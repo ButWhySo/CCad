@@ -12,7 +12,8 @@ _SECRET = re.compile(
     r"|\b(?:sk|csk|gsk|xai|sk-or)-[A-Za-z0-9_-]{12,}\b"
     r"|\bAIza[A-Za-z0-9_-]{20,}", re.IGNORECASE)
 _SENSITIVE_PROPERTY = re.compile(
-    r"api[_-]?key|secret|password|token|authorization|credential", re.IGNORECASE)
+    r"api[_-]?key|private[_-]?key|secret|password|token|authorization|credential",
+    re.IGNORECASE)
 _PREFIX = "[CCAD_CONTEXT_V3]\n"
 _RETRIEVAL_SAFE_FIELDS = (
     "rank", "tier", "query_overlap_terms", "bm25_score", "ranking_method",
@@ -70,8 +71,26 @@ def _project_payload(raw_context: Any) -> tuple[Any, str]:
         return {"native_context_text": _safe_text(text, 24000)}, ""
     if not isinstance(decoded, dict):
         return {"native_context_text": _safe_text(text, 24000)}, ""
+    decoded = _redact_project_secrets(decoded)
     revision = str(decoded.get("revision") or "")
     return decoded, revision
+
+
+def _redact_project_secrets(value: Any) -> Any:
+    """Remove credential-named fields and secret-shaped text from project data."""
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or _SENSITIVE_PROPERTY.search(key):
+                continue
+            if isinstance(item, str) and _SECRET.search(item):
+                continue
+            result[key] = _redact_project_secrets(item)
+        return result
+    if isinstance(value, list):
+        return [_redact_project_secrets(item) for item in value
+                if not isinstance(item, str) or not _SECRET.search(item)]
+    return value
 
 
 def _memory_payload(entries: Iterable[dict], per_entry_limit: int = 1000) -> list[dict]:
@@ -162,7 +181,8 @@ def _project_retrieval_payload(value: dict | None) -> dict:
                     "start_layer_id", "end_layer_id",
                     "component_id", "symbol_id", "position_mm", "bounds_mm", "retrieval",
                     "rank", "relationship", "distance_mm", "semantic_similarity",
-                    "design_rules"):
+                    "identity_source", "rule_field", "rule_path", "rule_value",
+                    "rule_unit", "design_rules"):
             if key in entity and isinstance(entity[key], (str, int, float, dict)):
                 item[key] = entity[key]
         for key in ("description", "library_description", "footprint_name", "lib_id",
@@ -221,7 +241,7 @@ def _project_retrieval_payload(value: dict | None) -> dict:
                      "relationship_match_count", "spatial_match_count",
                      "near_component_match_count", "region_member_match_count",
                      "passive_association_match_count",
-                     "semantic_match_count",
+                     "semantic_match_count", "rule_setting_match_count",
                      "omitted_count")}
     for relation, key in (("near_component", "near_component_match_count"),
                           ("region_member", "region_member_match_count"),
@@ -478,6 +498,9 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                 relation in entity.get("relationships", ()) or
                 entity.get("relationship") == relation
                 for entity in included_entities if isinstance(entity, dict))
+        included_retrieval_stats["rule_setting_match_count"] = sum(
+            entity.get("kind") == "design_rule_setting"
+            for entity in included_entities if isinstance(entity, dict))
         encoded = encode()
     # Conversation advances every turn; it must not invalidate a project/action
     # revision.  Fall back only to project and retrieved-memory identity.

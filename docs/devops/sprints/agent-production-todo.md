@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1024 — Exact board-rule context and project-secret filtering (Tier 1)
+
+- [x] Index scalar board design-rule settings as exact `board.design_rules.<field>` records, with explicit derived-path identity, original value, field name, and unit metadata; preserve the compatible aggregate rule record.
+- [x] Exclude credential-shaped design-rule fields and secret-shaped values from provider-bound project snapshots.
+- [x] Prove exact lookup, incremental update/deletion, unit labeling, and secret omission with focused contracts; run Pyright and Python syntax checks on changed modules.
+- [x] Pass the official Qt/MinGW Release build and full CTest (120/120); publish workspace-only evidence manifest `artifacts/evidence/sprint-1024-project-rule-context.json` (SHA-256 `89D234C649F6EE53B9815B4EABD9FAE30B7652FC8DC0EB5D9A612BE13169CC8C`).
+- [x] Run redacted tracked-tree and staged-added-line secret scans; all eight tracked matches are synthetic test sentinels, and the three staged matches are the new redaction-contract sentinels only.
+- [x] Update this checklist, the consolidated backlog, codebase map, feature inventory, and progress record in this sprint.
+Implementation boundary: CCad currently represents board design rules as scalar fields on one typed `DesignRules` object. The index therefore identifies each scalar by its stable typed field path and says so explicitly; it does not invent native rule IDs. Native per-rule IDs and source-authored prose descriptions remain open in the project-index backlog.
+
 ### Sprint 1023 — Memory secret-read boundary (Tier 1)
 
 References checked: [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) recommends removing, masking, sanitizing, hashing, or encrypting secrets rather than recording them; [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) calls for removal of secrets from logs. CCad preserves user-owned legacy store bytes and excludes unsafe records at public read/UI boundaries; explicit delete/reset remains the only destructive path.
@@ -4682,7 +4692,8 @@ Index exact identifiers for:
 - [x] net IDs/names.
 - [x] layer IDs/names.
 - [x] Relative sheet paths (absolute paths are excluded from retrieval).
-- [ ] rule IDs.
+- [x] Board scalar rule settings by stable typed field path, explicitly labeled as derived identity (Sprint 1024); native rule IDs remain unavailable.
+- [ ] Native per-rule IDs from the CCad kernel.
 - [x] DRC/ERC diagnostic lookup IDs/codes and affected-object IDs.
 - [x] zone/keepout IDs.
 - [x] track/via IDs.
@@ -4701,7 +4712,8 @@ Index textual fields such as:
 - [x] sheet names/titles.
 - [x] schematic symbol properties/fields (bounded scalar text and visibility).
 - [ ] notes.
-- [ ] rule descriptions.
+- [x] Deterministic names for scalar rule fields with suffix-derived units (Sprint 1024).
+- [ ] Source-authored free-text rule descriptions.
 - [x] DRC/ERC diagnostic codes, severity, engine, and messages.
 - [ ] generated functional-block summaries.
 - [ ] project annotations beyond the currently serialized schematic objects.

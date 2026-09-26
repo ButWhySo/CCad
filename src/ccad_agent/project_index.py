@@ -549,6 +549,8 @@ class ProjectIndex:
             for key, value in sorted(raw_rules.items()):
                 if not isinstance(key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", key):
                     continue
+                if _SENSITIVE_PROPERTY.search(key):
+                    continue
                 if isinstance(value, bool):
                     rule_value = value
                 elif isinstance(value, (int, float)) and math.isfinite(value) and abs(value) <= 1e12:
@@ -556,10 +558,40 @@ class ProjectIndex:
                 else:
                     continue
                 rule_values[key] = rule_value
-                phrase = key.removesuffix("_nm").removesuffix("_degrees").replace("_", " ")
+                stem = key.removesuffix("_nm").removesuffix("_degrees").removesuffix("_ratio")
+                phrase = stem.replace("_", " ")
                 phrase = re.sub(r"\bmin\b", "minimum", phrase)
                 phrase = re.sub(r"\bmax\b", "maximum", phrase)
                 rule_terms.extend((key.replace("_", " "), phrase))
+
+                unit = ("nm" if key.endswith("_nm") else
+                        "degrees" if key.endswith("_degrees") else
+                        "ratio" if key.endswith("_ratio") else
+                        "boolean" if isinstance(rule_value, bool) else "unitless")
+                title = phrase[:1].upper() + phrase[1:]
+                description = f"{title} ({unit})"
+                rule_path = f"board.design_rules.{key}"
+                setting_doc = cls._make_doc(
+                    "design_rule_setting",
+                    {"id": rule_path, "name": description,
+                     "description": description, "value": rule_value,
+                     "rule_field": key, "rule_path": rule_path,
+                     "identity_source": "typed_field_path"},
+                    aliases=("id", "name", "rule_field", "rule_path"),
+                    extra_text=(key.replace("_", " "), str(rule_value), unit))
+                if setting_doc is not None:
+                    setting_doc["fields"].update({
+                        "rule_field": key,
+                        "rule_path": rule_path,
+                        "rule_value": rule_value,
+                        "rule_unit": unit,
+                        "identity_source": "typed_field_path",
+                    })
+                    setting_doc["aliases"].update(
+                        _normalize(term) for term in (key, rule_path, phrase, description)
+                        if _normalize(term))
+                    setting_doc["signature"] = cls._signature(setting_doc)
+                    docs.append(setting_doc)
             if rule_values:
                 rule_doc = cls._make_doc(
                     "design_rules", {"id": "board-design-rules", "name": "Design rules"},
@@ -1944,7 +1976,8 @@ class ProjectIndex:
                                "layer_ids", "start_layer_id", "end_layer_id",
                                "component_id", "symbol_id", "position_mm", "bounds_mm",
                                "sheet_id", "parent_sheet_id", "code", "severity",
-                               "message", "engine", "object_id"}}
+                               "message", "engine", "object_id", "rule_field",
+                               "rule_path", "rule_value", "rule_unit"}}
             if "design_rules" in fields:
                 item["design_rules"] = fields["design_rules"]
             for key in ("anchor_pad_id", "anchor_via_id", "anchor_track_id",
@@ -1981,6 +2014,8 @@ class ProjectIndex:
                       "passive_association_match_count": sum(
                           "shares_power_input_net_with_passive" in values
                           for values in related.values()),
+                      "rule_setting_match_count": sum(
+                          item["kind"] == "design_rule_setting" for item in output),
                       "semantic_match_count": len(semantic),
                       "omitted_count": max(0, len(scores) - len(output)),
                       "total_entities": len(self._docs)})

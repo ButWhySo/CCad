@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1024-project-rule-context",
+    "feature":  "Exact board scalar-rule retrieval and project snapshot secret filtering",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T21:20:15.8684676Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.25 log=artifacts/evidence/sprint-1024-project-rule-context/preflight.log",
+                      "finished_utc":  "2026-09-26T21:20:17.2515851Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=311.85 log=artifacts/evidence/sprint-1024-project-rule-context/build.log",
+                      "finished_utc":  "2026-09-26T21:25:29.1218888Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=215.27 log=artifacts/evidence/sprint-1024-project-rule-context/ctest.log",
+                      "finished_utc":  "2026-09-26T21:29:04.3915044Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1024-project-rule-context/build.log",
+                                         "sha256":  "B08B63325F4EC25CB1F98630A2C28BD962DD004C8A9C691383F2B4A737C675C1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1024-project-rule-context/ctest.log",
+                                         "sha256":  "2428C3CB97AFC32FC9A7F4D883FC3B80AC61D30BA98A318191DDD007A13096FD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1024-project-rule-context/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T21:29:04.4935020Z"
+}

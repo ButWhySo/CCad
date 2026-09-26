@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Exact board design-rule context (Sprint 1024)
+
+The project index retains its aggregate board-rule record and additionally indexes each finite scalar `DesignRules` field under a stable typed path such as `board.design_rules.min_track_width_nm`. Records explicitly identify this as field-path-derived identity, preserve the typed value, and carry suffix-derived units when the serialized field supplies them; this does not claim the kernel provides native per-rule IDs or authored descriptions. Credential-shaped property names and secret-shaped values are removed recursively from provider-bound project snapshots. Project-index contracts pass 58/58, the context-package contract passes, changed-module Pyright reports zero diagnostics, and the official Qt/MinGW Release/full CTest gate passes 120/120. Evidence: `artifacts/evidence/sprint-1024-project-rule-context.json` (SHA-256 `89D234C649F6EE53B9815B4EABD9FAE30B7652FC8DC0EB5D9A612BE13169CC8C`).
+
 ## Memory legacy-secret read isolation (Sprint 1023)
 
 The local store rejects new secret-shaped memory metadata and filters historical credential-shaped keys and values recursively across record JSON from public namespace/list reads, usage results, RPC, compaction, and the Manage Memories list. Unsafe rows stay on disk unchanged until the user explicitly deletes or resets memory. Store and orchestrator JSON-RPC tests pass; changed-module Pyright is clean; Qt MinGW Release and full CTest pass (120/120). The provider-disabled UI-map flow verifies the visible safe record while hiding a legacy secret sentinel, preserves backing bytes, and passes nine mapped interactions; all five screenshots were inspected and stderr is empty. Evidence: `artifacts/evidence/sprint-1023-memory-secret-read-safety-r3.json` (SHA-256 `D408D1BD5B28CC846F02971D2DE672FAA972EA5DA8042C73249345AACFCCD64B`).

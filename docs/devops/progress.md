@@ -6,6 +6,12 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
+- Sprint: 1024
+- Branch: `sprint-1024-project-rule-context`
+- Sprint 1024 indexes typed scalar board-rule settings under explicit derived field paths, keeps their typed values and suffix-derived units, and removes credential-shaped content from provider-bound project snapshots. Project-index contracts pass 58/58, context-package contract passes, changed-module Pyright reports zero diagnostics, and Qt/MinGW Release/full CTest pass 120/120. Workspace-only evidence: `artifacts/evidence/sprint-1024-project-rule-context.json`, SHA-256 `89D234C649F6EE53B9815B4EABD9FAE30B7652FC8DC0EB5D9A612BE13169CC8C`.
+
+- Phase: 9 / 9
+- Phase name: Deterministic KiCad Parity Execution
 - Sprint: 1023
 - Branch: `sprint-1023-memory-secret-read-safety`
 - Sprint 1023 closes the legacy-memory secret-read boundary: credential-like keys and values anywhere in a record are excluded from public store reads, namespace loads, usage responses, compaction, RPC, and Manage Memories display; source bytes remain unchanged unless explicitly deleted/reset. Focused store and real JSON-RPC contracts pass; changed-module Pyright reports 0 diagnostics; Qt MinGW Release build and full CTest pass (120/120). The app-owned Manage Memories flow passes nine mapped interactions; all five final screenshots were inspected and stdout/stderr reviewed (stderr empty). Manifest `artifacts/evidence/sprint-1023-memory-secret-read-safety-r3.json`, SHA-256 `D408D1BD5B28CC846F02971D2DE672FAA972EA5DA8042C73249345AACFCCD64B`. The first UI attempt exposed and corrected a fixture thread-identity mismatch; r3 is the accepted evidence.

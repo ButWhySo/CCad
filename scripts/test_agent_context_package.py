@@ -70,6 +70,28 @@ assert '"kind":"correction"' in package["content"]
 assert "User correction: Board intent" in package["content"]
 assert len(package["content"]) <= 4096
 
+unsafe_project = json.dumps({
+    "typed_state": {"project": {
+        "board": {
+            "design_rules": {"private_api_key": "fixture-sensitive-key",
+                             "copper_clearance_nm": 200_000},
+            "extension": {"authorization": "Bearer fixture-sensitive-token",
+                           "private_key": "fixture-private-key",
+                           "safe_label": "board settings"},
+        },
+        "components": [{"reference": "U1",
+                        "datasheet_note": "sk-testfixturevalue1234567890"}],
+    }},
+})
+safe_project_package = build_context_package(
+    unsafe_project, [], [], char_limit=4096)
+for forbidden in ("private_api_key", "fixture-sensitive-key", "authorization",
+                  "fixture-sensitive-token", "private_key", "fixture-private-key",
+                  "sk-testfixturevalue1234567890"):
+    assert forbidden not in safe_project_package["content"]
+assert "copper_clearance_nm" in safe_project_package["content"]
+assert "board settings" in safe_project_package["content"]
+
 truncated = build_context_package(raw + ("x" * 9000), [], [], char_limit=1024)
 assert truncated["metadata"]["truncated"] is True
 assert len(truncated["content"]) <= 1024

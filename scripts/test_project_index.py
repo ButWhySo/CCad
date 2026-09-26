@@ -69,6 +69,21 @@ def project_snapshot():
     }
 
 
+def design_rule_snapshot():
+    snapshot = project_snapshot()
+    snapshot["typed_state"]["project"]["board"]["id"] = "pcb-main"
+    snapshot["typed_state"]["project"]["board"]["design_rules"] = {
+        "copper_clearance_nm": 200_000,
+        "min_track_width_nm": 150_000,
+        "min_track_angle_degrees": 45.0,
+        "solder_paste_margin_ratio": 0.1,
+        "tent_vias_front": True,
+        "private_api_key": "fixture-sensitive-key",
+        "unbounded_extension": ["must not be indexed"],
+    }
+    return snapshot
+
+
 def power_passive_snapshot():
     snapshot = project_snapshot()
     project = snapshot["typed_state"]["project"]
@@ -93,6 +108,75 @@ def power_passive_snapshot():
 
 
 class ProjectIndexTests(unittest.TestCase):
+    def test_design_rule_field_paths_are_exact_searchable_and_context_safe(self):
+        snapshot = design_rule_snapshot()
+        result = ProjectIndex().retrieve(
+            snapshot, "minimum track width", limit=24)
+        rule = next(item for item in result["entities"]
+                    if item["kind"] == "design_rule_setting" and
+                    item["rule_field"] == "min_track_width_nm")
+        self.assertEqual(rule["id"],
+                         "board.design_rules.min_track_width_nm")
+        self.assertEqual(rule["rule_path"], rule["id"])
+        self.assertEqual(rule["identity_source"], "typed_field_path")
+        self.assertEqual(rule["rule_value"], 150_000)
+        self.assertEqual(rule["rule_unit"], "nm")
+        self.assertEqual(rule["description"], "Minimum track width (nm)")
+        self.assertEqual(result["stats"]["rule_setting_match_count"],
+                         sum(item["kind"] == "design_rule_setting"
+                             for item in result["entities"]))
+        self.assertFalse(any(item.get("rule_field") == "private_api_key"
+                             for item in result["entities"]))
+        self.assertFalse(any("unbounded_extension" in str(item)
+                             for item in result["entities"]))
+
+        package = build_context_package(
+            json.dumps(snapshot), [], [], char_limit=8192,
+            project_retrieval=result)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        packaged_rule = next(item for item in
+                             envelope["project_retrieval"]["entities"]
+                             if item.get("rule_field") == "min_track_width_nm")
+        self.assertEqual(packaged_rule["rule_value"], 150_000)
+        self.assertEqual(packaged_rule["rule_unit"], "nm")
+        self.assertEqual(packaged_rule["identity_source"], "typed_field_path")
+        self.assertEqual(packaged_rule["description"],
+                         "Minimum track width (nm)")
+        self.assertNotIn("private_api_key", package["content"])
+
+    def test_design_rule_settings_update_and_disappear_with_source_fields(self):
+        snapshot = design_rule_snapshot()
+        index = ProjectIndex()
+        first = index.retrieve(snapshot, "copper clearance", limit=24)
+        first_rule = next(item for item in first["entities"]
+                          if item.get("rule_field") == "copper_clearance_nm")
+        self.assertEqual(first_rule["rule_value"], 200_000)
+
+        rules = snapshot["typed_state"]["project"]["board"]["design_rules"]
+        rules["copper_clearance_nm"] = 250_000
+        rules.pop("min_track_width_nm")
+        updated = index.retrieve(snapshot, "copper clearance minimum track width",
+                                 limit=24)
+        self.assertEqual(updated["stats"]["index_state"], "incremental")
+        changed_rule = next(item for item in updated["entities"]
+                            if item.get("rule_field") == "copper_clearance_nm")
+        self.assertEqual(changed_rule["rule_value"], 250_000)
+        self.assertFalse(any(item.get("rule_field") == "min_track_width_nm"
+                             for item in updated["entities"]))
+
+    def test_design_rule_units_are_derived_only_from_serialized_field_suffix(self):
+        result = ProjectIndex().retrieve(
+            design_rule_snapshot(),
+            "track angle solder paste margin ratio tent vias front", limit=24)
+        rules = {item["rule_field"]: item for item in result["entities"]
+                 if item["kind"] == "design_rule_setting"}
+        self.assertEqual(rules["min_track_angle_degrees"]["rule_unit"],
+                         "degrees")
+        self.assertEqual(rules["solder_paste_margin_ratio"]["rule_unit"],
+                         "ratio")
+        self.assertEqual(rules["tent_vias_front"]["rule_unit"], "boolean")
+        self.assertEqual(rules["tent_vias_front"]["rule_value"], True)
+
     def test_source_typed_power_and_passive_association_is_retrievable_and_packaged(self):
         snapshot = power_passive_snapshot()
         result = ProjectIndex().retrieve(snapshot, "U1 input power", limit=24)
@@ -844,7 +928,7 @@ class ProjectIndexTests(unittest.TestCase):
         board["design_rules"]["min_track_width_nm"] = 175_000
         changed = index.retrieve(snapshot, "minimum track width", limit=12)
         self.assertEqual(changed["stats"]["index_state"], "incremental")
-        self.assertEqual(changed["stats"]["updated_count"], 1)
+        self.assertEqual(changed["stats"]["updated_count"], 2)
         updated = next(item for item in changed["entities"]
                        if item["kind"] == "design_rules")
         package = build_context_package(json.dumps(snapshot), [], [], char_limit=4096,
