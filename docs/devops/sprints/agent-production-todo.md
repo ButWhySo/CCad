@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1022 — CI / CTest / CD failure diagnosis
+
+- [x] Inspect hosted job-level logs: run `36234661589` failed the Linux core, Linux GUI, and Windows core CTest lanes on old SHA `fc1b960`; all three failed `agent_project_index` because one test opened ignored local fixture `artifacts/demos/sprint160-placement-crash-ci-final.ccad.json`.
+- [x] Confirm the repair already on `main`: Sprint 1015 makes project-index contracts self-contained and includes a source contract preventing the regression.
+- [x] Verify the repair on later hosted `main` runs, including run `36261448041` on merged SHA `bab8aed149015a6c763dfec861c86b7d69326d86`; all five jobs pass (`agent-python`, Linux core, Linux GUI, Windows core, evidence manifest).
+- [x] Run the official nonvisual verifier; Qt/MinGW preflight passes and its timestamp-checked reuse confirms the unchanged source has a successful Release build and full CTest, 120/120. Manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json`, SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`.
+- [x] Confirm `.github/workflows/ci.yml` is the sole configured workflow and that it runs CTest in all three native jobs; no CD workflow/deployment target exists, so delivery is unconfigured rather than failing.
+- [ ] Commit this report, locally merge to `main`, push, and verify hosted CI against the resulting exact SHA.
+
+Finding: the visible red badges are historical, superseded runs; the current workflow is green. The missing-fixture regression and earlier Sprint 1010 dependency/contract/`-Werror` failures are already repaired. No CI source change is justified by current evidence. Do not invent a CD target; release destination and publishing policy need a product decision.
+
 ### Sprint 1021 — Memory reset and transcript isolation (Tier 1)
 
 - [x] Verify enabling LTM/episodic opens durable namespaces and reset requires explicit confirmation.

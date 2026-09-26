@@ -1,5 +1,20 @@
 # Implemented Features
 
+## CI / CTest / CD diagnosis (Sprint 1022)
+
+Hosted logs for run `36234661589` show the Linux core, Linux GUI, and Windows
+core CTest jobs failed on the same test because it tried to read an ignored,
+workspace-only demo board absent from clean runners. Sprint 1015 removed that
+dependency by constructing typed test input locally. Run `36261448041` verifies
+the repaired code on merged `main` SHA
+`bab8aed149015a6c763dfec861c86b7d69326d86`; all five CI jobs pass. The official
+local verifier confirms the unchanged source's Qt/MinGW Release build and
+120/120 CTests. Manifest:
+`artifacts/evidence/sprint-1022-ci-ct-cd-health.json` (SHA-256
+`150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`).
+There is no CD workflow or deployment target, so deployment is unconfigured;
+no publishing destination was assumed.
+
 ## CI / CTest delivery status (Sprint 1019)
 
 GitHub Actions run `36256453720` passes all five configured jobs on pushed `main` SHA `8d678b92435bfa8a5ee0dad46f268f3273dae4de`. CTest is part of the Linux core, Linux GUI, and Windows core jobs. Previously observed failures were repaired in Sprints 1010 and 1011 and are not current failures. A fresh local Qt/MinGW Release build and full CTest passed 120/120; evidence is `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`). This repository has no CD workflow or deployment target; shipping is not configured.

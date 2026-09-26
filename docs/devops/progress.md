@@ -6,8 +6,11 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
+- Sprint: 1022
+- Branch: `sprint-1022-ci-ct-cd-health` (based on `main` `7697a35463ac2b5c472f83ce4dbdfbf0fc081eda`)
+- Sprint 1022 diagnoses the reported red CI/CTest status from hosted job logs. Run `36234661589` failed only because `agent_project_index` read an ignored local demo-board fixture missing on clean runners; Sprint 1015 already replaced this dependency with self-contained typed fixtures. The later merged `main` run `36261448041` passes all five jobs on exact SHA `bab8aed149015a6c763dfec861c86b7d69326d86`. Official verifier preflight passes; timestamp-checked build/test reuse confirms the unchanged Release source and all 120 CTests pass, manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json` SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`. `.github/workflows/ci.yml` is the sole configured workflow. No CD target/workflow exists, so delivery is unconfigured, not failing. Current docs branch has not yet been pushed; exact post-push CI verification remains open.
 - Sprint: 1021
-- Branch: `sprint-1021-memory-transcript-isolation` (based on `main` `c22229bdbe116eb611466aca1f7a324866803c8d`)
+- Branch: `main` (implementation branch `sprint-1021-memory-transcript-isolation`, based on `c22229bdbe116eb611466aca1f7a324866803c8d`)
 - Sprint 1021 strengthens the Tier-1 memory contract: LTM/episodic activation opens their persistent namespaces; disabling and confirmed reset cannot erase canonical conversation history, project bytes, or unrelated checkpoint state. The real JSON-RPC restart contract, memory persistence contract, and manager lifecycle tests pass with provider calls disabled. Focused Pyright on production dependency modules reports zero diagnostics. Official Qt/MinGW Release passes; full CTest passes 120/120. Redacted changed-file secret scan is clean. Manifest `artifacts/evidence/sprint-1021-memory-transcript-isolation.json` SHA-256 `5823B39C237831C88905F81736DAD94DB6F9DA69CD64D1F87CF4470D68FBE460`. Commit `2cce403` is merged and pushed at `bab8aed`; hosted CI run `36261448041` passes all five jobs on that exact SHA. PR creation was denied to the connected GitHub integration (403); CI was triggered by the explicitly requested `main` push.
 - Sprint: 1020
 - Branch: `main` (CI/CTest/CD status refresh; current commit `3587c6e4b50d5a899abb54aa08593b0c5baeb5f1`)

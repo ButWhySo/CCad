@@ -48,6 +48,10 @@ Owns the `ccad agent orchestrate` and `ccad agent plan` CLI wrapper, providing t
 
 Sprint 207 addendum: `src/ccad_gui/agent_panel.cpp` added the fifth reference-inspired Agent pane contract with compact header action bar, evidence thumbnails, approval preview, and UI-map target proof.
 
+## Sprint 1022 CI / CTest / CD diagnosis
+
+The reported red CTest run `36234661589` failed in the Linux core, Linux GUI, and Windows core lanes because `agent_project_index` depended on an ignored local demo-board file that clean runners do not have. Sprint 1015 already repaired this with self-contained typed fixtures. Later hosted run `36261448041` passes all five jobs on merged `main` SHA `bab8aed149015a6c763dfec861c86b7d69326d86`. The official nonvisual verifier confirms the unchanged Qt/MinGW Release build and all 120 CTests; manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json` (SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`). `.github/workflows/ci.yml` is the only configured workflow; CD has no workflow or deployment target and is unconfigured, not failing.
+
 ## Sprint 1019 CI / CTest / CD status
 
 The active workflow is `.github/workflows/ci.yml`; run `36256453720` is green on pushed `main` SHA `8d678b92435bfa8a5ee0dad46f268f3273dae4de`, including its Python, Linux core, Linux GUI, Windows core, and evidence-manifest jobs. CTest executes within all three native jobs. Older hosted failures were traced to causes repaired in Sprints 1010 and 1011. A fresh local Qt/MinGW Release build and full CTest passed 120/120 under Sprint 1019 manifest `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`). There is no CD workflow or configured deployment target. See `docs/devops/sprints/agent-production-todo.md` and `docs/devops/progress.md` for the timestamped reconciliation.
