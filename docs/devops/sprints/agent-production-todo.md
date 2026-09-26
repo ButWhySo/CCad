@@ -54,7 +54,7 @@ References checked: LangChain's [memory](https://docs.langchain.com/oss/python/l
 - [x] Run changed-module Pyright (0 diagnostics) and the official Qt/MinGW Release/full CTest gate (119/119); inspect manifest and captured logs. Workspace-only manifest `artifacts/evidence/sprint1008-memory-summary-r2.json`, SHA-256 `CEAC8CE780EC8DFDBB7E5B09FA494ECB29D4B07CC1DEAC98536C8D3D5A12433D`.
 - [x] Update progress, feature inventory, codebase map, backlog, and this TODO in the verified change set.
 - [x] Run redacted repository and staged-diff secret scans; staged diff is clean. Repository scan finds only synthetic credential strings in `scripts/test_memory_store.py:76`. Stage only scoped source, tests, docs, and evidence manifest.
-- [ ] Commit verified files on this feature branch, merge locally after gates, then push `main` and verify its SHA.
+- [x] Commit verified files, merge locally, push `main`, and verify remote SHA (`a1603e0` feature commit; `5d6aab6` merge; remote main `5d6aab66871cf93e389c215920bfc7ee33a5f099`).
 
 Scope boundary: this does not add generated semantic summaries, source-attribution labels for each memory entry, or a real-provider recall benchmark.
 
