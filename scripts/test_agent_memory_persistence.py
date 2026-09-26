@@ -133,6 +133,68 @@ with tempfile.TemporaryDirectory() as temp:
 with tempfile.TemporaryDirectory() as temp:
     root = Path(temp)
     app_data = root / "roaming"
+    memory_path = root / "legacy-memory.json"
+    thread_id = "sprint1023-legacy-secret-thread"
+    secret_sentinel = "SPRINT1023_RPC_SECRET_SENTINEL_52b17d"
+    memory_path.write_text(json.dumps([
+        {
+            "id": "legacy-secret",
+            "title": "Legacy provider key",
+            "content": f"api_key: {secret_sentinel}",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": thread_id,
+            "tags": [],
+        },
+        {
+            "id": "legacy-safe",
+            "title": "Safe legacy preference",
+            "content": "Keep the verified minimum clearance at 0.25 mm.",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": thread_id,
+            "tags": ["pcb"],
+        },
+    ]), encoding="utf-8")
+    original_memory = json.loads(memory_path.read_text(encoding="utf-8"))
+    env = os.environ.copy()
+    env["APPDATA"] = str(app_data)
+    env["CCAD_AGENT_MEMORY_PATH"] = str(memory_path)
+    env["CCAD_AGENT_THREAD_ID"] = thread_id
+    env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
+    requests = [
+        {"method": "agent.set_thread_id", "params": {
+            "thread_id": thread_id, "session_id": thread_id}},
+        {"method": "agent.memory_set_enabled", "params": {
+            "tier": "ltm", "enabled": True}},
+        {"method": "agent.memory_list", "params": {"tier": "ltm"}},
+        {"method": "agent.memory_state", "params": {"tier": "ltm"}},
+    ]
+    process = subprocess.run(
+        [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
+        input="".join(json.dumps(request) + "\n" for request in requests),
+        capture_output=True, text=True, env=env, timeout=45, check=False)
+    assert process.returncode == 0, process.stderr[-2000:]
+    assert secret_sentinel not in process.stdout
+    assert secret_sentinel not in process.stderr
+    events = [json.loads(line) for line in process.stdout.splitlines()
+              if line.startswith("{")]
+    listed = next(event["params"] for event in events
+                  if event.get("method") == "memory_state" and
+                  "entries" in event.get("params", {}))
+    listed_ids = [entry["id"] for entry in listed["entries"]]
+    assert listed_ids == ["legacy-safe"], listed_ids
+    assert listed["secret_value_visible"] is False
+    state = next(event["params"] for event in events
+                 if event.get("method") == "memory_state" and
+                 "persistent_entries" in event.get("params", {}))
+    assert state["persistent_entries"] == 1
+    persisted = json.loads(memory_path.read_text(encoding="utf-8"))
+    assert persisted == original_memory
+
+with tempfile.TemporaryDirectory() as temp:
+    root = Path(temp)
+    app_data = root / "roaming"
     memory_path = root / "memory.json"
     original_bytes = b'{damaged memory; preserve this file'
     memory_path.write_bytes(original_bytes)

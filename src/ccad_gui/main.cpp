@@ -1325,6 +1325,8 @@ int main(int argc, char** argv) {
       const bool provider_target_sequence = name.startsWith("sprint972-provider");
       const bool gemini_count_target_sequence =
           name.startsWith("sprint1007-gemini-exact-count");
+      const bool memory_secret_target_sequence =
+          name.startsWith("sprint1023-memory-secret-redaction");
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
                                           name.startsWith("sprint971-memory") ||
                                           name.startsWith("sprint1001-memory-kind") ||
@@ -1332,7 +1334,13 @@ int main(int argc, char** argv) {
       const bool memory_kind_target_sequence = name.startsWith("sprint1001-memory-kind");
       const bool memory_importance_target_sequence = name.startsWith("sprint1003-memory-importance");
       const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
-      const QStringList target_ids = gemini_count_target_sequence
+      const QStringList target_ids = memory_secret_target_sequence
+          ? QStringList{"action:settingsBtn", "control:categoryList",
+                        "action:agent_memory_manage", "control:memoryTier",
+                        "control:memoryEntries", "control:memoryTitle",
+                        "control:memoryContent", "action:closeMemoryManager",
+                        "action:cancelSettingsButton"}
+          : gemini_count_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:geminiExactInputCounting", "control:providerCombo",
                         "control:modelCombo", "action:primaryButton",
@@ -1374,7 +1382,7 @@ int main(int argc, char** argv) {
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
       const QStringList trigger_before_capture_ids = memory_target_sequence ||
           semantic_memory_target_sequence || provider_target_sequence ||
-          gemini_count_target_sequence
+          gemini_count_target_sequence || memory_secret_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -1394,6 +1402,7 @@ int main(int argc, char** argv) {
                                                     "action:agent_memory_manage",
                                                     "action:addMemory", "action:saveMemory",
                                                     "control:memoryTier",
+                                                    "control:memoryEntries",
                                                     "control:memoryKind",
                                                     "control:memoryImportance",
                                                     "control:memoryTitle", "control:memoryScope",
@@ -1417,6 +1426,7 @@ int main(int argc, char** argv) {
                             memory_target_sequence,
                             memory_kind_target_sequence,
                             memory_importance_target_sequence,
+                            memory_secret_target_sequence,
                             semantic_memory_target_sequence,
                             provider_target_sequence,
                             gemini_count_target_sequence,
@@ -1448,14 +1458,17 @@ int main(int argc, char** argv) {
               id == "control:semanticMemoryEnabled" ||
               id == "control:semanticMemoryEndpoint" ||
               id == "control:semanticMemoryModel" ||
-              id == "label:semanticMemoryState" ||
-              id == "action:agent_memory_manage" ||
-              id == "action:agent_memory_reset" ||
+               id == "label:semanticMemoryState" ||
+               id == "action:agent_memory_manage" ||
+               (memory_secret_target_sequence &&
+                (id == "control:memoryEntries" || id == "control:memoryTitle" ||
+                 id == "control:memoryContent")) ||
+               id == "action:agent_memory_reset" ||
               (provider_target_sequence && id == "action:testProviderBtn")) {
             const bool memory_control = id == "control:stmCb" || id == "control:ltmCb" ||
                 id == "control:episodicCb" || id == "label:memoryState" ||
                 id == "action:agent_memory_manage" ||
-                id == "action:agent_memory_reset";
+                id == "action:agent_memory_reset" || memory_secret_target_sequence;
             int category = 1;
             if (gemini_count_target_sequence) {
               category = id == "control:geminiExactInputCounting" ? 4 : 1;
@@ -1518,7 +1531,9 @@ int main(int argc, char** argv) {
                 ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2);
             const QString payload = id == "control:categoryList"
                 ? QString("{\"id\":%1,\"row\":%2}").arg(jsonStringLocal(id)).arg(category_row)
-                : (id == "control:memoryTier"
+                : (id == "control:memoryEntries"
+                    ? QString("{\"id\":%1,\"row\":0}").arg(jsonStringLocal(id))
+                    : (id == "control:memoryTier"
                     ? QString("{\"id\":%1,\"value\":\"ltm\"}").arg(jsonStringLocal(id))
                     : (id == "control:memoryKind"
                         ? QString("{\"id\":%1,\"value\":%2}").arg(
@@ -1526,13 +1541,13 @@ int main(int argc, char** argv) {
                                 memory_kind_target_sequence ? "preference" : "fact"))
                     : (id == "control:memoryImportance"
                         ? QString("{\"id\":%1,\"value\":\"5\"}").arg(jsonStringLocal(id))
-                    : QString("{\"id\":%1}").arg(jsonStringLocal(id)))));
+                    : QString("{\"id\":%1}").arg(jsonStringLocal(id))))));
             const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
             if (gemini_count_target_sequence &&
                 id == "control:geminiExactInputCounting")
               gemini_checkbox_changed = true;
-            if (memory_target_sequence || provider_target_sequence ||
-                gemini_count_target_sequence) {
+            if (memory_target_sequence || memory_secret_target_sequence ||
+                provider_target_sequence || gemini_count_target_sequence) {
               const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
               const bool performed = click_doc.isObject() &&
                   click_doc.object().value("ok").toBool() &&
@@ -1597,6 +1612,59 @@ int main(int argc, char** argv) {
             if (id == "action:agent_memory_manage") {
               QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
               QApplication::processEvents();
+              if (memory_secret_target_sequence) {
+                QListWidget* entries_list = nullptr;
+                for (QWidget* top_level : QApplication::topLevelWidgets()) {
+                  entries_list = top_level->findChild<QListWidget*>(
+                      "control:memoryEntries");
+                  if (entries_list && entries_list->isVisible()) break;
+                  entries_list = nullptr;
+                }
+                bool checked = false;
+                for (int attempt = 0; attempt < 40 && !checked; ++attempt) {
+                  QApplication::processEvents();
+                  const QString joined = entries_list
+                      ? [&entries_list]() {
+                          QString result;
+                          for (int row = 0; row < entries_list->count(); ++row) {
+                            const QListWidgetItem* item = entries_list->item(row);
+                            if (item) {
+                              result += item->text();
+                              result += item->data(Qt::UserRole + 1).toString();
+                              result += item->data(Qt::UserRole + 4).toString();
+                            }
+                          }
+                          return result;
+                        }()
+                      : QString();
+                  QString visible_text = joined;
+                  for (QWidget* widget : QApplication::allWidgets()) {
+                    if (!widget->isVisible()) continue;
+                    if (const auto* line = qobject_cast<const QLineEdit*>(widget))
+                      visible_text += line->text();
+                    else if (const auto* editor = qobject_cast<const QTextEdit*>(widget))
+                      visible_text += editor->toPlainText();
+                    else if (const auto* label = qobject_cast<const QLabel*>(widget))
+                      visible_text += label->text();
+                  }
+                  const bool has_safe = entries_list && entries_list->count() == 1 &&
+                      joined.contains("Safe legacy preference");
+                  const bool no_secret = !visible_text.contains(
+                      "SPRINT1023_GUI_SECRET_SENTINEL_6c92e1");
+                  checked = has_safe && no_secret;
+                  if (!checked) {
+                    QThread::msleep(100);
+                    QApplication::processEvents();
+                  }
+                }
+                memory_target_actions_ok = memory_target_actions_ok && checked;
+                entries << QString("{\"legacy_secret_hidden\":%1,"
+                                   "\"safe_legacy_entry_visible\":%2,"
+                                   "\"visible_memory_count\":%3}")
+                    .arg(checked ? "true" : "false",
+                         checked ? "true" : "false")
+                    .arg(entries_list ? entries_list->count() : -1);
+              }
             }
             }
           }
@@ -1619,6 +1687,8 @@ int main(int argc, char** argv) {
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
           QString screenshot_path;
           if (found && x.has_value() && y.has_value() &&
+              (!memory_secret_target_sequence ||
+               id == "action:agent_memory_manage") &&
               (!semantic_memory_target_sequence || id == "action:settingsBtn" ||
                id == "action:primaryButton" || id == "action:cancelSettingsButton")) {
             QCursor::setPos(*x, *y);
@@ -1643,8 +1713,9 @@ int main(int argc, char** argv) {
                 break;
               }
             }
-          if ((semantic_memory_target_sequence || memory_kind_target_sequence ||
-               gemini_count_target_sequence) &&
+            if ((semantic_memory_target_sequence || memory_kind_target_sequence ||
+                 memory_secret_target_sequence ||
+                 gemini_count_target_sequence) &&
                 id == "action:settingsBtn") {
               QWidget* active = QApplication::activeWindow();
               if (active && active->isVisible()) capture_window = active;
@@ -1662,6 +1733,9 @@ int main(int argc, char** argv) {
             painter.end();
             screenshot.save(screenshot_path);
           } else if ((click_before_capture_ids.contains(id) &&
+                      (!memory_secret_target_sequence ||
+                       id == "action:closeMemoryManager" ||
+                       id == "action:cancelSettingsButton") &&
                       (!(memory_kind_target_sequence || memory_importance_target_sequence) ||
                        id == "action:closeMemoryManager" ||
                        id == "action:cancelSettingsButton") &&
@@ -1681,6 +1755,7 @@ int main(int argc, char** argv) {
           }
           if ((id == "control:memoryContent" || id == "control:memoryTitle" ||
                id == "control:memoryScope") && found &&
+              !memory_secret_target_sequence &&
               (!memory_target_sequence || pass_name == "initial")) {
             const QString value = memory_importance_target_sequence
                 ? (id == "control:memoryContent"
@@ -1725,6 +1800,31 @@ int main(int argc, char** argv) {
                            .arg(jsonStringLocal(pass_name), jsonStringLocal(id), typing_result.trimmed(),
                                 jsonStringLocal(typed_screenshot));
           }
+          if (id == "control:memoryContent" && found &&
+              memory_secret_target_sequence) {
+            const QString typing = QString("{\"id\":%1,\"text\":%2}")
+                .arg(jsonStringLocal(id),
+                     jsonStringLocal("Unsaved keyboard interaction; do not persist."));
+            const QString typing_result = window->runAgentUiQueryJson(
+                "ui.type_text", typing);
+            const QJsonDocument typing_doc =
+                QJsonDocument::fromJson(typing_result.toUtf8());
+            const bool performed = typing_doc.isObject() &&
+                typing_doc.object().value("ok").toBool() &&
+                typing_doc.object().value("result").toObject()
+                    .value("performed").toBool();
+            memory_target_actions_ok = memory_target_actions_ok && performed;
+            QApplication::processEvents();
+            const auto typed_path = output_dir /
+                (name + "-dialog-keyboard-result.png").toStdString();
+            QWidget* active = QApplication::activeWindow();
+            if (active && active->isVisible())
+              active->grab().save(QString::fromStdString(typed_path.string()));
+            entries << QString("{\"interaction\":\"ui.type_text\",\"id\":%1,"
+                               "\"result\":%2,\"screenshot\":%3}")
+                .arg(jsonStringLocal(id), typing_result.trimmed(),
+                     jsonStringLocal(QString::fromStdString(typed_path.string())));
+          }
           if ((id == "control:semanticMemoryEndpoint" ||
                id == "control:semanticMemoryModel") && found &&
               semantic_memory_target_sequence && pass_name == "initial") {
@@ -1755,11 +1855,28 @@ int main(int argc, char** argv) {
         }
       };
 
+      if (memory_secret_target_sequence) {
+        const bool test_thread_set = window->setAgentThreadForAutomation(
+            "sprint1023-memory-secret-ui-thread") == "true";
+        entries << QString("{\"test_thread_set\":%1}")
+                       .arg(test_thread_set ? "true" : "false");
+        if (!test_thread_set) memory_target_actions_ok = false;
+        QApplication::processEvents();
+        QThread::msleep(500);
+        QApplication::processEvents();
+        const auto before_path = output_dir /
+            (name + "-before.png").toStdString();
+        window->grab().save(QString::fromStdString(before_path.string()));
+        entries << QString("{\"before_feature_screenshot\":%1}")
+                       .arg(jsonStringLocal(QString::fromStdString(
+                           before_path.string())));
+      }
       runPass("initial");
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
       if (!semantic_memory_target_sequence && !gemini_count_target_sequence &&
+          !memory_secret_target_sequence &&
           !memory_kind_target_sequence &&
           !memory_importance_target_sequence)
         runPass("resized");
@@ -1920,7 +2037,8 @@ int main(int argc, char** argv) {
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
-      if (!output || ((memory_target_sequence || provider_target_sequence ||
+      if (!output || ((memory_target_sequence || memory_secret_target_sequence ||
+                       provider_target_sequence ||
                        gemini_count_target_sequence ||
                        memory_importance_target_sequence ||
                        semantic_memory_target_sequence) &&

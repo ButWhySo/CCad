@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Memory legacy-secret read isolation (Sprint 1023)
+
+The local store rejects new secret-shaped memory metadata and filters historical credential-shaped keys and values recursively across record JSON from public namespace/list reads, usage results, RPC, compaction, and the Manage Memories list. Unsafe rows stay on disk unchanged until the user explicitly deletes or resets memory. Store and orchestrator JSON-RPC tests pass; changed-module Pyright is clean; Qt MinGW Release and full CTest pass (120/120). The provider-disabled UI-map flow verifies the visible safe record while hiding a legacy secret sentinel, preserves backing bytes, and passes nine mapped interactions; all five screenshots were inspected and stderr is empty. Evidence: `artifacts/evidence/sprint-1023-memory-secret-read-safety-r3.json` (SHA-256 `D408D1BD5B28CC846F02971D2DE672FAA972EA5DA8042C73249345AACFCCD64B`).
+
 ## CI / CTest / CD diagnosis (Sprint 1022)
 
 Hosted logs for run `36234661589` show the Linux core, Linux GUI, and Windows

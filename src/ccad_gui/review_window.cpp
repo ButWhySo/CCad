@@ -7058,6 +7058,15 @@ QString ReviewWindow::projectDiagnosticsJson() const {
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::setAgentThreadForAutomation(const QString& thread_id) {
+  if (agent_panel_ == nullptr || thread_id.trimmed().isEmpty()) return "false";
+  const bool sent = agent_panel_->sendJsonRpc("agent.set_thread_id", QJsonObject{
+      {"thread_id", thread_id.trimmed()},
+      {"session_id", thread_id.trimmed()},
+      {"project_id", "sprint1023-memory-secret-ui"}});
+  return sent ? "true" : "false";
+}
+
 QString ReviewWindow::agentWorkspaceStateJson() const {
   if (agent_panel_ == nullptr) {
     QJsonObject response;

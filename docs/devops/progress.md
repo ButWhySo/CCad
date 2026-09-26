@@ -6,6 +6,12 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
+- Sprint: 1023
+- Branch: `sprint-1023-memory-secret-read-safety`
+- Sprint 1023 closes the legacy-memory secret-read boundary: credential-like keys and values anywhere in a record are excluded from public store reads, namespace loads, usage responses, compaction, RPC, and Manage Memories display; source bytes remain unchanged unless explicitly deleted/reset. Focused store and real JSON-RPC contracts pass; changed-module Pyright reports 0 diagnostics; Qt MinGW Release build and full CTest pass (120/120). The app-owned Manage Memories flow passes nine mapped interactions; all five final screenshots were inspected and stdout/stderr reviewed (stderr empty). Manifest `artifacts/evidence/sprint-1023-memory-secret-read-safety-r3.json`, SHA-256 `D408D1BD5B28CC846F02971D2DE672FAA972EA5DA8042C73249345AACFCCD64B`. The first UI attempt exposed and corrected a fixture thread-identity mismatch; r3 is the accepted evidence.
+
+- Phase: 9 / 9
+- Phase name: Deterministic KiCad Parity Execution
 - Sprint: 1022
 - Branch: `main` (report commit `ab04db1e0d417733da7966e16b5f634499f11ff4`, fast-forwarded from `sprint-1022-ci-ct-cd-health`)
 - Sprint 1022 diagnoses the reported red CI/CTest status from hosted job logs. Run `36234661589` failed only because `agent_project_index` read an ignored local demo-board fixture missing on clean runners; Sprint 1015 already replaced this dependency with self-contained typed fixtures. Official verifier preflight passes; timestamp-checked build/test reuse confirms the unchanged Release source and all 120 CTests pass, manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json` SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`. Post-push hosted CI run `36264153092` passes all five jobs on exact `main` SHA `ab04db1e0d417733da7966e16b5f634499f11ff4`. `.github/workflows/ci.yml` is the sole configured workflow. No CD target/workflow exists, so delivery is unconfigured, not failing.

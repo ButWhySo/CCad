@@ -1,5 +1,7 @@
 # CCad Consolidated Backlog
 
+- [x] Sprint 1023: credential-shaped keys and values anywhere in legacy memory records are excluded across store API, JSON-RPC, compaction, and Manage Memories UI; source bytes remain intact absent explicit delete/reset. Full Qt Release/CTest (120/120), Pyright (0 diagnostics for edited modules), and nine mapped UI interactions pass; five screenshots and logs inspected. Manifest `artifacts/evidence/sprint-1023-memory-secret-read-safety-r3.json` (SHA-256 `D408D1BD5B28CC846F02971D2DE672FAA972EA5DA8042C73249345AACFCCD64B`).
+
 - [x] Sprint 1016: index embedded symbol definitions and pin metadata; create exact, unique schematic-pin/PCB-pad identity edges; preserve safe provenance in bounded provider context. Focused contracts pass 49/49, changed-module Pyright is clean, and Qt/MinGW Release/full CTest pass 120/120. All five hosted CI jobs pass on pushed `main` SHA `2ce38f9a91fb1ad8590e4d112562e1d84f1a3dc4` (run `36248441890`). Manifest `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`). Standalone catalog definitions, passive association, proposals/artifacts, and transaction deltas remain open.
 
 This file is the single local backlog for scattered CCad feature requests. Sprint files remain the execution record, while this backlog holds the larger map so future agents do not lose roadmap items.

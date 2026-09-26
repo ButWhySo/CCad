@@ -295,6 +295,51 @@ if ($Name.StartsWith("sprint1001-memory-kind") -or $Name.StartsWith("sprint1003-
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
+if ($Name.StartsWith("sprint1023-memory-secret-redaction")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1023-memory-secret-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint1023-memory-secret-ui-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+  $secretSentinel = "SPRINT1023_GUI_SECRET_SENTINEL_6c92e1"
+  $testRecords = @(
+    @{
+      id = "legacy-secret-memory"
+      title = "Legacy provider key"
+      content = "api_key: $secretSentinel"
+      scope = "conversation"
+      tier = "ltm"
+      namespace = $env:CCAD_AGENT_THREAD_ID
+      tags = @()
+    },
+    @{
+      id = "legacy-safe-memory"
+      title = "Safe legacy preference"
+      content = "Keep the verified minimum clearance at 0.25 mm."
+      scope = "conversation"
+      tier = "ltm"
+      namespace = $env:CCAD_AGENT_THREAD_ID
+      tags = @("pcb")
+    }
+  )
+  [IO.File]::WriteAllText($env:CCAD_AGENT_MEMORY_PATH,
+    (ConvertTo-Json -InputObject $testRecords -Depth 8),
+    [Text.UTF8Encoding]::new($false))
+  $script:memoryBeforeHash = (Get-FileHash -LiteralPath $env:CCAD_AGENT_MEMORY_PATH -Algorithm SHA256).Hash
+  $script:memorySecretSentinel = $secretSentinel
+}
 if ($Name.StartsWith("sprint1007-gemini-exact-count")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
     "ccad-sprint1007-gemini-count-" + [Guid]::NewGuid().ToString("N"))
@@ -650,6 +695,50 @@ if ($Name.StartsWith("sprint1003-memory-importance")) {
   }
   if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
     throw "Provider request occurred during isolated memory-importance GUI validation."
+  }
+}
+if ($Name.StartsWith("sprint1023-memory-secret-redaction")) {
+  $memoryFile = $env:CCAD_AGENT_MEMORY_PATH
+  if (-not (Test-Path -LiteralPath $memoryFile)) {
+    throw "Mapped memory-safety flow lost its isolated legacy store."
+  }
+  $afterHash = (Get-FileHash -LiteralPath $memoryFile -Algorithm SHA256).Hash
+  if ($afterHash -ne $script:memoryBeforeHash) {
+    throw "Read-only memory UI validation changed legacy persistent bytes."
+  }
+  $diskText = [IO.File]::ReadAllText($memoryFile)
+  if (-not $diskText.Contains($script:memorySecretSentinel)) {
+    throw "Memory validation silently removed the legacy record; only explicit deletion may do that."
+  }
+  foreach ($log in @($stdoutLog, $stderrLog)) {
+    if ((Test-Path -LiteralPath $log) -and
+        (Select-String -LiteralPath $log -SimpleMatch $script:memorySecretSentinel -Quiet)) {
+      throw "Legacy secret sentinel escaped into captured process logs."
+    }
+  }
+  $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+  $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+  $performed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+  })
+  $typed = @($reportData.entries | Where-Object {
+    $_.interaction -eq "ui.type_text" -and $_.id -eq "control:memoryContent" -and
+    $_.result.result.performed -eq $true
+  })
+  if ($performed.Count -lt 7 -or $typed.Count -ne 1 -or
+      -not ($reportData.entries | Where-Object {
+        $_.legacy_secret_hidden -eq $true -and
+        $_.safe_legacy_entry_visible -eq $true -and
+        $_.visible_memory_count -eq 1
+      })) {
+    throw "Manage Memories did not prove legacy secret exclusion and safe-record visibility."
+  }
+  $checkpoints = @(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png")
+  if ($checkpoints.Count -ne 5) {
+    throw "Memory-safety visual proof requires five distinct checkpoints; found $($checkpoints.Count)."
+  }
+  if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+    throw "Provider request occurred during isolated memory-safety GUI validation."
   }
 }
 if ($Name.StartsWith("sprint974-memory")) {

@@ -1,5 +1,6 @@
 """No-network memory CRUD, deletion, bounds, and secret-rejection proof."""
 
+import json
 import tempfile
 import sys
 import os
@@ -80,7 +81,8 @@ with tempfile.TemporaryDirectory() as temp:
             pass
         else:
             raise AssertionError("provider credential pattern was accepted")
-    for kwargs in ({"title": "api_key: hidden"}, {"tags": ["token: hidden"]}):
+    for kwargs in ({"title": "api_key: hidden"}, {"tags": ["token: hidden"]},
+                   {"namespace": "password: hidden"}):
         try:
             store.add("safe content", **kwargs)
         except ValueError:
@@ -93,6 +95,109 @@ with tempfile.TemporaryDirectory() as temp:
         assert "ISO-8601" in str(error)
     else:
         raise AssertionError("invalid memory expiry was accepted")
+
+with tempfile.TemporaryDirectory() as temp:
+    legacy_path = Path(temp) / "legacy-secrets.json"
+    secret_sentinel = "SPRINT1023_LEGACY_SECRET_SENTINEL_7f3a9c"
+    legacy_records = [
+        {
+            "id": "legacy-content-secret",
+            "content": f"provider api_key: {secret_sentinel}",
+            "title": "Unsafe content",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": "legacy-thread",
+            "tags": [],
+        },
+        {
+            "id": "legacy-title-secret",
+            "content": "Safe body",
+            "title": f"password={secret_sentinel}",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": "legacy-thread",
+            "tags": [],
+        },
+        {
+            "id": "legacy-tag-secret",
+            "content": "Safe body",
+            "title": "Unsafe tag",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": "legacy-thread",
+            "tags": [f"token:{secret_sentinel}"],
+        },
+        {
+            "id": f"token:{secret_sentinel}",
+            "content": "Safe body",
+            "title": "Unsafe identifier",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": "legacy-thread",
+            "tags": [],
+        },
+        {
+            "id": "legacy-extra-field-secret",
+            "content": "Safe body",
+            "title": "Unsafe custom field",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": "legacy-thread",
+            "tags": [],
+            "metadata": {"credentials": {"api_key": secret_sentinel,
+                                           "credential": "legacy-value"}},
+        },
+        {
+            "id": "legacy-namespace-secret",
+            "content": "Safe body",
+            "title": "Unsafe namespace",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": f"api_key={secret_sentinel}",
+            "tags": [],
+        },
+        {
+            "id": "legacy-safe",
+            "content": "Keep the verified 0.25 mm clearance.",
+            "title": "Safe legacy preference",
+            "scope": "conversation",
+            "tier": "ltm",
+            "namespace": "legacy-thread",
+            "tags": ["pcb"],
+        },
+    ]
+    legacy_path.write_text(json.dumps(legacy_records), encoding="utf-8")
+    store = MemoryStore(legacy_path)
+    original_bytes = legacy_path.read_bytes()
+
+    visible = store.list(tier="ltm", namespace="legacy-thread")
+    assert [entry["id"] for entry in visible] == ["legacy-safe"]
+    assert store.ensure_namespace("ltm", "legacy-thread") == visible
+    assert store.record_usage(
+        ["legacy-content-secret", "legacy-title-secret", "legacy-tag-secret",
+         f"token:{secret_sentinel}", "legacy-extra-field-secret",
+         "legacy-namespace-secret"],
+        used_at="2026-09-27T00:00:00+00:00") == {}
+    assert store.update("legacy-title-secret", "safe replacement") is None
+    assert store.update(f"token:{secret_sentinel}", "safe replacement") is None
+    assert legacy_path.read_bytes() == original_bytes
+    assert secret_sentinel not in json.dumps(visible)
+
+    try:
+        store.validate_compaction_sources(
+            [legacy_records[0], legacy_records[-1]], tier="ltm",
+            namespace="legacy-thread", scope="conversation")
+    except RuntimeError as error:
+        assert getattr(error, "category", "") == "memory_secret_record_excluded"
+    else:
+        raise AssertionError("secret-bearing legacy source entered compaction")
+
+    store.add("A safe current preference", tier="ltm", namespace="legacy-thread",
+              scope="conversation")
+    after_write = json.loads(legacy_path.read_text(encoding="utf-8"))
+    assert len(after_write) == len(legacy_records) + 1
+    assert any(secret_sentinel in json.dumps(record) for record in after_write)
+    assert all(secret_sentinel not in json.dumps(record) for record in store.list())
 
 with tempfile.TemporaryDirectory() as temp:
     corrupt_path = Path(temp) / "memory.json"

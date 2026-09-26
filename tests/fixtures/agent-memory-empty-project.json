@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "id": "agent-memory-visual-fixture",
+  "name": "agent-memory-visual-fixture",
+  "text_variables": {},
+  "components": [],
+  "constraints": [],
+  "nets": [],
+  "wires": [],
+  "buses": [],
+  "labels": [],
+  "power_symbols": []
+}

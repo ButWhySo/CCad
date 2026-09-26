@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1023 — Memory secret-read boundary (Tier 1)
+
+References checked: [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) recommends removing, masking, sanitizing, hashing, or encrypting secrets rather than recording them; [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) calls for removal of secrets from logs. CCad preserves user-owned legacy store bytes and excludes unsafe records at public read/UI boundaries; explicit delete/reset remains the only destructive path.
+
+- [x] Exclude legacy secret-bearing memory from every public store read, namespace load, retrieval-use result, compaction input, JSON-RPC response, and Manage Memories display without silently rewriting or deleting the source file.
+- [x] Reject new secret-bearing metadata, including namespace and tags, and prove unsafe legacy IDs cannot be updated or returned.
+- [x] Verify no sentinel appears in RPC stdout/stderr, visible widget text, or exported status metadata; prove persistent source bytes remain unchanged.
+- [x] Pass focused memory contracts, changed-module Pyright (0 diagnostics), Qt MinGW Release build, full CTest (120/120), and app-owned UI-map scenario (9 successful interactions); inspect all five final screenshots and logs (stderr empty).
+- [x] Record verified behavior in codebase map, feature inventory, progress, and consolidated backlog. Manifest `artifacts/evidence/sprint-1023-memory-secret-read-safety-r3.json`, SHA-256 `D408D1BD5B28CC846F02971D2DE672FAA972EA5DA8042C73249345AACFCCD64B`.
+
+Implementation: the store recursively rejects credential-like JSON field names and secret-shaped values on all outward record paths. Source bytes remain intact unless the user explicitly deletes/resets them. The full evidence gate passed.
+
 ### Sprint 1022 — CI / CTest / CD failure diagnosis
 
 - [x] Inspect hosted job-level logs: run `36234661589` failed the Linux core, Linux GUI, and Windows core CTest lanes on old SHA `fc1b960`; all three failed `agent_project_index` because one test opened ignored local fixture `artifacts/demos/sprint160-placement-crash-ci-final.ccad.json`.

@@ -1,7 +1,8 @@
 """Small local, provider-independent agent memory store.
 
 Memory is user-owned JSON, never sent to a model automatically. Entries are
-bounded, tagged, and deletable; credential-looking content is rejected.
+bounded, tagged, and deletable; credential-looking writes are rejected and
+legacy credential-bearing records are excluded from every public read result.
 """
 
 import hashlib
@@ -19,6 +20,10 @@ SECRET_MARKERS = re.compile(
     r"\bsk-[A-Za-z0-9_-]{12,}\b|\bgh[pousr]_[A-Za-z0-9_]{20,}\b|"
     r"\bBearer\s+[A-Za-z0-9._~-]{12,}|\bAIza[0-9A-Za-z_-]{30,}\b|"
     r"\bya29\.[0-9A-Za-z_-]{20,}", re.IGNORECASE
+)
+SECRET_FIELD_MARKERS = re.compile(
+    r"api[_-]?key|secret|password|token|credential|authorization|"
+    r"private[_-]?key|auth[_-]", re.IGNORECASE
 )
 
 
@@ -92,7 +97,8 @@ class MemoryStore:
             self._write(entries)
         return [entry for entry in entries
                 if entry.get("tier", "ltm") == tier
-                and entry.get("namespace", "project") == namespace]
+                and entry.get("namespace", "project") == namespace
+                and not self.contains_secret(entry)]
 
     def add(self, content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
             namespace="project", expires_at="", importance=3):
@@ -131,7 +137,8 @@ class MemoryStore:
             raise ValueError("memory importance must be an integer from 1 to 5")
         namespace = str(namespace or "project").strip()[:160]
         clean_tags = [str(tag).strip()[:60] for tag in (tags or []) if str(tag).strip()][:20]
-        if any(SECRET_MARKERS.search(value) for value in (content, title, scope, *clean_tags)):
+        if any(SECRET_MARKERS.search(value) for value in (
+                content, title, scope, namespace, *clean_tags)):
             raise ValueError("memory content appears to contain a secret")
         entry = {
             "id": "mem-" + uuid.uuid4().hex,
@@ -157,9 +164,13 @@ class MemoryStore:
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
                tier=None, namespace=None, expires_at=None, kind=None, importance=None):
+        if SECRET_MARKERS.search(str(entry_id or "")):
+            return None
         entries = self._read()
         for index, current in enumerate(entries):
             if current.get("id") == entry_id:
+                if self.contains_secret(current):
+                    return None
                 replacement = self._normalise_entry(
                     content,
                     title=current.get("title", "") if title is None else title,
@@ -182,11 +193,13 @@ class MemoryStore:
         return None
 
     def list(self, scope=None, *, tier=None, namespace=None):
+        """Return only safe records; keep rejected legacy bytes untouched on disk."""
         entries = self._read()
         return [item for item in entries
                 if (scope is None or item.get("scope") == scope)
                 and (tier is None or item.get("tier", "ltm") == tier)
-                and (namespace is None or item.get("namespace", "project") == namespace)]
+                and (namespace is None or item.get("namespace", "project") == namespace)
+                and not self.contains_secret(item)]
 
     def record_usage(self, entry_ids, *, used_at=None):
         """Persist bounded retrieval-use metadata without changing memory content."""
@@ -197,7 +210,7 @@ class MemoryStore:
         entries = self._read()
         updated = {}
         for entry in entries:
-            if entry.get("id") not in ids:
+            if entry.get("id") not in ids or self.contains_secret(entry):
                 continue
             count = entry.get("use_count", 0)
             count = count if isinstance(count, int) and not isinstance(count, bool) else 0
@@ -210,9 +223,30 @@ class MemoryStore:
 
     @staticmethod
     def contains_secret(entry):
-        return any(SECRET_MARKERS.search(str(value or "")) for value in (
-            entry.get("content", ""), entry.get("title", ""),
-            entry.get("scope", ""), *entry.get("tags", [])))
+        if not isinstance(entry, dict):
+            return True
+        pending = [entry]
+        visited = set()
+        while pending:
+            value = pending.pop()
+            if isinstance(value, dict):
+                identity = id(value)
+                if identity in visited:
+                    continue
+                visited.add(identity)
+                for key, child in value.items():
+                    if SECRET_FIELD_MARKERS.search(str(key)):
+                        return True
+                    pending.append(child)
+            elif isinstance(value, (list, tuple, set)):
+                identity = id(value)
+                if identity in visited:
+                    continue
+                visited.add(identity)
+                pending.extend(value)
+            elif SECRET_MARKERS.search(str(value or "")):
+                return True
+        return False
 
     def delete(self, entry_id):
         old = self._read()
@@ -316,7 +350,11 @@ class MemoryStore:
             raise MemoryStoreError("memory_compaction_stale")
         current = {str(entry.get("id", "")): entry for entry in entries}
         for source in sources:
+            if self.contains_secret(source):
+                raise MemoryStoreError("memory_secret_record_excluded")
             stored = current.get(str(source["id"]))
+            if stored is not None and self.contains_secret(stored):
+                raise MemoryStoreError("memory_secret_record_excluded")
             if (stored is None or stored.get("tier", "ltm") != tier
                     or stored.get("namespace", "project") != namespace
                     or stored.get("scope", "project") != scope
