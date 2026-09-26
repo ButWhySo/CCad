@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1017-ci-ct-cd-health",
+    "feature":  "CI/CT/CD health triage: reconcile hosted history, validate current Qt CTest, and record deployment scope",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T15:01:58.7202782Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.95 log=artifacts/evidence/sprint1017-ci-ct-cd-health/preflight.log",
+                      "finished_utc":  "2026-09-26T15:01:59.7989382Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.68 log=artifacts/evidence/sprint1017-ci-ct-cd-health/build.log",
+                      "finished_utc":  "2026-09-26T15:02:00.4955367Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=150.19 log=artifacts/evidence/sprint1017-ci-ct-cd-health/ctest.log",
+                      "finished_utc":  "2026-09-26T15:04:30.6888450Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1017-ci-ct-cd-health/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1017-ci-ct-cd-health/ctest.log",
+                                         "sha256":  "268E9C8F0FEB9A68F7A4C24336DAE09BEC993EE75C93E3D2736AF175A5975465"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1017-ci-ct-cd-health/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T15:04:30.7523810Z"
+}
