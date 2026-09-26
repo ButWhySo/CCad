@@ -13,7 +13,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Re-run the full official Qt/MinGW Release gate after checkout invalidated timestamp-based reuse; full CTest passes 120/120. Manifest `artifacts/evidence/sprint-1015-ci-ct-hosted-closure-r1.json` (SHA-256 `17A22EB1EA936A12A030B2901E441292650A5B2BB8AA59642D72D8967AAC8479`).
 - [ ] Replace checkout-sensitive timestamp-only source freshness checks with content-bound evidence; current branch checkout refreshed timestamps, so the verifier conservatively rejected reuse despite identical Git source content.
 - [x] Commit verified source/tests/docs/manifest (`3536bc4`), locally merge into `main` (`ce8a518`), push, and confirm all five hosted jobs pass on exact `main` SHA `ce8a518906baaef5b88e278aaa12675c3e6a447f` (run #547).
-- [ ] Commit and publish this final checklist/progress closure; confirm the new docs-only main SHA's hosted run.
+- [x] Commit and publish the final checklist/progress closure; confirm exact pushed `main` SHA `aa45f27ed1a78916a736d67acd2a6cec4d9a915f` passes all five hosted CI jobs in run #548.
 
 ### Sprint 1014 — CI / CT / CD status reconciliation
 
