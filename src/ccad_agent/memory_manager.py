@@ -316,6 +316,7 @@ class MemoryManager:
                                    "title_text": title, "content_text": content,
                                    "tags_text": tags,
                                    "kind": entry.get("kind", "fact"),
+                                   "importance": entry.get("importance", 3),
                                    "created_at": str(entry.get("created_at", "")),
                                    "last_used_at": str(entry.get("last_used_at", "")),
                                    "updated_at": str(entry.get("updated_at", "")),
@@ -349,11 +350,14 @@ class MemoryManager:
         for item in fused:
             document = item["document"]
             kind = document.get("kind", "fact")
+            importance = document.get("importance", 3)
             item["score"] *= kind_weights.get(kind, 1.0)
             item["kind_weight"] = kind_weights.get(kind, 1.0)
+            item["importance_weight"] = self._importance_weight(importance)
             item["recency_weight"] = self._recency_weight(document, ranked_at)
             item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
-            item["score"] *= item["recency_weight"] * item["usage_weight"]
+            item["score"] *= (item["importance_weight"] * item["recency_weight"] *
+                               item["usage_weight"])
         fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
         lexical_by_id = {item["document"]["entry"]["id"]: item
                          for item in lexical}
@@ -391,6 +395,7 @@ class MemoryManager:
             "rank": index + 1,
             "tier": item["document"]["tier"],
             "memory_kind": item["document"].get("kind", "fact"),
+            "importance_weight": round(item.get("importance_weight", 1.0), 3),
             "kind_weight": round(item.get("kind_weight", 1.0), 3),
             "recency_weight": round(item.get("recency_weight", 1.0), 6),
             "usage_weight": round(item.get("usage_weight", 1.0), 6),
@@ -423,6 +428,12 @@ class MemoryManager:
     def _usage_weight(cls, value):
         count = min(32, max(0, cls._safe_use_count(value)))
         return 1.0 + 0.10 * math.log1p(count) / math.log1p(32)
+
+    @staticmethod
+    def _importance_weight(value):
+        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 5:
+            value = 3
+        return 1.0 + (value - 3) * 0.05
 
     @staticmethod
     def _recency_weight(document, now):
@@ -553,10 +564,14 @@ class MemoryManager:
 
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
             kind=None,
-            expires_at=""):
+            expires_at="", importance=None):
         self._check_tier(tier)
         if not self.enabled[tier]:
             raise RuntimeError(f"memory tier disabled: {tier}")
+        if (importance is not None and
+                (isinstance(importance, bool) or not isinstance(importance, int)
+                 or not 1 <= importance <= 5)):
+            raise ValueError("memory importance must be an integer from 1 to 5")
         if tier == "stm" and not self._retain_stm_task:
             raise RuntimeError("STM requires an active task; use /task start")
         normalized = " ".join(str(content).casefold().split())
@@ -565,8 +580,11 @@ class MemoryManager:
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
-            if kind is not None and existing.get("kind", "fact") != kind:
-                return self.update(existing["id"], content, kind=kind)
+            if ((kind is not None and existing.get("kind", "fact") != kind) or
+                    (importance is not None and
+                     existing.get("importance", 3) != importance)):
+                return self.update(existing["id"], content, kind=kind,
+                                   importance=importance)
             return existing
         duplicate = self._near_duplicate(content, tier, scope=scope)
         if duplicate:
@@ -575,15 +593,16 @@ class MemoryManager:
                 f"near-duplicate memory exists ({entry['id']}, lexical overlap "
                 f"{similarity:.0%}); update that record or add distinct information")
         namespace = self.namespace_for(tier, scope)
+        importance = 3 if importance is None else importance
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
                                      tier=tier, kind=kind or "fact", namespace=namespace,
-                                     expires_at=expires_at)
+                                     expires_at=expires_at, importance=importance)
         entry["project_id"] = self.project_id
         if tier != "stm":
             entry = self.store.add(content, title=title, scope=scope, tags=tags,
                                    kind=kind or "fact",
                                    tier=tier, namespace=namespace,
-                                   expires_at=expires_at)
+                                   expires_at=expires_at, importance=importance)
             self.store.keep_latest(tier, namespace, 64)
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
@@ -680,7 +699,7 @@ class MemoryManager:
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               expires_at=None, kind=None):
+               expires_at=None, kind=None, importance=None):
         for tier in self.TIERS:
             if not self.enabled[tier]:
                 if tier != "stm" and any(
@@ -707,6 +726,7 @@ class MemoryManager:
                       "scope": target_scope,
                       "tags": entry.get("tags", []) if tags is None else tags,
                       "kind": entry.get("kind", "fact") if kind is None else kind,
+                      "importance": entry.get("importance", 3) if importance is None else importance,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
             if tier == "stm":

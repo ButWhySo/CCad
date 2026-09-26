@@ -58,6 +58,11 @@ class MemoryStore:
             item.setdefault("kind", "fact")
             if item["kind"] not in {"fact", "preference", "correction"}:
                 raise MemoryStoreError("memory_store_corrupt")
+            item.setdefault("importance", 3)
+            if (isinstance(item["importance"], bool) or
+                    not isinstance(item["importance"], int) or
+                    not 1 <= item["importance"] <= 5):
+                raise MemoryStoreError("memory_store_corrupt")
         return data
 
     def _write(self, entries):
@@ -90,10 +95,10 @@ class MemoryStore:
                 and entry.get("namespace", "project") == namespace]
 
     def add(self, content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
-            namespace="project", expires_at=""):
+            namespace="project", expires_at="", importance=3):
         entry = self._normalise_entry(content, title=title, scope=scope, tags=tags,
                                       tier=tier, kind=kind, namespace=namespace,
-                                      expires_at=expires_at)
+                                      expires_at=expires_at, importance=importance)
         entries = self._read()
         entries.append(entry)
         self._write(entries)
@@ -101,14 +106,15 @@ class MemoryStore:
 
     @staticmethod
     def normalise(content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
-                  namespace="project", expires_at=""):
+                  namespace="project", expires_at="", importance=3):
         return MemoryStore._normalise_entry(
             content, title=title, scope=scope, tags=tags, tier=tier, kind=kind,
-            namespace=namespace, expires_at=expires_at)
+            namespace=namespace, expires_at=expires_at, importance=importance)
 
     @staticmethod
     def _normalise_entry(content, *, title="", scope="project", tags=None,
-                         tier="ltm", kind="fact", namespace="project", expires_at=""):
+                         tier="ltm", kind="fact", namespace="project", expires_at="",
+                         importance=3):
         content = str(content or "").strip()
         if not content or len(content) > 8000:
             raise ValueError("memory content must contain 1..8000 characters")
@@ -120,6 +126,9 @@ class MemoryStore:
         kind = str(kind or "fact").strip().lower()
         if kind not in {"fact", "preference", "correction"}:
             raise ValueError("memory kind must be fact, preference, or correction")
+        if (isinstance(importance, bool) or not isinstance(importance, int)
+                or not 1 <= importance <= 5):
+            raise ValueError("memory importance must be an integer from 1 to 5")
         namespace = str(namespace or "project").strip()[:160]
         clean_tags = [str(tag).strip()[:60] for tag in (tags or []) if str(tag).strip()][:20]
         if any(SECRET_MARKERS.search(value) for value in (content, title, scope, *clean_tags)):
@@ -131,6 +140,7 @@ class MemoryStore:
             "scope": scope,
             "tier": tier,
             "kind": kind,
+            "importance": importance,
             "namespace": namespace,
             "tags": clean_tags,
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -146,7 +156,7 @@ class MemoryStore:
         return entry
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               tier=None, namespace=None, expires_at=None, kind=None):
+               tier=None, namespace=None, expires_at=None, kind=None, importance=None):
         entries = self._read()
         for index, current in enumerate(entries):
             if current.get("id") == entry_id:
@@ -158,7 +168,8 @@ class MemoryStore:
                     tier=current.get("tier", "ltm") if tier is None else tier,
                     kind=current.get("kind", "fact") if kind is None else kind,
                     namespace=current.get("namespace", "project") if namespace is None else namespace,
-                    expires_at=current.get("expires_at", "") if expires_at is None else expires_at)
+                    expires_at=current.get("expires_at", "") if expires_at is None else expires_at,
+                    importance=current.get("importance", 3) if importance is None else importance)
                 replacement["id"] = entry_id
                 replacement["created_at"] = current.get("created_at", replacement["created_at"])
                 replacement["updated_at"] = datetime.now(timezone.utc).isoformat()

@@ -1325,8 +1325,10 @@ int main(int argc, char** argv) {
       const bool provider_target_sequence = name.startsWith("sprint972-provider");
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
                                           name.startsWith("sprint971-memory") ||
-                                          name.startsWith("sprint1001-memory-kind");
+                                          name.startsWith("sprint1001-memory-kind") ||
+                                          name.startsWith("sprint1003-memory-importance");
       const bool memory_kind_target_sequence = name.startsWith("sprint1001-memory-kind");
+      const bool memory_importance_target_sequence = name.startsWith("sprint1003-memory-importance");
       const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
       const QStringList target_ids = provider_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
@@ -1338,6 +1340,7 @@ int main(int argc, char** argv) {
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "action:agent_memory_manage", "action:addMemory", "control:memoryTier",
                         "control:memoryKind",
+                        "control:memoryImportance",
                         "control:memoryTitle", "control:memoryScope",
                         "control:memoryContent", "action:saveMemory",
                         "action:closeMemoryManager", "action:cancelSettingsButton"}
@@ -1380,6 +1383,7 @@ int main(int argc, char** argv) {
                                                     "action:addMemory", "action:saveMemory",
                                                     "control:memoryTier",
                                                     "control:memoryKind",
+                                                    "control:memoryImportance",
                                                     "control:memoryTitle", "control:memoryScope",
                                                     "control:memoryContent",
                                                     "action:closeMemoryManager",
@@ -1399,6 +1403,7 @@ int main(int argc, char** argv) {
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
                             memory_target_sequence,
                             memory_kind_target_sequence,
+                            memory_importance_target_sequence,
                             semantic_memory_target_sequence,
                             provider_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
@@ -1495,7 +1500,9 @@ int main(int argc, char** argv) {
                         ? QString("{\"id\":%1,\"value\":%2}").arg(
                             jsonStringLocal(id), jsonStringLocal(
                                 memory_kind_target_sequence ? "preference" : "fact"))
-                    : QString("{\"id\":%1}").arg(jsonStringLocal(id))));
+                    : (id == "control:memoryImportance"
+                        ? QString("{\"id\":%1,\"value\":\"5\"}").arg(jsonStringLocal(id))
+                    : QString("{\"id\":%1}").arg(jsonStringLocal(id)))));
             const QString click_result = window->runAgentUiQueryJson("ui.click", payload);
             if (memory_target_sequence || provider_target_sequence) {
               const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
@@ -1522,7 +1529,7 @@ int main(int argc, char** argv) {
               entries << QString("{\"provider_local_validation_ready\":%1,\"status\":%2}")
                              .arg(ready ? "true" : "false", status);
             }
-            if (memory_kind_target_sequence && id == "action:saveMemory") {
+            if ((memory_kind_target_sequence || memory_importance_target_sequence) && id == "action:saveMemory") {
               bool saved = false;
               QString status;
               for (int attempt = 0; attempt < 50; ++attempt) {
@@ -1536,8 +1543,28 @@ int main(int argc, char** argv) {
                 if (status.contains("Memory add failed")) break;
               }
               memory_target_actions_ok = memory_target_actions_ok && saved;
-              entries << QString("{\"memory_kind_saved_visible\":%1,\"status\":%2}")
-                  .arg(saved ? "true" : "false", status);
+              bool priority_visible = !memory_importance_target_sequence;
+              if (memory_importance_target_sequence) {
+                for (int attempt = 0; attempt < 50 && !priority_visible; ++attempt) {
+                  for (QWidget* widget : QApplication::allWidgets()) {
+                    auto* list = qobject_cast<QListWidget*>(widget);
+                    if (!list || list->objectName() != "control:memoryEntries" || !list->isVisible()) continue;
+                    for (int row = 0; row < list->count(); ++row) {
+                      const QListWidgetItem* item = list->item(row);
+                      if (item && item->text().contains("priority 5/5") &&
+                          item->data(Qt::UserRole + 6).toInt() == 5) priority_visible = true;
+                    }
+                  }
+                  if (!priority_visible) {
+                    QThread::msleep(100);
+                    QApplication::processEvents();
+                  }
+                }
+              }
+              saved = saved && priority_visible;
+              entries << QString("{\"memory_kind_saved_visible\":%1,\"memory_importance_saved_visible\":%2,\"status\":%3}")
+                  .arg(saved ? "true" : "false",
+                       priority_visible ? "true" : "false", jsonStringLocal(status));
             }
             if (id == "action:agent_memory_manage") {
               QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
@@ -1593,7 +1620,7 @@ int main(int argc, char** argv) {
             painter.end();
             screenshot.save(screenshot_path);
           } else if ((click_before_capture_ids.contains(id) &&
-                      (!memory_kind_target_sequence ||
+                      (!(memory_kind_target_sequence || memory_importance_target_sequence) ||
                        id == "action:closeMemoryManager" ||
                        id == "action:cancelSettingsButton") &&
                       !(semantic_memory_target_sequence &&
@@ -1613,13 +1640,17 @@ int main(int argc, char** argv) {
           if ((id == "control:memoryContent" || id == "control:memoryTitle" ||
                id == "control:memoryScope") && found &&
               (!memory_target_sequence || pass_name == "initial")) {
-            const QString value = memory_kind_target_sequence
+            const QString value = memory_importance_target_sequence
+                ? (id == "control:memoryContent"
+                    ? "Keep ground return routing short in future edits"
+                    : (id == "control:memoryTitle" ? "Memory importance proof" : "conversation"))
+                : (memory_kind_target_sequence
                 ? (id == "control:memoryContent"
                     ? "Keep ground return routing short in future edits"
                     : (id == "control:memoryTitle" ? "Memory kind proof" : "conversation"))
                 : (id == "control:memoryContent"
                     ? "Sprint 971 UI-map proof record; safe to delete"
-                    : (id == "control:memoryTitle" ? "UI-map verification" : "conversation"));
+                    : (id == "control:memoryTitle" ? "UI-map verification" : "conversation")));
             const QString typing = QString("{\"id\":%1,\"text\":%2}")
                 .arg(jsonStringLocal(id), jsonStringLocal(value));
             const QString typing_result = window->runAgentUiQueryJson("ui.type_text", typing);
@@ -1634,7 +1665,7 @@ int main(int argc, char** argv) {
             QApplication::processEvents();
             QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
             QApplication::processEvents();
-            if (memory_kind_target_sequence) {
+            if (memory_kind_target_sequence || memory_importance_target_sequence) {
               const std::filesystem::path typed_path = output_dir /
                   (name + "-" + pass_name + "-" + id.mid(id.indexOf(':') + 1) + "-typed.png").toStdString();
               QWidget* active = QApplication::activeWindow();
@@ -1645,7 +1676,7 @@ int main(int argc, char** argv) {
             const std::filesystem::path typed_path = output_dir /
                 (name + "-" + pass_name + "-" + typed_slug + "-typed.png").toStdString();
             QWidget* active = QApplication::activeWindow();
-            if (!memory_kind_target_sequence && active && active->isVisible())
+            if (!(memory_kind_target_sequence || memory_importance_target_sequence) && active && active->isVisible())
               active->grab().save(QString::fromStdString(typed_path.string()));
             const QString typed_screenshot = QString::fromStdString(typed_path.string());
             entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.type_text\",\"result\":%3,\"screenshot\":%4}")
@@ -1685,9 +1716,11 @@ int main(int argc, char** argv) {
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
-      if (!semantic_memory_target_sequence && !memory_kind_target_sequence)
+      if (!semantic_memory_target_sequence && !memory_kind_target_sequence &&
+          !memory_importance_target_sequence)
         runPass("resized");
-      if (memory_target_sequence && !memory_kind_target_sequence) {
+      if (memory_target_sequence && !memory_kind_target_sequence &&
+          !memory_importance_target_sequence) {
         const QString reopen_result = window->runAgentUiQueryJson(
             "ui.click", "{\"id\":\"action:settingsBtn\"}");
         QApplication::processEvents();
@@ -1844,6 +1877,7 @@ int main(int argc, char** argv) {
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output || ((memory_target_sequence || provider_target_sequence ||
+                       memory_importance_target_sequence ||
                        semantic_memory_target_sequence) &&
                       !memory_target_actions_ok)) {
         std::cerr << "GUI-map target sequence failed; report: " << output_path.string() << '\n';

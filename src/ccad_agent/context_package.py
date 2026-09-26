@@ -24,11 +24,13 @@ def _safe_retrieval_metadata(item: dict, *, include_bm25: bool) -> dict:
     fields = _RETRIEVAL_SAFE_FIELDS if include_bm25 else tuple(
         key for key in _RETRIEVAL_SAFE_FIELDS if key != "bm25_score")
     safe = {key: item[key] for key in fields if key in item}
-    for key, ceiling in (("kind_weight", 1.16), ("recency_weight", 1.15),
-                         ("usage_weight", 1.10)):
+    for key, floor, ceiling in (("kind_weight", 1.0, 1.16),
+                                ("importance_weight", 0.9, 1.1),
+                                ("recency_weight", 1.0, 1.15),
+                                ("usage_weight", 1.0, 1.10)):
         value = item.get(key)
         if (isinstance(value, (int, float)) and not isinstance(value, bool)
-                and math.isfinite(value) and 1.0 <= value <= ceiling):
+                and math.isfinite(value) and floor <= value <= ceiling):
             safe[key] = value
     persistence = item.get("usage_persistence")
     if persistence in {"durable", "process", "process_only", "unavailable"}:

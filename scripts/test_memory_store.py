@@ -19,6 +19,7 @@ with tempfile.TemporaryDirectory() as temp:
                      kind="preference")
     assert store.list()[0]["id"] == item["id"]
     assert store.list()[0]["kind"] == "preference"
+    assert store.list()[0]["importance"] == 3
     assert store.list(scope="other") == []
     updated = store.update(item["id"], "Use 0.30 mm minimum track width", title="updated")
     assert updated["id"] == item["id"]
@@ -26,6 +27,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert updated["namespace"] == "local-user"
     assert updated["scope"] == "user"
     assert updated["kind"] == "preference"
+    assert updated["importance"] == 3
     recorded = store.record_usage([item["id"], "missing"],
                                   used_at="2026-09-25T12:00:00+00:00")
     assert list(recorded) == [item["id"]]
@@ -35,6 +37,11 @@ with tempfile.TemporaryDirectory() as temp:
     updated = store.update(item["id"], "Use 0.28 mm minimum track width")
     assert updated["use_count"] == 1
     assert updated["last_used_at"] == "2026-09-25T12:00:00+00:00"
+    updated = store.update(item["id"], "Use 0.28 mm minimum track width",
+                           importance=5)
+    assert updated["importance"] == 5
+    assert store.list()[0]["importance"] == 5
+    assert store.list()[0]["use_count"] == 1
     assert updated["updated_at"]
     assert store.list()[0]["content"].startswith("Use 0.28")
     legacy_path = Path(temp) / "legacy.json"
@@ -42,7 +49,9 @@ with tempfile.TemporaryDirectory() as temp:
                            encoding="utf-8")
     legacy = MemoryStore(legacy_path).list()[0]
     assert legacy["kind"] == "fact"
-    assert '"kind"' not in legacy_path.read_text(encoding="utf-8")
+    assert legacy["importance"] == 3
+    legacy_disk = legacy_path.read_text(encoding="utf-8")
+    assert '"kind"' not in legacy_disk and '"importance"' not in legacy_disk
     assert store.delete(item["id"]) is True
     assert store.list() == []
     try:
@@ -51,6 +60,13 @@ with tempfile.TemporaryDirectory() as temp:
         assert "kind" in str(error)
     else:
         raise AssertionError("unknown memory kind was accepted")
+    for importance in (0, 6, True, "5", 2.5):
+        try:
+            store.add("Invalid importance value", importance=importance)
+        except ValueError as error:
+            assert "importance" in str(error)
+        else:
+            raise AssertionError("invalid user-controlled importance was accepted")
     try:
         store.add("api_key: do-not-store")
     except ValueError as error:

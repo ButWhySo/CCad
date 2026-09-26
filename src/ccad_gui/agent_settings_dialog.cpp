@@ -1263,8 +1263,11 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
     for (const QJsonValue& value : entries) {
       const QJsonObject entry = value.toObject();
       const QString kind = entry.value("kind").toString("fact");
-      const QString label = QString("%1 · %2 memory  ·  record %3")
-          .arg(kind, entry.value("tier").toString(), entry.value("id").toString().right(8));
+      const int importance = entry.value("importance").toInt(3);
+      const QString label = QString("%1 · %2 memory  ·  priority %3/5  ·  record %4")
+          .arg(kind, entry.value("tier").toString())
+          .arg(importance)
+          .arg(entry.value("id").toString().right(8));
       auto* row = new QListWidgetItem(label, memory_entries_);
       row->setData(Qt::UserRole, entry.value("id").toString());
       row->setData(Qt::UserRole + 1, entry.value("content").toString());
@@ -1272,6 +1275,7 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
       row->setData(Qt::UserRole + 3, entry.value("scope").toString());
       row->setData(Qt::UserRole + 4, entry.value("title").toString());
       row->setData(Qt::UserRole + 5, kind);
+      row->setData(Qt::UserRole + 6, importance);
       if (row->data(Qt::UserRole).toString() == selected)
         memory_entries_->setCurrentItem(row);
     }
@@ -1356,6 +1360,14 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_kind_->addItem("Fact", "fact");
   memory_kind_->addItem("Preference", "preference");
   memory_kind_->addItem("Correction", "correction");
+  memory_importance_ = new QComboBox(dialog);
+  memory_importance_->setObjectName("control:memoryImportance");
+  memory_importance_->addItem("1 · Low priority", 1);
+  memory_importance_->addItem("2 · Below normal", 2);
+  memory_importance_->addItem("3 · Normal", 3);
+  memory_importance_->addItem("4 · Important", 4);
+  memory_importance_->addItem("5 · Highest priority", 5);
+  memory_importance_->setCurrentIndex(memory_importance_->findData(3));
   memory_title_ = new QLineEdit(dialog);
   memory_title_->setObjectName("control:memoryTitle");
   memory_scope_ = new QLineEdit(dialog);
@@ -1365,6 +1377,7 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_content_->setMaximumHeight(100);
   form->addRow("Tier:", memory_tier_);
   form->addRow("Memory type:", memory_kind_);
+  form->addRow("User-set importance:", memory_importance_);
   form->addRow("Title:", memory_title_);
   form->addRow("Scope:", memory_scope_);
   form->addRow("Content:", memory_content_);
@@ -1400,6 +1413,12 @@ void AgentSettingsDialog::openMemoryManager() {
     if (kind >= 0) memory_kind_->setCurrentIndex(kind);
     const int tier = memory_tier_ ? memory_tier_->findData(current->data(Qt::UserRole + 2)) : -1;
     if (tier >= 0) memory_tier_->setCurrentIndex(tier);
+    const int stored_importance = current->data(Qt::UserRole + 6).toInt();
+    const int importance = memory_importance_
+        ? memory_importance_->findData(
+              stored_importance >= 1 && stored_importance <= 5 ? stored_importance : 3)
+        : -1;
+    if (importance >= 0) memory_importance_->setCurrentIndex(importance);
   });
   connect(add, &QPushButton::clicked, this, [this]() {
     if (memory_entries_) memory_entries_->clearSelection();
@@ -1407,11 +1426,15 @@ void AgentSettingsDialog::openMemoryManager() {
     if (memory_title_) memory_title_->clear();
     if (memory_scope_) memory_scope_->setText("conversation");
     if (memory_kind_) memory_kind_->setCurrentIndex(memory_kind_->findData("fact"));
+    if (memory_importance_)
+      memory_importance_->setCurrentIndex(memory_importance_->findData(3));
   });
   connect(save, &QPushButton::clicked, this, [this]() {
     if (!agent_panel_ || !memory_tier_ || !memory_content_ || !memory_scope_) return;
     QJsonObject params{{"tier", memory_tier_->currentData().toString()},
                        {"kind", memory_kind_ ? memory_kind_->currentData().toString() : "fact"},
+                       {"importance", memory_importance_
+                           ? memory_importance_->currentData().toInt() : 3},
                        {"scope", memory_scope_->text().trimmed()},
                        {"title", memory_title_ ? memory_title_->text().trimmed() : QString()},
                        {"content", memory_content_->toPlainText()}};
@@ -1463,6 +1486,7 @@ void AgentSettingsDialog::openMemoryManager() {
     memory_title_ = nullptr;
     memory_scope_ = nullptr;
     memory_tier_ = nullptr;
+    memory_importance_ = nullptr;
     memory_manager_status_label_ = nullptr;
     memory_save_button_ = nullptr;
     memory_delete_button_ = nullptr;

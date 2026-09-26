@@ -68,6 +68,7 @@ with tempfile.TemporaryDirectory() as temp:
         {"method": "agent.memory_add", "params": {
             "tier": "ltm", "scope": "conversation", "title": "test",
             "kind": "preference",
+            "importance": 5,
             "content": "Preserve the user's verified 0.25 mm clearance rule."}},
         {"method": "agent.memory_set_enabled", "params": {
             "tier": "ltm", "enabled": False}},
@@ -104,6 +105,7 @@ with tempfile.TemporaryDirectory() as temp:
                 if event.get("method") == method]
 
     assert matching("memory_added")[0]["kind"] == "preference"
+    assert matching("memory_added")[0]["importance"] == 5
 
     toggles = matching("memory_state")
     assert any(state.get("tier") == "ltm" and state.get("enabled") is True

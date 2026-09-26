@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1003 user-controlled memory importance
+
+Manage Memories exposes an explicit priority from 1 to 5, with 3 as the neutral default. Durable records retain that value through updates and legacy entries are read as neutral without rewriting the file. Existing scope, enabled-tier, expiry, and relevance checks remain authoritative; only admitted candidates receive a deterministic 0.90–1.10 ranking factor. Slash memory commands and JSON-RPC expose bounded importance fields, while context metadata carries only the numeric factor. Focused contracts pass, Qt/MinGW Release and full CTest pass 115/115, and an isolated provider-disabled UI-map run persisted/read back priority 5 with 15 successful mapped interactions. All 16 scoped screenshots were inspected; stdout was reviewed and stderr is empty. Verifier manifest: `artifacts/evidence/sprint1003-memory-importance-release.json` (SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`).
+
 ## Sprint 1002 bounded memory recency and usage ranking
 
 After tier/project authorization, expiry, and lexical/semantic relevance checks, selected memories receive a deterministic recency adjustment capped at +15% with a 90-day exponential decay and a retrieval-use adjustment capped at +10% after 32 uses. The persistent store records only retrieval count and timestamp and preserves those fields across content edits; STM remains process-only. Safe provenance carries the two numeric factors and a controlled persistence status through the context package while excluding record text. Focused storage, manager, broker, lexical/semantic, and context-budget contracts pass; changed-module Pyright reports zero diagnostics. The official full Qt/CTest gate remains pending. User-controlled importance ranking and provider-specific tokenizer budgeting remain open.

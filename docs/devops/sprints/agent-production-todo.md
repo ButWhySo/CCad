@@ -2,6 +2,20 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1003 active slice - user-controlled memory importance (Tier 1, M4)
+
+- [x] Add explicit integer importance 1–5 to memory records; default legacy/new records to neutral 3 without inferring priority.
+- [x] Carry the optional priority through manager add/update, duplicate handling, slash commands, JSON-RPC schemas/results, and safe retrieval provenance.
+- [x] Apply bounded 0.90–1.10 weighting only to candidates admitted by existing tier, namespace, expiry, and relevance gates.
+- [x] Add a Personalisation → Manage Memories control; edit existing priority and show saved priority in the record list.
+- [x] Add storage migration/validation, ranking, command/catalog, context allowlist, and GUI control contracts; focused Python contracts pass.
+- [x] Run changed-module Pyright and Qt/MinGW clangd checks; record pre-existing diagnostics separately. Pyright: changed modules 0 diagnostics; orchestrator retains its two tracked `AgentConfigManager`/`ConfigPersistenceError` import-symbol diagnostics. clangd found and helped correct the Settings `QVariant::toInt` mismatch; `main.cpp` has no diagnostics. Its final Settings check reached the known optional `ExtractFunction` break/continue internal-error path; the Qt/MinGW compile remains the authoritative check.
+- [x] Run the official Qt/MinGW Release build and complete CTest gate (115/115; verifier manifest `artifacts/evidence/sprint1003-memory-importance-release.json`, SHA-256 `981FF8D01D32234C15A16631839DE36D5CA7CA0FB345C60A5010C1D70E3E2E17`).
+- [x] Run provider-disabled official UI-map scenario; exact priority 5 persisted and displayed; 15 mapped interactions and all 16 scoped screenshots inspected; stdout reviewed and stderr empty.
+- [x] Update progress/features/codebase/backlog and evidence; run staged secret scan and `git diff --check`. Commit/push status is not checked until it is confirmed.
+
+Scope boundary: priority is explicitly user-authored; it does not classify memories or bypass any retrieval scope/relevance/expiry filter. Weights are bounded to ±10% and metadata sent in context contains only the numeric weight. Provider-tokenizer budgeting remains open.
+
 ### Sprint 1002 active slice - bounded memory recency/usage ranking (Tier 1, M4)
 
 - [x] Add bounded, deterministic recency and persisted retrieval-use weights after relevance filtering and before diversity selection.

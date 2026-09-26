@@ -32,16 +32,18 @@ with tempfile.TemporaryDirectory() as temp:
     else:
         raise AssertionError("non-retained STM memory write succeeded")
     added, result = execute_memory_command(
-        manager, 'add tier:ltm scope:conversation kind:preference title:"route rule" Keep ground return short')
+        manager, 'add tier:ltm scope:conversation kind:preference importance:5 title:"route rule" Keep ground return short')
     assert added == "memory_added" and result["tier"] == "ltm"
     assert result["kind"] == "preference"
+    assert result["importance"] == 5
     listed, result = execute_memory_command(manager, "list tier:ltm scope:conversation")
     assert listed == "memory_state" and len(result["entries"]) == 1
     entry_id = result["entries"][0]["id"]
     _, update = execute_memory_command(
-        manager, f"update {entry_id} kind:correction Keep return path short")
+        manager, f"update {entry_id} kind:correction importance:1 Keep return path short")
     assert update["updated"]
     assert manager.list(tier="ltm")[0]["kind"] == "correction"
+    assert manager.list(tier="ltm")[0]["importance"] == 1
     assert manager.list(tier="ltm")[0]["namespace"] == "thread-a"
     project_added, project_result = execute_memory_command(
         manager, 'add tier:ltm scope:project title:"board rule" Keep analog ground return clear')

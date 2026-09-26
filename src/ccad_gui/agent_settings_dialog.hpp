@@ -93,6 +93,7 @@ private:
   QLineEdit* memory_scope_{nullptr};
   QComboBox* memory_tier_{nullptr};
   QComboBox* memory_kind_{nullptr};
+  QComboBox* memory_importance_{nullptr};
   QComboBox* hooks_combo_{nullptr};
 
   // General settings

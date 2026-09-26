@@ -46,9 +46,14 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
         self.assertEqual(self.by_name["agent.memory_add"]["params"]["kind"]["enum"],
                          ["fact", "preference", "correction"])
         self.assertIn("kind", self.by_name["agent.memory_add"]["response"]["fields"])
+        self.assertEqual(self.by_name["agent.memory_add"]["params"]["importance"]["minimum"], 1)
+        self.assertEqual(self.by_name["agent.memory_add"]["params"]["importance"]["maximum"], 5)
+        self.assertIn("importance", self.by_name["agent.memory_add"]["response"]["fields"])
         self.assertEqual(self.by_name["agent.memory_update"]["params"]["kind"]["enum"],
                          ["fact", "preference", "correction"])
         self.assertIn("kind", self.by_name["agent.memory_update"]["response"]["fields"])
+        self.assertEqual(self.by_name["agent.memory_update"]["params"]["importance"]["minimum"], 1)
+        self.assertEqual(self.by_name["agent.memory_update"]["params"]["importance"]["maximum"], 5)
 
     def test_catalog_never_discloses_secret_values(self):
         self.assertFalse(self.catalog["secret_value_visible"])

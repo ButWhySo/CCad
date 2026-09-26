@@ -1,0 +1,27 @@
+{
+  "feature": "Set an explicit memory importance in Manage Memories; prove persistence and UI round-trip with providers disabled.",
+  "target_sequence": "sprint1003-memory-importance",
+  "project": "artifacts/demos/sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 8,
+  "required_targets": [
+    "action:settingsBtn",
+    "control:categoryList",
+    "action:agent_memory_manage",
+    "action:addMemory",
+    "control:memoryTier",
+    "control:memoryKind",
+    "control:memoryImportance",
+    "control:memoryTitle",
+    "control:memoryScope",
+    "control:memoryContent",
+    "action:saveMemory",
+    "action:closeMemoryManager",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [
+    "control:memoryTitle",
+    "control:memoryScope",
+    "control:memoryContent"
+  ],
+  "meaningful_screenshots": 16
+}

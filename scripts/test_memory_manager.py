@@ -136,6 +136,28 @@ with tempfile.TemporaryDirectory() as temp:
     assert provenance[0]["memory_kind"] == "correction"
     manager.reset("ltm")
 
+    low_priority = manager.add(
+        "Return path near U3 should leave room for test access", tier="ltm",
+        importance=1)
+    high_priority = manager.add(
+        "Return path beside U3 must preserve assembly clearance", tier="ltm",
+        importance=5)
+    unrelated = manager.add(
+        "Clock crystal nets need short symmetric routes", tier="ltm",
+        importance=5)
+    ranked, ranking = manager.retrieve_with_metadata("return path U3", limit=2)
+    assert [item["id"] for item in ranked] == [high_priority["id"], low_priority["id"]]
+    assert [item["importance"] for item in ranked] == [5, 1]
+    assert [item["importance_weight"] for item in ranking] == [1.1, 0.9]
+    assert unrelated["id"] not in {item["id"] for item in ranked}
+    manager.update(low_priority["id"],
+                   "Return path near U3 should leave more test access",
+                   importance=4)
+    persisted_importance = {item["id"]: item["importance"]
+                            for item in manager.store.list(tier="ltm")}
+    assert persisted_importance[low_priority["id"]] == 4
+    manager.reset("ltm")
+
     recent = manager.add(
         "Keep return routing short near U3 connector pads", tier="ltm",
         title="return route")

@@ -90,6 +90,7 @@ class ContextBudgetTests(unittest.TestCase):
             memory_retrieval=[{"entry_id": "m1", "rank": 1, "tier": "stm", "query_overlap_terms": 2,
                                "bm25_score": 1.25, "matched_terms": ["vias", "clear"],
                                "namespace_hash": "ab12", "kind_weight": 1.08,
+                               "importance_weight": 1.1,
                                "recency_weight": 1.12, "usage_weight": 1.04,
                                "usage_persistence": "process", "raw_content": "must not leak"}],
             memory_runtime={"stm": {"enabled": True, "runtime_entries": 1,
@@ -105,6 +106,7 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertTrue(meta["memory_runtime"]["stm"]["enabled"])
         self.assertEqual(meta["memory_retrieval"][0]["rank"], 1)
         self.assertEqual(meta["memory_retrieval"][0]["kind_weight"], 1.08)
+        self.assertEqual(meta["memory_retrieval"][0]["importance_weight"], 1.1)
         self.assertEqual(meta["memory_retrieval"][0]["recency_weight"], 1.12)
         self.assertEqual(meta["memory_retrieval"][0]["usage_weight"], 1.04)
         self.assertEqual(meta["memory_retrieval"][0]["usage_persistence"], "process")
@@ -117,10 +119,12 @@ class ContextBudgetTests(unittest.TestCase):
                     "content": "Keep the ground return short."}], [], char_limit=4096,
             memory_retrieval=[{"entry_id": "m-safe", "rank": 1, "tier": "ltm",
                                "recency_weight": 99, "usage_weight": "secret-value",
-                               "kind_weight": 1.08, "usage_persistence": "arbitrary",
+                               "kind_weight": 1.08, "importance_weight": 1.1,
+                               "usage_persistence": "arbitrary",
                                "raw_content": "private memory text"}])
         provenance = package["metadata"]["memory_retrieval"][0]
         self.assertEqual(provenance["kind_weight"], 1.08)
+        self.assertEqual(provenance["importance_weight"], 1.1)
         self.assertNotIn("recency_weight", provenance)
         self.assertNotIn("usage_weight", provenance)
         self.assertNotIn("usage_persistence", provenance)

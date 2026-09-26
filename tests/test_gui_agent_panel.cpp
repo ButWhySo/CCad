@@ -311,6 +311,7 @@ private slots:
     auto* save = settings.findChild<QPushButton*>("action:saveMemory");
     auto* remove = settings.findChild<QPushButton*>("action:deleteMemory");
     auto* kind = settings.findChild<QComboBox*>("control:memoryKind");
+    auto* importance = settings.findChild<QComboBox*>("control:memoryImportance");
     QVERIFY(status != nullptr);
     QCOMPARE(status->text(), QString("Ready."));
     QVERIFY(save != nullptr);
@@ -318,9 +319,16 @@ private slots:
     QVERIFY(remove != nullptr);
     QVERIFY(remove->isEnabled());
     QVERIFY(kind != nullptr);
+    QVERIFY(importance != nullptr);
     QCOMPARE(kind->currentData().toString(), QString("fact"));
     QCOMPARE(kind->findData("preference") >= 0, true);
     QCOMPARE(kind->findData("correction") >= 0, true);
+    QCOMPARE(importance->currentData().toInt(), 3);
+    QCOMPARE(importance->count(), 5);
+    QCOMPARE(importance->findData(1) >= 0, true);
+    QCOMPARE(importance->findData(5) >= 0, true);
+    importance->setCurrentIndex(importance->findData(5));
+    QCOMPARE(importance->currentData().toInt(), 5);
     settings.close();
     QTest::qWait(50);
   }
