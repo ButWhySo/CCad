@@ -58,6 +58,22 @@ References checked: LangChain's [memory](https://docs.langchain.com/oss/python/l
 
 Scope boundary: this does not add generated semantic summaries, source-attribution labels for each memory entry, or a real-provider recall benchmark.
 
+### Sprint 1009 active slice - memory exposure provenance (Tier 1)
+
+References checked: Langfuse's [Python instrumentation documentation](https://langfuse.com/docs/observability/sdk/instrumentation) supports safe metadata on observations; LangGraph's [memory guide](https://langchain-ai.github.io/langgraph/how-tos/cross-thread-persistence-functional/) distinguishes thread memory from durable cross-session memory. CCad's addition is limited to content-free provenance describing which local context path surfaced each authorized record.
+
+- [x] Label automatically retrieved memories and the subset actually included in Memory Summary.
+- [x] Preserve and extend those labels when explicit deep memory search merges results into the active turn.
+- [x] Report per-record exposure channels with opaque hashes only; raw memory IDs and contents stay out of context diagnostics and Langfuse metadata.
+- [x] Make channel counts reflect entries and summary text that survive the final context-package budget.
+- [x] Report the safe channel counts on context state and the Langfuse `memory.retrieve` / package observations.
+- [x] Contract-test automatic/summary/deep overlap, tool-search output, budget omission, allowlisting, and secret/ID redaction.
+- [x] Run applicable changed-module Pyright, official Qt/MinGW Release and full CTest; inspect the non-visual evidence manifest and logs (119/119; Pyright retains two pre-existing orchestrator import-symbol diagnostics).
+- [x] Update progress, codebase map, feature inventory, backlog, and this checklist; run redacted staged-addition secret scan and `git diff --check`.
+- [ ] Commit the verified slice on its feature branch; locally merge using Git after required hosted checks, resolve conflicts, then push `main` and verify remote SHA.
+
+Scope boundary: no memory retrieval algorithm, memory content policy, provider request payload, or GUI behavior changes in this slice. Recall-quality measurement and a real remote Langfuse receipt remain open.
+
 ### Sprint 1004 active slice — lean, complete visual evidence policy
 
 - [x] Align `AGENTS.md` with feature-specific visual checkpoints: record every mapped action, capture only distinct visual states, and inspect every retained image.
@@ -4175,7 +4191,7 @@ The essential architecture is:
 - [ ] Refresh/extend TurnMemoryContext only after a meaningful task/domain/evidence change or explicit Agent memory request.
 - [ ] Let the Agent issue deeper `memory.search` when new facts discovered during execution make additional historical knowledge relevant.
 - [ ] Merge deep-retrieval results into the current turn memory context with deduplication and token-budget enforcement.
-- [ ] Record whether each memory entered context through Memory Summary, automatic retrieval, or explicit deep retrieval.
+- [x] Record whether each memory entered context through Memory Summary, automatic retrieval, or explicit deep retrieval (Sprint 1009: per-record safe channel metadata and deep-search response coverage).
 - [ ] Report safe retrieval metadata in Langfuse under `memory.retrieve`.
 - [ ] Measure first-turn automatic retrieval recall and unnecessary-memory injection rate.
 - [ ] Measure extra model/tool calls avoided by automatic retrieval compared with on-demand-only memory search.

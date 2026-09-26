@@ -1,10 +1,16 @@
 """No-network contract for bounded, opt-in local memory context injection."""
 
+import ast
 from pathlib import Path
 
 
 text = (Path(__file__).parents[1] / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
-assert "from context_broker import ContextBroker, extract_context_signals" in text
+tree = ast.parse(text)
+broker_imports = {name.name for node in ast.walk(tree)
+                  if isinstance(node, ast.ImportFrom) and
+                  node.module == "context_broker" for name in node.names}
+assert {"ContextBroker", "extract_context_signals", "memory_exposure_counts",
+        "memory_exposure_manifest"} <= broker_imports
 assert "context_broker.prepare(" in text
 assert 'memory_entries = turn_context["memories"]' in text
 assert 'memory_entries, memory_retrieval = local_memory_entries(memory_query)' not in text
