@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1013 — real engineering calculator tools
+
+- [x] Add deterministic, bounded dimensional arithmetic for mm, cm, nm, mil, inches, metres, degrees, radians, and impedance units.
+- [x] Add typed coordinate rotation/translation and a constrained Hammerstad-Jensen microstrip estimate with explicit assumptions.
+- [x] Register the calculators as actual read-only orchestration tools with validated schemas, examples, and safe failure categories.
+- [x] Keep calculation results content-minimal; do not echo user formula text in tool output.
+- [x] Write and pass calculator and native-catalog integration contracts; no provider call, project mutation, or output artifact.
+- [x] Pass Pyright on the new calculator module and Qt/MinGW Release/full CTest (120/120); verifier manifest `artifacts/evidence/sprint-1013-agent-calculator.json`.
+- [ ] Confirm hosted CI passes on the exact published feature commit; CD remains unavailable until a deployment target is configured.
+
 ### Sprint 1011 — failing CTest diagnostics
 
 - [x] Rerun failed CTest cases verbosely on Linux core, Linux GUI, and Windows.
@@ -637,7 +647,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
   - [ ] Expose kernel transaction capabilities only after the real apply/undo/verify execution path is wired; retain explicit unavailable state until then.
 - [x] Give each supported command schemas, examples, validation, side-effect class, context needs, and result shape.
 - [ ] Add guarded real CLI execution with structured stdout, stderr, artifacts, and safe failure mapping.
-- [ ] Add deterministic unit-aware calculator and coordinate-transform tool.
+- [x] Add deterministic unit-aware calculator and coordinate-transform tool (Sprint 1013; see the precision/model limits and evidence above).
 - [ ] Add constrained project-scoped Python computation with explicit artifacts, no inherited secrets or shell interpolation, bounded execution, and approval for persistence.
 - [x] Add screenshot/evidence capture with viewport, layer, and selection metadata.
 - [ ] Add UI-map inspection and mapped-action tools; never fixed-coordinate scripts for normal operation.

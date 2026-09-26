@@ -56,6 +56,7 @@ from memory_compaction import (MemoryCompactionError, MemoryCompactionPlans,
                                MEMORY_SUMMARY_SYSTEM_PROMPT)
 from context_broker import (ContextBroker, extract_context_signals,
                             memory_exposure_counts, memory_exposure_manifest)
+from engineering_calculator import build_engineering_tools
 from history_compaction import (HistoryCompactionError,
                                 compact_history,
                                 prepare_history_compaction,
@@ -994,6 +995,7 @@ def install_native_tool_catalog(catalog: object) -> dict:
     global native_tool_catalog, agent_tools, router_llm, librarian_llm, execute_tool_node, executor
     native_tool_catalog = validate_native_tool_catalog(catalog)
     agent_tools = build_native_tools(native_tool_catalog)
+    agent_tools.extend(build_engineering_tools())
     if "ccad_search_memory" not in {tool.name for tool in agent_tools}:
         agent_tools.append(build_memory_search_tool())
     if llm is not None:

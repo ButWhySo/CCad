@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1013-agent-calculator",
+    "feature":  "Typed read-only dimensional calculator, coordinate transform, and microstrip impedance tools",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T11:24:07.3530296Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.62 log=artifacts/evidence/sprint-1013-agent-calculator/preflight.log",
+                      "finished_utc":  "2026-09-26T11:24:09.1251529Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=27.69 log=artifacts/evidence/sprint-1013-agent-calculator/build.log",
+                      "finished_utc":  "2026-09-26T11:24:36.8248579Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=174.15 log=artifacts/evidence/sprint-1013-agent-calculator/ctest.log",
+                      "finished_utc":  "2026-09-26T11:27:30.9795877Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1013-agent-calculator/build.log",
+                                         "sha256":  "23417113261C139D672DBA950AFC827643333379D13A446BCBC0540380847082"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1013-agent-calculator/ctest.log",
+                                         "sha256":  "22EBB2662844DEA283979D9705B80925828FCB1D29516F2D6D0F67BE07EBD9D1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1013-agent-calculator/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T11:27:31.0706439Z"
+}

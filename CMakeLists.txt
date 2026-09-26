@@ -239,6 +239,14 @@ find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
   add_test(NAME agent_python_method_catalog
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
+  if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    add_test(NAME agent_engineering_calculator
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_engineering_calculator.py")
+  else()
+    add_test(NAME agent_engineering_calculator
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_engineering_calculator.py")
+  endif()
   add_test(NAME agent_context_budget
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_budget.py")
   add_test(NAME agent_provider_usage

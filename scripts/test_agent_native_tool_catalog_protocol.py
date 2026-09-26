@@ -69,8 +69,8 @@ run = subprocess.run(
 assert run.returncode == 0, run.stderr
 responses = [json.loads(line) for line in run.stdout.splitlines() if line.startswith("{")]
 states = [item["params"] for item in responses if item.get("method") == "tool_catalog_state"]
-assert states[0] == {"accepted": True, "method_count": 2, "tool_count": 3,
-                     "native_tool_count": 2, "local_tool_count": 1,
+assert states[0] == {"accepted": True, "method_count": 2, "tool_count": 6,
+                     "native_tool_count": 2, "local_tool_count": 4,
                      "secret_value_visible": False}
 assert states[1]["accepted"] is False and states[1]["tool_count"] == 0
 print("PASS native catalog builds provider-safe LangChain tools and IPC rejects invalid input; no provider call")

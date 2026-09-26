@@ -6,6 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
+- Sprint: 1013
+- Branch: `sprint-1013-agent-calculator`
+- Sprint 1010/1011 reliability fixes are on `main`; current remote `main` is `dac80a9db546add56d110c464b4e1f31982791a4`. Hosted CI run `36236321750` passed Agent Python, Linux core, Linux GUI, Windows core, and evidence-manifest for that exact source SHA. CD is not a failing configured workflow: the repository has no deployment workflow or deployment target. Sprint 1013 adds provider-callable, read-only engineering calculation tools and is verified by the Qt/MinGW Release build and full CTest (120/120), focused calculator/catalog contracts, and Pyright on the new calculator module. Workspace-only verifier manifest: `artifacts/evidence/sprint-1013-agent-calculator.json` (SHA-256 `2AD04B0909B363BEDB168A19AB9B1A75E6C2D305760E95DC8BC5266DE838059E`). No GUI behavior changed.
 - Sprint: 1011
 - Branch: `sprint-1011-ctest-failure-diagnostics`
 - Sprint 1010 and Sprint 1011 fixes are merged to `main`. Hosted CI is green for exact source SHA `4698996db768bd01f746a2a874edb07cff44a3c4` in run `36235647915`: Agent Python, Linux core, Linux GUI, Windows core, and evidence-manifest all succeeded. Sprint 1011's verified non-visual Qt/MinGW Release/full CTest result is 119/119; manifest `artifacts/evidence/sprint1011-ctest-fixture-fix.json` (SHA-256 `376998C90A02A27397DDFB7CEBDAD6CB5FD0AC331D8CFEB44C2908B791CE403B`). The test fixture root cause was an ignored local demo board absent from clean checkouts. CD remains unconfigured because no deployment target exists.
