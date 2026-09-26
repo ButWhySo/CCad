@@ -2,6 +2,15 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1020 — CI / CTest / CD failure report refresh
+
+- [x] Inspect live GitHub Actions history and verify exact current `main` SHA `3587c6e4b50d5a899abb54aa08593b0c5baeb5f1`; run `36257220845` passes all five jobs: `agent-python`, `core-linux`, `gui-linux`, `core-windows`, and `evidence-manifest`.
+- [x] Inspect recent red runs: CI/CTest failures were caused by Python dependency/contract drift and Linux `-Werror` (Sprint 1010), then Python-backed CTests reading an ignored local demo fixture (Sprint 1011); subsequent clean-checkout runs pass.
+- [x] Confirm CTest currently runs in Linux core, Linux GUI, and Windows core jobs; the repository has one active workflow, `.github/workflows/ci.yml`.
+- [x] Confirm there is no CD workflow or deployment target. CD is not failing; release artifact, destination, credentials/permissions, and trigger remain unspecified.
+
+Current state: hosted CI and CTest are green on the exact current `main` SHA. Older red notifications are from superseded commits. No pipeline source was changed because no current CI/CTest failure reproduces, and creating a CD publisher without a defined destination would risk publishing to the wrong target.
+
 ### Sprint 1019 — CI / CTest / CD current-state verification
 
 - [x] Query live GitHub Actions on the exact merged `main` SHA `8d678b92435bfa8a5ee0dad46f268f3273dae4de`; run `36256453720` passes `agent-python`, `core-linux`, `gui-linux`, `core-windows`, and `evidence-manifest`.
