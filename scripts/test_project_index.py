@@ -1140,6 +1140,105 @@ class ProjectIndexTests(unittest.TestCase):
                             item.get("relationship") == "same_component"
                             for item in from_symbol["entities"]))
 
+    def test_embedded_library_definition_links_to_instance_pins_and_survives_context(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        component = project["components"][0]
+        component["pins"] = [
+            {"id": "instance-vin", "name": "VIN", "number": "1",
+             "electrical_type": "power_in"},
+            {"id": "instance-pgood", "name": "PGOOD", "number": "2",
+             "electrical_type": "output"},
+        ]
+        component["symbol"] = {
+            "name": "TPS62130", "extends": "TPS62130_BASE",
+            "pins": [
+                {"name": "VIN", "number": "1", "electrical_type": "power_in"},
+                {"name": "PGOOD", "number": "2", "electrical_type": "output"},
+                {"name": "GND", "number": "3", "electrical_type": "power_in"},
+            ],
+        }
+
+        index = ProjectIndex(max_entities=24)
+        definition_id = next(doc["fields"]["id"] for doc in
+                             index._extract(snapshot)[1]
+                             if doc["fields"]["kind"] == "library_symbol")
+        result = index.retrieve(snapshot, definition_id, limit=24)
+        definition = next(item for item in result["entities"]
+                          if item["kind"] == "library_symbol")
+        library_pin = next(item for item in result["entities"]
+                           if item["kind"] == "library_pin" and
+                           item.get("pin_number") == "3")
+        self.assertEqual(definition["definition_source"], "embedded_project_symbol")
+        self.assertEqual(definition["extends"], "TPS62130_BASE")
+        self.assertEqual(library_pin["pin_name"], "GND")
+        self.assertEqual(library_pin["library_symbol_id"], definition["id"])
+        self.assertIn("library_pin", library_pin["relationships"])
+
+        pin_query = index.retrieve(
+            snapshot, "declared:sch-u3:1:instance-vin", limit=24)
+        instance_pin = next(item for item in pin_query["entities"]
+                            if item["kind"] == "schematic_pin" and
+                            item.get("pin_number") == "1")
+        self.assertTrue(any(item["kind"] == "library_pin" and
+                            "embedded_library_pin" in item.get("relationships", ())
+                            for item in pin_query["entities"]))
+        package = build_context_package(json.dumps(snapshot), [], [], char_limit=8192,
+                                        project_retrieval=result)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        packed_pin = next(item for item in envelope["project_retrieval"]["entities"]
+                          if item["kind"] == "library_pin" and
+                          item.get("pin_number") == "3")
+        self.assertEqual(packed_pin["pin_name"], "GND")
+        self.assertEqual(packed_pin["library_symbol_id"], definition["id"])
+
+    def test_exact_schematic_pin_to_board_pad_link_is_unambiguous_and_incremental(self):
+        snapshot = project_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["components"][0]["pins"] = [
+            {"id": "vin-pin", "name": "VIN", "number": "1"},
+            {"id": "pgood-pin", "name": "PGOOD", "number": "2"},
+        ]
+        project["board"]["pads"][0]["pin_name"] = "1"
+        project["board"]["pads"].append({
+            "id": "U3.2", "component_id": "U3", "pin_name": "2",
+            "net_id": "PGOOD", "position": {"x_nm": 1_000_000, "y_nm": 0},
+        })
+        index = ProjectIndex()
+        initial = index.retrieve(snapshot, "U3 VIN pin 1", limit=24)
+        pad = next(item for item in initial["entities"]
+                   if item["kind"] == "pad" and item["id"] == "P1")
+        pin = next(item for item in initial["entities"]
+                   if item["kind"] == "schematic_pin" and
+                   item.get("pin_number") == "1")
+        self.assertIn("physical_pad_for_pin", pad["relationships"])
+        self.assertEqual(pin["pin_number"], "1")
+
+        # A reused pad number makes the mapping ambiguous; never choose one.
+        project["board"]["pads"].append({
+            "id": "U3.1-duplicate", "component_id": "U3", "pin_name": "1",
+            "net_id": "GND", "position": {"x_nm": 2_000_000, "y_nm": 0},
+        })
+        ambiguous = index.retrieve(snapshot, "U3 VIN pin 1", limit=24)
+        ambiguous_pin = next(item for item in ambiguous["entities"]
+                             if item["kind"] == "schematic_pin" and
+                             item.get("pin_number") == "1")
+        self.assertFalse(any(item["kind"] == "pad" and
+                             "physical_pad_for_pin" in item.get("relationships", ())
+                             for item in ambiguous["entities"]))
+        self.assertEqual(ambiguous["stats"]["index_state"], "incremental")
+
+        project["board"]["pads"].pop()
+        project["board"]["pads"][0]["pin_name"] = "GND"
+        removed = index.retrieve(snapshot, "U3 VIN pin 1", limit=24)
+        removed_pin = next(item for item in removed["entities"]
+                           if item["kind"] == "schematic_pin" and
+                           item.get("pin_number") == "1")
+        self.assertEqual(removed_pin["pin_number"], "1")
+        self.assertFalse(any(item["kind"] == "pad" and
+                             "physical_pad_for_pin" in item.get("relationships", ())
+                             for item in removed["entities"]))
+
     def test_spatial_query_uses_coordinates_and_near_exact_object(self):
         index = ProjectIndex()
         by_origin = index.retrieve(project_snapshot(), "objects within 3 mm of 0,0", limit=12)

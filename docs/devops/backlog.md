@@ -1,5 +1,7 @@
 # CCad Consolidated Backlog
 
+- [x] Sprint 1016: index embedded symbol definitions and pin metadata; create exact, unique schematic-pin/PCB-pad identity edges; preserve safe provenance in bounded provider context. Focused contracts pass 49/49, changed-module Pyright is clean, and Qt/MinGW Release/full CTest pass 120/120. Manifest `artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256 `827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`). Standalone catalog definitions, passive association, proposals/artifacts, and transaction deltas remain open.
+
 This file is the single local backlog for scattered CCad feature requests. Sprint files remain the execution record, while this backlog holds the larger map so future agents do not lose roadmap items.
 
 ## Agent provider-token budget follow-up

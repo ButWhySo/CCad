@@ -2396,6 +2396,30 @@ The CI workflow's native CTest jobs run Python-backed contracts, so each now pro
 
 Hosted runs #539/#540 failed because two geometry retrieval tests read an ignored local demo board. Sprint 1011 replaced that dependency with deterministic typed fixtures; exact hosted runs #541 through #547 pass across all five configured jobs. `scripts/verify_sprint.ps1` build reuse validates the full CTest success summary with a positive discovered test count and still rejects source changes newer than the evidence. Its timestamp-based freshness check can conservatively reject unchanged sources after branch checkout; rerun official gate rather than override the check. Current local suite: 120/120. CI is configured in `.github/workflows/ci.yml`; this repository has no CD workflow or deployment target.
 
+## Sprint 1016 embedded symbol definitions and pin graph
+
+`ProjectIndex._extract()` now indexes only symbol definitions already embedded
+in typed schematic instances. Definition identity includes a bounded digest
+over library ID, name, inheritance, and safe pin metadata, so changed embedded
+definitions become new revisions without consulting an external library
+cache. `schematic_symbol` links to its embedded `library_symbol`, and the
+definition links to `library_pin` records. Instance and declared pins connect
+only by exact unique pin number. Separately, the native typed placement model
+stores footprint pad numbers in `Pad.pin_name`; the graph links a schematic
+pin to a PCB pad only for a unique, case-preserving component-reference/pin
+number pair. Duplicate or missing identities do not create links, and net
+names are never used to infer physical identity. `context_package.py` allows
+only the added scalar provenance and pin fields through the existing budgeted
+package. Contracts cover retrieval, provider packaging, duplicate ambiguity,
+and graph changes after a revision. Focused contracts pass 49/49; changed
+production modules pass Pyright with zero diagnostics; the Qt/MinGW Release
+build and full CTest pass 120/120. The official nonvisual manifest is
+`artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256
+`827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`).
+Standalone cached definitions, passive/decoupling links, proposal/artifact
+links, and transaction-delta ingestion remain open because the current project
+snapshot does not carry their authoritative contracts.
+
 ## Sprint 1013 read-only engineering calculator
 
 `src/ccad_agent/engineering_calculator.py` owns the standalone bounded dimensional expression parser, coordinate transform, and zero-thickness Hammerstad-Jensen microstrip estimate. It is imported into `orchestrator.py` and added to the rebuilt tool list next to the native method catalog and local memory search. These tools have no project-context dependency and do not modify project files or CAD state. Calculator arithmetic uses bounded AST parsing and `Decimal`, rejects unsafe Python syntax, caps expression length/tree depth/numeric magnitude, and returns stable error categories. The coordinate convention follows the kernel's Cartesian rotation formula (positive angles use `x'=x cos-y sin`, `y'=x sin+y cos`). The microstrip result explicitly excludes conductor-thickness and solder-mask corrections; it is an estimate, not a field solver. The outputs do not repeat user-supplied expression text. `scripts/test_agent_engineering_calculator.py` tests physical units, conversion, errors, transforms, the impedance path, schemas and orchestration registration; CTest target `agent_engineering_calculator` runs it using the project virtual environment on Windows. Qt/MinGW Release and full CTest pass 120/120; see manifest `artifacts/evidence/sprint-1013-agent-calculator.json`.

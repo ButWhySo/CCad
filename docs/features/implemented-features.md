@@ -1,5 +1,23 @@
 # Implemented Features
 
+## Sprint 1016 embedded symbol pins and physical identity graph
+
+The bounded project index reads symbol definitions and pin attributes only
+from symbol content embedded in the typed project snapshot. It gives each
+definition a content-derived revision identity, preserves safe pin metadata,
+and links an instance to its embedded definition and uniquely numbered pins.
+Schematic pin declarations link to physical PCB pads only when both the
+component reference and case-preserving pin number identify exactly one item
+on each side; ambiguous matches and net-name guesses produce no edge. The
+provider context package carries allowlisted definition provenance and pin
+fields. Focused contracts pass 49/49, Pyright reports zero diagnostics on the
+changed production modules, and the official Qt/MinGW Release build and full
+CTest pass 120/120. Workspace-only evidence is recorded in
+`artifacts/evidence/sprint1016-project-pin-relationships.json` (SHA-256
+`827A69DB649AD6DFFF0526877802B4DBE86CCE2D26847E477DBBC86355CF7C95`). This
+does not index standalone library-cache definitions, proposals/artifacts,
+passive relationships, or transaction deltas.
+
 ## Sprint 1015 CI and CTest follow-up
 
 Recent hosted CTest failures were traced to test code opening an ignored demo

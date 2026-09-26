@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1016-project-pin-relationships",
+    "feature":  "Index embedded schematic symbol definitions and pins; link exact unique schematic pin identities to physical PCB pads and preserve safe graph context.",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T14:15:17.8978127Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.85 log=artifacts/evidence/sprint1016-project-pin-relationships/preflight.log",
+                      "finished_utc":  "2026-09-26T14:15:18.8318697Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.38 log=artifacts/evidence/sprint1016-project-pin-relationships/build.log",
+                      "finished_utc":  "2026-09-26T14:15:19.2228703Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=147.62 log=artifacts/evidence/sprint1016-project-pin-relationships/ctest.log",
+                      "finished_utc":  "2026-09-26T14:17:46.8473616Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1016-project-pin-relationships/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1016-project-pin-relationships/ctest.log",
+                                         "sha256":  "ED787971A718ED04066F7D7712D21D8EAC644F28F3952118DA931551DDDE8D92"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1016-project-pin-relationships/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T14:17:46.9123608Z"
+}
