@@ -6,7 +6,7 @@ This file is the single local backlog for scattered CCad feature requests. Sprin
 
 ## CI / CTest / CD health snapshot (Sprint 1019)
 
-- [x] Current `main` CI run `36254672193` on `081e9897d008dbf2e235bf39ca35abe77798726e` passes all five configured jobs; CTest runs in `core-linux`, `gui-linux`, and `core-windows`. The earlier dependency/`-Werror` and ignored-fixture failures were fixed in Sprints 1010 and 1011; the 14 latest `main` runs are green.
+- [x] Current `main` CI run `36256453720` on `8d678b92435bfa8a5ee0dad46f268f3273dae4de` passes all five configured jobs; CTest runs in `core-linux`, `gui-linux`, and `core-windows`. The earlier dependency/`-Werror` and ignored-fixture failures were fixed in Sprints 1010 and 1011; 15 consecutive `main` runs are green. Sprint 1019 merged and the completed branch was removed.
 - [ ] CD remains unconfigured: the repository has no deployment workflow or target. Define release artifact, destination, credentials/permissions, and trigger before adding a real delivery workflow; do not claim a missing workflow is failing. Sprint 1019 evidence: `artifacts/evidence/sprint1019-ci-ct-reconciliation-r2.json` (SHA-256 `C2937FE61E2F6867E98FC436D2D9A80F738600CED3EF47D43C1545ACBE9F369F`); fresh local Qt/MinGW Release/full CTest passed 120/120 and current hosted run is green.
 
 ## Agent provider-token budget follow-up
