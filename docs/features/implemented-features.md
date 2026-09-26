@@ -1,5 +1,17 @@
 # Implemented Features
 
+## Sprint 1015 CI and CTest follow-up
+
+Recent hosted CTest failures were traced to test code opening an ignored demo
+board that clean GitHub runners do not receive. The repair already present on
+`main` constructs deterministic typed input inside the affected tests; exact
+hosted runs #541–#546 passed all five configured jobs, including current
+`main` SHA `9d33693458ba0ad88f1b1c3bf9a15cecd4c8925e`. The local sprint verifier
+now accepts any positive registered-test count in a complete `100% tests
+passed` CTest summary instead of being pinned to 115, while still requiring a
+successful build manifest and unchanged source timestamps. No CD workflow or
+deployment destination is configured in this repository.
+
 ## Sprint 1013 typed read-only engineering calculator tools
 
 The Python Agent exposes `ccad_calculate`, `ccad_transform_point`, and `ccad_microstrip_impedance` as real schema-validated LangChain tools alongside the native method catalog. The arithmetic parser supports bounded dimensional expressions in mm, cm, nm, mil, inches, metres, degrees, radians, and ohms, rejects incompatible dimensions and unsafe syntax, and supports explicitly unit-tagged trigonometry and coordinate transforms. The microstrip tool uses the Hammerstad-Jensen zero-thickness estimate and states its limits: conductor thickness and solder mask are not modeled. The tools are read-only, require no project context, and never mutate board or schematic state. Formula text is not echoed into results. Contracts prove orchestration discovery, tool schemas, conversions, failure categories, transformations, and the impedance estimate without a provider call. Qt/MinGW Release and full CTest pass 120/120. Manifest: `artifacts/evidence/sprint-1013-agent-calculator.json`.

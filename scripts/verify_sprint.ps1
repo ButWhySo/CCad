@@ -84,9 +84,19 @@ try {
     }
     $priorBuild = Join-Path $priorRoot 'build.log'
     $priorTests = Join-Path $priorRoot 'ctest.log'
-    if (-not (Test-Path -LiteralPath $priorBuild) -or
-        -not (Select-String -LiteralPath $priorTests -Pattern '100% tests passed, 0 tests failed out of 115' -Quiet)) {
+    $testSummary = if (Test-Path -LiteralPath $priorTests) {
+      Select-String -LiteralPath $priorTests `
+        -Pattern '100% tests passed, 0 tests failed out of ([0-9]+)' |
+        Select-Object -First 1
+    } else {
+      $null
+    }
+    if (-not (Test-Path -LiteralPath $priorBuild) -or -not $testSummary) {
       throw 'Prior build/test logs do not prove the expected successful full suite.'
+    }
+    $testCount = [int]$testSummary.Matches[0].Groups[1].Value
+    if ($testCount -lt 1) {
+      throw 'Prior CTest summary reports no tests; refusing build/test reuse.'
     }
     $codeFiles = @(Get-ChildItem src,tests -Recurse -File | Where-Object {
       $_.Extension -in @('.cpp','.hpp','.h','.py')
@@ -98,7 +108,7 @@ try {
     Copy-Item -LiteralPath $priorBuild -Destination (Join-Path $evidenceRoot 'build.log')
     Copy-Item -LiteralPath $priorTests -Destination (Join-Path $evidenceRoot 'ctest.log')
     Add-Step 'release_build' $true "reused verified prior run $ReusePassedBuildAndTestsFrom; source timestamps precede test log"
-    Add-Step 'full_ctest' $true "reused verified prior run $ReusePassedBuildAndTestsFrom; 115/115 passed"
+    Add-Step 'full_ctest' $true "reused verified prior run $ReusePassedBuildAndTestsFrom; $testCount/$testCount passed"
   } else {
     Invoke-Logged 'release_build' {
       cmake --build build-qt --config Release --parallel 8

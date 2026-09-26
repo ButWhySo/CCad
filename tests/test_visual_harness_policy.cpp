@@ -152,6 +152,11 @@ int main() {
                   "evidence verifier supports local-only payloads");
   requireContains(evidence_verifier, "[string]$ReusePassedBuildAndTestsFrom",
                   "evidence verifier gates prior build/test reuse");
+  requireContains(evidence_verifier,
+                  "100% tests passed, 0 tests failed out of",
+                  "reused CTest evidence accepts the current registered test count");
+  requireNotContains(evidence_verifier, "out of 115",
+                     "reused CTest evidence is not pinned to an obsolete test count");
   requireContains(evidence_hook, "scripts/check_evidence_manifest.py",
                   "commit hook uses the canonical evidence checker");
   requireContains(evidence_ci, "evidence-manifest:",
