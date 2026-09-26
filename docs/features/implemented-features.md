@@ -5,12 +5,16 @@
 Recent hosted CTest failures were traced to test code opening an ignored demo
 board that clean GitHub runners do not receive. The repair already present on
 `main` constructs deterministic typed input inside the affected tests; exact
-hosted runs #541–#546 passed all five configured jobs, including current
-`main` SHA `9d33693458ba0ad88f1b1c3bf9a15cecd4c8925e`. The local sprint verifier
+hosted runs #541–#547 passed all five configured jobs, including merged
+`main` SHA `ce8a518906baaef5b88e278aaa12675c3e6a447f` in run #547. The local sprint verifier
 now accepts any positive registered-test count in a complete `100% tests
 passed` CTest summary instead of being pinned to 115, while still requiring a
 successful build manifest and unchanged source timestamps. No CD workflow or
 deployment destination is configured in this repository.
+
+The post-merge local Qt/MinGW Release and full CTest gate also pass 120/120;
+manifest `artifacts/evidence/sprint-1015-ci-ct-hosted-closure-r1.json` records
+the rerun required after checkout timestamps conservatively invalidated reuse.
 
 ## Sprint 1013 typed read-only engineering calculator tools
 
