@@ -119,9 +119,11 @@ bool authorizeSecretReveal(QWidget* parent) {
 #endif
 }
 
+#ifdef Q_OS_WIN
 QString credentialTarget(const QString& provider) {
   return QStringLiteral("CCad/provider/") + provider;
 }
+#endif
 
 QString loadStoredSecret(const QString& provider) {
 #ifdef Q_OS_WIN

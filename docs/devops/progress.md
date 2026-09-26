@@ -6,8 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 1009
-- Branch: `sprint-1009-memory-exposure-provenance`
+- Sprint: 1010
+- Branch: `sprint-1010-ci-ct-repair`
+- Sprint 1010 reproduces failures from the prior hosted run: stale provider/checkpoint source contracts, Python-backed CTest jobs missing runtime dependencies, and a Linux-only unused Windows credential helper under `-Werror`. The full Python CI lane and checkpoint accept/deny/cancel restart matrix pass locally; the official Qt/MinGW Release build and full CTest pass 119/119, with workspace-only verifier manifest `artifacts/evidence/sprint1010-ci-ct-repair.json` (SHA-256 `6293CE9182EB818A127D9D5584B9CE3CA67E347E6F2B5E73520448F39D47BA32`). Changed Python contracts pass Pyright with zero diagnostics. Hosted CI for the exact pushed main SHA remains pending. CI now retains per-job build/test logs and emits Linux compiler diagnostics. The repository has no CD workflow or configured deployment target, so CD is not currently an implemented failing pipeline.
 - Sprint 1009 implementation is verified locally: per-memory safe exposure channels distinguish automatic retrieval, actual Memory Summary inclusion, and explicit deep search. The final budgeted package reports SHA-256-derived memory keys and exact channel counts; context state, deep-search results, and retrieval/package Langfuse observations report content-free channel metadata. Focused contracts pass; Pyright reports only the two pre-existing orchestrator import-symbol diagnostics. Qt/MinGW preflight and Release build pass; full CTest passes 119/119. Workspace-only manifest `artifacts/evidence/sprint1009-memory-exposure-provenance-r3.json` (SHA-256 `97B97406372ACE0BB26DE6DA669C0BD668C4D19429C707F0E2B34FF9B012520B`). No GUI behavior changed. Secret scan, commit, local merge/conflict resolution, push, and remote SHA verification remain pending.
 - Sprint: 1008
 - Branch: `sprint-1008-memory-summary-context`

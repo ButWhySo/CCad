@@ -10,6 +10,7 @@ settings = (root / "src" / "ccad_gui" / "agent_settings_dialog.cpp").read_text(e
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 main = (root / "src" / "ccad_gui" / "main.cpp").read_text(encoding="utf-8")
 orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
+model_catalog = (root / "src" / "ccad_agent" / "model_catalog.py").read_text(encoding="utf-8")
 
 assert "QTextBrowser* chat_stream_" in header
 assert 'setObjectName("control:agent_chat_stream")' in panel
@@ -108,8 +109,8 @@ assert 'trace_id' in settings
 assert 'telemetry_runtime.flush_turn()' in orchestrator
 assert 'method": "observability_state"' in orchestrator
 assert 'payment, credits, or project billing is required' in settings
-assert 'https://api.cerebras.ai/public/v1/models' in orchestrator
-assert 'CCad/1.0 (+https://github.com/ButWhySo/CCad)' in orchestrator
+assert 'https://api.cerebras.ai/public/v1/models' in model_catalog
+assert 'CCad/1.0 (+https://github.com/ButWhySo/CCad)' in model_catalog
 assert 'connection_attempted = True' in orchestrator
 assert '"request_count": 1 if connection_attempted else 0' in orchestrator
 assert 'return "payment_required"' in orchestrator
@@ -136,7 +137,7 @@ assert 'storedProviderSecret(configured_provider)' in panel
 assert 'openrouter/free' in settings
 assert 'provider_combo_->addItem("Ollama (local)", "ollama")' in settings
 assert 'fetch_ollama_models' in orchestrator
-assert '"network_access": "explicit_local_refresh"' in orchestrator
+assert '"network_access": "explicit_local_refresh"' in model_catalog
 for target in ("label:providerTestTarget", "label:providerTestStatus",
                "action:testProviderBtn", "action:cancelSettingsButton"):
     assert target in main

@@ -10,11 +10,27 @@ from langgraph.types import Command
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
-import orchestrator as ccad  # noqa: E402
+import orchestrator as ccad  # type: ignore[reportMissingImports]  # noqa: E402
+
+TOOL_CATALOG = [{
+    "method": "ui.route_track",
+    "description": "Route a board track between two millimeter coordinates.",
+    "read_only": False,
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "start_x_mm": {"type": "number", "description": "Track start X in mm."},
+            "end_x_mm": {"type": "number", "description": "Track end X in mm."},
+        },
+        "required": ["start_x_mm", "end_x_mm"],
+    },
+}]
 
 
 class FakeModel:
-    def bind_tools(self, _tools):
+    def bind_tools(self, tools):
+        self.tool_name = next(tool.name for tool in tools
+                              if tool.name == "ccad_ui_route_track")
         return self
 
     def invoke(self, messages, config=None):
@@ -23,8 +39,8 @@ class FakeModel:
         if any("supervisor" in str(getattr(m, "content", "")).lower() for m in messages):
             return AIMessage(content="router")
         return AIMessage(content="", tool_calls=[{
-            "name": "ui_add_track",
-            "args": {"x1": 1.0, "y1": 1.0, "x2": 2.0, "y2": 2.0},
+            "name": self.tool_name,
+            "args": {"start_x_mm": 1.0, "end_x_mm": 2.0},
             "id": "restart-tool",
             "type": "tool_call",
         }])
@@ -37,6 +53,9 @@ def configure(db):
     ccad.llm = FakeModel()
     ccad.router_llm = ccad.llm
     ccad.librarian_llm = ccad.llm
+    catalog_result = ccad.install_native_tool_catalog(TOOL_CATALOG)
+    assert catalog_result["accepted"] is True
+    assert catalog_result["native_tool_count"] == 1
     ccad.broker_wait_enabled = True
     ccad.executor = ccad.create_orchestrator()
 

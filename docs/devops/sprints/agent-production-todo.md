@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1010 — CI/CTest failure repair
+
+- [x] Align stale provider/checkpoint CI contracts to current typed method catalogs and runtime behavior.
+- [x] Isolate local provider protocol test from persistent user state and bound its process wait.
+- [x] Install Python agent requirements in each native CTest job.
+- [x] Guard Windows-only credential code against Linux warnings-as-errors compilation.
+- [x] Retain job configure/build/test logs and surface Linux compiler diagnostics.
+- [x] Run complete Python CI lane and checkpoint restart matrix locally.
+- [x] Run official Qt/MinGW Release build and full CTest verifier (119/119); commit workspace-only manifest after review.
+- [ ] Confirm hosted CI passes on exact pushed main SHA.
+- [x] Audit CD: no deployment workflow or target is configured; do not invent a destination.
+
 ### Sprint 1006 completed slice - model-window-aware context allocation (Tier 1)
 
 - [x] Derive active model context limits only from successful explicit provider catalog refreshes; keep catalog metadata process-local and keyed by exact provider/model.
@@ -432,6 +444,18 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 ## Update protocol and active slice
 
 Update this file in the same commit as each implementation slice.
+
+### Sprint 1010 — CI/CTest failure repair
+
+- [x] Reproduce and repair stale provider/checkpoint CI contracts against current typed catalogs and runtime behavior.
+- [x] Isolate provider protocol tests from user configuration, persistent chat data, and unbounded waits.
+- [x] Install the declared Python agent dependencies in each native CTest job.
+- [x] Guard the Windows-only credential helper from Linux warnings-as-errors builds.
+- [x] Preserve CI configure/build/test logs as downloadable workflow artifacts and publish Linux compiler failures as annotations.
+- [x] Run the complete Python CI lane and checkpoint restart matrix locally.
+- [ ] Run the official Qt/MinGW Release build and full CTest verifier.
+- [ ] Confirm hosted CI passes for the exact pushed main commit.
+- [x] Audit CD configuration: repository has no deployment workflow or configured deployment target; no CD failure can be asserted or safely invented.
 
 ### Sprint 975 memory-management feedback
 

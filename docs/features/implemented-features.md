@@ -1,5 +1,9 @@
 # Implemented Features
 
+# Sprint 1010 CI and CTest reliability (in progress)
+
+The CI workflow now supplies Python 3.12 and the Agent's declared requirements to all native CTest jobs, because several registered contracts import the Agent runtime. Provider/checkpoint source contracts align to the current typed method catalog; the local OpenAI-compatible protocol test uses isolated temporary state and a bounded subprocess; and the restart matrix exercises the real `ui.route_track` method schema. Linux build diagnostics are surfaced as workflow annotations, while configure/build/test logs are retained as artifacts. The Windows-only credential target helper is excluded from Linux compilation. The complete Python lane passes locally; the official Qt/MinGW Release build and full CTest pass 119/119, with workspace-only evidence manifest `artifacts/evidence/sprint1010-ci-ct-repair.json`. Changed Python contracts pass Pyright with zero diagnostics. Hosted CI for the pushed SHA remains pending. This repository has no configured CD workflow or deployment target.
+
 ## Sprint 1009 per-memory context exposure provenance
 
 Each packaged memory now has content-free provenance for its actual exposure

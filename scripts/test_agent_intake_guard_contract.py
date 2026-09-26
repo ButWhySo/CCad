@@ -4,15 +4,21 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
-assert '"preflight": "intake_guard"' in SOURCE
-assert '"intake_state", "context_state", "provider_state"' in SOURCE
+CATALOG = (ROOT / "src" / "ccad_agent" / "method_catalog.py").read_text(encoding="utf-8")
+assert '"preflight": "intake_guard"' in CATALOG
+assert '"intake_state", "context_state", "provider_state"' in CATALOG
+temporary_data = tempfile.TemporaryDirectory(prefix="ccad-intake-contract-")
+isolated_root = Path(temporary_data.name)
 env = os.environ.copy()
 env.update({"CCAD_AGENT_DEFER_PROVIDER_INIT": "1", "PYTHONNOUSERSITE": "1",
-            "PYTHONPATH": str(ROOT / "src" / "ccad_agent")})
+            "PYTHONPATH": str(ROOT / "src" / "ccad_agent"),
+            "APPDATA": str(isolated_root),
+            "CCAD_AGENT_CONVERSATION_DB": str(isolated_root / "conversations.sqlite3"),
+            "CCAD_AGENT_MEMORY_PATH": str(isolated_root / "memory.json")})
 
 
 def run(text, context=""):

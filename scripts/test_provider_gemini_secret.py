@@ -42,7 +42,8 @@ assert terminal_result["network_access"] == "not_probed"
 assert secret not in terminal.stdout
 assert secret not in terminal.stderr
 source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text()
-assert 'os.environ.get("CCAD_GEMINI_MODEL") or model_name' in source
+assert '"google_gemini": "CCAD_GEMINI_MODEL"' in source
+assert 'if model_env: os.environ[model_env] = model' in source
 assert 'method in ("agent.test_provider", "agent.test_provider_connection")' in source
 test_start = source.index('method in ("agent.test_provider", "agent.test_provider_connection")')
 secret_start = source.index('method == "agent.set_provider_secret"')

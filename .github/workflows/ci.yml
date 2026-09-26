@@ -27,10 +27,14 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: src/ccad_agent/requirements.txt
       - name: Install agent dependencies
         run: python -m pip install -r src/ccad_agent/requirements.txt
       - name: Test provider and checkpoint protocols
         run: |
+          {
+          set -e
           python -m py_compile src/ccad_agent/*.py scripts/test_*.py
           python scripts/test_provider_unconfigured.py
           python scripts/test_provider_gemini_secret.py
@@ -62,12 +66,20 @@ jobs:
           python scripts/test_model_selector_boundary_contract.py
           python scripts/test_agent_ui_runtime_contract.py
           python scripts/test_ci_checkout_contract.py
+          python scripts/test_ci_pipeline_contract.py
           CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           CCAD_RESTART_PHASE=second python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-accept.db
           CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
           CCAD_RESTART_PHASE=denial python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
           CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-cancel.db
           CCAD_RESTART_PHASE=cancel python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-cancel.db
+          } 2>&1 | tee agent-python-tests.log
+      - name: Upload Python test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-python-diagnostics
+          path: agent-python-tests.log
 
   core-linux:
     runs-on: ubuntu-latest
@@ -77,10 +89,28 @@ jobs:
         with:
           clean: true
           submodules: false
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: src/ccad_agent/requirements.txt
+      - name: Install agent dependencies for Python-backed CTest contracts
+        run: python -m pip install -r src/ccad_agent/requirements.txt
       - name: Configure
-        run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
+        run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF 2>&1 | tee configure.log
       - name: Build
-        run: cmake --build build --parallel 2
+        run: |
+          set -o pipefail
+          set +e
+          cmake --build build --parallel 2 2>&1 | tee build.log
+          build_exit=${PIPESTATUS[0]}
+          if [ "$build_exit" -ne 0 ]; then
+            grep -E '(^|:) (fatal )?error:|undefined reference|collect2: error:' build.log | tail -n 30 | while IFS= read -r diagnostic; do
+              echo "::error title=Linux build diagnostic::$diagnostic"
+            done
+          fi
+          exit "$build_exit"
       - name: Test
         env:
           QT_QPA_PLATFORM: offscreen
@@ -123,6 +153,8 @@ jobs:
         with:
           name: ctest-core-linux
           path: |
+            configure.log
+            build.log
             ctest-core-linux.log
             ctest-cli-linux-verbose.log
 
@@ -134,14 +166,32 @@ jobs:
         with:
           clean: true
           submodules: false
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: src/ccad_agent/requirements.txt
+      - name: Install agent dependencies for Python-backed CTest contracts
+        run: python -m pip install -r src/ccad_agent/requirements.txt
       - name: Install Qt
         run: |
           sudo apt-get update
           sudo apt-get install -y qt6-base-dev qt6-svg-dev
       - name: Configure
-        run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON
+        run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=ON 2>&1 | tee configure.log
       - name: Build
-        run: cmake --build build --parallel 2
+        run: |
+          set -o pipefail
+          set +e
+          cmake --build build --parallel 2 2>&1 | tee build.log
+          build_exit=${PIPESTATUS[0]}
+          if [ "$build_exit" -ne 0 ]; then
+            grep -E '(^|:) (fatal )?error:|undefined reference|collect2: error:' build.log | tail -n 30 | while IFS= read -r diagnostic; do
+              echo "::error title=Linux GUI build diagnostic::$diagnostic"
+            done
+          fi
+          exit "$build_exit"
       - name: Test
         env:
           QT_QPA_PLATFORM: offscreen
@@ -184,6 +234,8 @@ jobs:
         with:
           name: ctest-gui-linux
           path: |
+            configure.log
+            build.log
             ctest-gui-linux.log
             ctest-cli-gui-linux-verbose.log
 
@@ -195,10 +247,22 @@ jobs:
         with:
           clean: true
           submodules: false
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: src/ccad_agent/requirements.txt
+      - name: Install agent dependencies for Python-backed CTest contracts
+        run: python -m pip install -r src/ccad_agent/requirements.txt
       - name: Configure
-        run: cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF
+        run: |
+          cmake -S . -B build -DCCAD_WARNINGS_AS_ERRORS=ON -DCCAD_BUILD_GUI=OFF 2>&1 | Tee-Object -FilePath configure.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build
-        run: cmake --build build --config Release --parallel 2
+        run: |
+          cmake --build build --config Release --parallel 2 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Test
         run: |
           ctest --test-dir build --output-on-failure -C Release *> ctest-core-windows.log
@@ -211,6 +275,14 @@ jobs:
         with:
           name: ctest-core-windows
           path: ctest-core-windows.log
+      - name: Upload Windows configure/build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: configure-build-core-windows
+          path: |
+            configure.log
+            build.log
 
   evidence-manifest:
     runs-on: ubuntu-latest
