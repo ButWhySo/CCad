@@ -2,6 +2,15 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1021 — Memory reset and transcript isolation (Tier 1)
+
+- [x] Verify enabling LTM/episodic opens durable namespaces and reset requires explicit confirmation.
+- [x] Prove disabling/resetting memory leaves canonical conversation transcript and project/checkpoint state intact.
+- [x] Add real JSON-RPC restart contract covering both durable memory tiers and the existing conversation store.
+- [x] Pass official Qt/MinGW Release build and full CTest (120/120); manifest `artifacts/evidence/sprint-1021-memory-transcript-isolation.json`, SHA-256 `5823B39C237831C88905F81736DAD94DB6F9DA69CD64D1F87CF4470D68FBE460`.
+- [x] Run redacted changed-file secret scan; no credential-pattern additions. Record manifest; keep captured logs workspace-only.
+- [ ] Commit, locally merge to `main`, push, and verify hosted CI on the exact merged SHA.
+
 ### Sprint 1020 — CI / CTest / CD failure report refresh
 
 - [x] Inspect live GitHub Actions history and verify exact current `main` SHA `3587c6e4b50d5a899abb54aa08593b0c5baeb5f1`; run `36257220845` passes all five jobs: `agent-python`, `core-linux`, `gui-linux`, `core-windows`, and `evidence-manifest`.
@@ -1212,7 +1221,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [x] Define STM as current goal/task working memory; `/task start|status|end` supplies its explicit task boundary (99/99 CTest; mapped GUI evidence inspected).
 - [x] Define LTM as current conversation/thread durable memory.
 - [x] Define episodic memory as cross-conversation/project experiences on this local user/device.
-- [ ] Enabling a tier must create/open its backing store/namespace if required.
+- [x] Enabling a tier must create/open its backing store/namespace if required; LTM and episodic JSON-RPC activation/empty-namespace contracts pass.
 - [x] Enabling a tier loads relevant entries into bounded runtime state.
 - [x] Enabling a tier permits explicit capture/update for that tier.
 - [x] Enabling a tier permits query-ranked retrieval from that tier.
@@ -1222,10 +1231,10 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [x] Disabling a tier preserves durable records.
 - [x] Add `Manage memories` with tier-aware list/add/update/delete IPC and mapped UI controls; persistent CRUD button interactions remain open evidence.
 - [x] Add explicit `Reset/Delete memories` separately from enable/disable.
-- [ ] Require confirmation before destructive reset/delete.
+- [x] Require confirmation before destructive reset/delete; unconfirmed reset is refused and confirmed reset reports exact removals.
 - [x] Report enabled state, loaded runtime count, and persistent count truthfully where practical.
-- [ ] Ensure disabling LTM does not delete ordinary chat transcript/checkpoint state.
-- [ ] Ensure disabling episodic memory does not erase project/conversation state.
+- [x] Ensure disabling LTM does not delete ordinary chat transcript/checkpoint state; verified across Agent-process restart.
+- [x] Ensure disabling episodic memory does not erase project/conversation state; verified with isolated project bytes and durable transcript.
 - [ ] Implement per-tier ranking/retrieval and not one shared flat store presented as three different systems.
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
@@ -1233,7 +1242,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Implement semantic near-duplicate handling; exact duplicates and high lexical-overlap duplicates are handled, but semantic similarity remains unimplemented.
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
-- [ ] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart.
+- [x] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart; enable, disable, loaded/persistent counts, and reset outcomes are contract-tested.
 
 ## Providers & Models
 

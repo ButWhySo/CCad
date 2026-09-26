@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1021-memory-transcript-isolation",
+    "feature":  "Verify memory tier toggles and reset preserve canonical conversations",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T18:00:22.0109847Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.97 log=artifacts/evidence/sprint-1021-memory-transcript-isolation/preflight.log",
+                      "finished_utc":  "2026-09-26T18:00:23.0910893Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.4 log=artifacts/evidence/sprint-1021-memory-transcript-isolation/build.log",
+                      "finished_utc":  "2026-09-26T18:00:23.5026126Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=160.33 log=artifacts/evidence/sprint-1021-memory-transcript-isolation/ctest.log",
+                      "finished_utc":  "2026-09-26T18:03:03.8344662Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1021-memory-transcript-isolation/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1021-memory-transcript-isolation/ctest.log",
+                                         "sha256":  "4EAFCF0E01A3CDC85E2C6516537A29FCB3E4409A7C85E5BA457124C66044D4CB"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1021-memory-transcript-isolation/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T18:03:03.9034644Z"
+}

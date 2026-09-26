@@ -39,6 +39,7 @@ def run():
             "APPDATA": str(appdata),
             "LOCALAPPDATA": str(appdata),
             "CCAD_AGENT_CONVERSATION_DB": str(db_path),
+            "CCAD_AGENT_MEMORY_PATH": str(appdata / "memories.json"),
             "CCAD_AGENT_DEFER_PROVIDER_INIT": "1",
             "CCAD_TRACE_EXPORT_ENABLED": "0",
             "CCAD_PROVIDER": "google_gemini",
@@ -80,6 +81,47 @@ def run():
         loaded_counts = [item["params"].get("conversation_message_count")
                          for item in second if item.get("method") == "thread_state"]
         assert loaded_counts == [2, 2, 2]
+
+        memory_lifecycle = exchange(env, [
+            {"jsonrpc": "2.0", "id": 7, "method": "agent.set_thread_id",
+             "params": thread},
+            {"jsonrpc": "2.0", "id": 8, "method": "agent.memory_set_enabled",
+             "params": {"tier": "ltm", "enabled": True}},
+            {"jsonrpc": "2.0", "id": 9, "method": "agent.memory_set_enabled",
+             "params": {"tier": "episodic", "enabled": True}},
+            {"jsonrpc": "2.0", "id": 10, "method": "agent.memory_add",
+             "params": {"tier": "ltm", "scope": "conversation",
+                        "title": "temporary thread memory",
+                        "content": "This thread-scoped memory exists only to verify safe tier reset."}},
+            {"jsonrpc": "2.0", "id": 11, "method": "agent.memory_add",
+             "params": {"tier": "episodic", "scope": "user",
+                        "title": "temporary episodic memory",
+                        "content": "This episodic memory exists only to verify safe tier reset."}},
+            {"jsonrpc": "2.0", "id": 12, "method": "agent.memory_set_enabled",
+             "params": {"tier": "ltm", "enabled": False}},
+            {"jsonrpc": "2.0", "id": 13, "method": "agent.memory_set_enabled",
+             "params": {"tier": "episodic", "enabled": False}},
+            {"jsonrpc": "2.0", "id": 14, "method": "agent.memory_reset",
+             "params": {"confirmed": True}},
+            {"jsonrpc": "2.0", "id": 15, "method": "agent.set_thread_id",
+             "params": thread},
+        ])
+        memory_states = [item["params"] for item in memory_lifecycle
+                         if item.get("method") == "memory_state"]
+        assert any(item.get("tier") == "ltm" and item.get("enabled") is False
+                   and item.get("runtime_entries") == 0
+                   and item.get("persistent_entries") == 1
+                   for item in memory_states)
+        assert any(item.get("tier") == "episodic" and item.get("enabled") is False
+                   and item.get("runtime_entries") == 0
+                   and item.get("persistent_entries") == 1
+                   for item in memory_states)
+        resets = [item["params"] for item in memory_lifecycle
+                  if item.get("method") == "memory_reset"]
+        assert len(resets) == 1 and resets[0].get("removed") == 2
+        assert any(item.get("method") == "thread_state" and
+                   item.get("params", {}).get("conversation_message_count") == 2
+                   for item in memory_lifecycle)
 
         sys.path.insert(0, str(AGENT_DIR))
         from conversation_store import ConversationStore
