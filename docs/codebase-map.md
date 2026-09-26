@@ -2394,7 +2394,7 @@ The CI workflow's native CTest jobs run Python-backed contracts, so each now pro
 
 ## Sprint 1015 CI / CTest troubleshooting
 
-Hosted runs #539/#540 failed because two geometry retrieval tests read an ignored local demo board. Sprint 1011 replaced that dependency with deterministic typed fixtures; exact hosted runs #541 through #546 pass across all five configured jobs. `scripts/verify_sprint.ps1` build reuse validates the full CTest success summary with a positive discovered test count and still rejects source changes newer than the evidence. Current local suite: 120/120. CI is configured in `.github/workflows/ci.yml`; this repository has no CD workflow or deployment target.
+Hosted runs #539/#540 failed because two geometry retrieval tests read an ignored local demo board. Sprint 1011 replaced that dependency with deterministic typed fixtures; exact hosted runs #541 through #547 pass across all five configured jobs. `scripts/verify_sprint.ps1` build reuse validates the full CTest success summary with a positive discovered test count and still rejects source changes newer than the evidence. Its timestamp-based freshness check can conservatively reject unchanged sources after branch checkout; rerun official gate rather than override the check. Current local suite: 120/120. CI is configured in `.github/workflows/ci.yml`; this repository has no CD workflow or deployment target.
 
 ## Sprint 1013 read-only engineering calculator
 
