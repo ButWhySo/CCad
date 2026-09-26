@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1015 — CI / CTest follow-up
+
+- [x] Inspect failed hosted runs #539 and #540 at job and verbose-test level; identify the clean-runner fixture failure.
+- [x] Confirm the self-contained fixture repair is present on `main` at `4698996db768bd01f746a2a874edb07cff44a3c4`.
+- [x] Verify subsequent hosted runs #541–#546; every configured job passes on #546 for exact `main` SHA `9d33693458ba0ad88f1b1c3bf9a15cecd4c8925e`.
+- [x] Confirm no CD workflow/deployment target exists in this repository; no deployment failure can be repaired without a selected destination.
+- [x] Remove the sprint verifier's obsolete fixed CTest count; retain full-zero-failure and source-timestamp checks.
+- [x] Run official Qt/MinGW Release verification and full CTest (120/120); manifest `artifacts/evidence/sprint-1015-ci-ct-pipeline-triage.json` (SHA-256 `B2D42AA4CC2B83F6306BC84A73BBB7F9DC8D6AA165B4DB6B617FA7A292442084`).
+- [ ] Commit the verified files, push, and confirm hosted checks for the resulting SHA.
+
 ### Sprint 1014 — CI / CT / CD status reconciliation
 
 - [x] Inspect the latest public failure: run `36101062608` for old source SHA `214df8f`; Python protocol tests and six Python-backed Linux CTests failed on that revision.

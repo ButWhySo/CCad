@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1015-ci-ct-pipeline-triage",
+    "feature":  "Diagnose stale hosted CTest failures and make verified build reuse accept the current dynamic suite count",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T12:47:59.4547372Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.04 log=artifacts/evidence/sprint-1015-ci-ct-pipeline-triage/preflight.log",
+                      "finished_utc":  "2026-09-26T12:48:00.5993267Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=7.16 log=artifacts/evidence/sprint-1015-ci-ct-pipeline-triage/build.log",
+                      "finished_utc":  "2026-09-26T12:48:07.7679350Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=151.85 log=artifacts/evidence/sprint-1015-ci-ct-pipeline-triage/ctest.log",
+                      "finished_utc":  "2026-09-26T12:50:39.6184363Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1015-ci-ct-pipeline-triage/build.log",
+                                         "sha256":  "B4914D7AF1975EF93E67197541CC5DBB79CE711A548CC40D4165786A2936FDAA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1015-ci-ct-pipeline-triage/ctest.log",
+                                         "sha256":  "2566BC0EFDCE6BFD8792F2627649BFF52C9040497E6901788EFFD9E34CA9D260"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1015-ci-ct-pipeline-triage/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T12:50:39.7064335Z"
+}
