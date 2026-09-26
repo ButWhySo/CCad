@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1018-source-passive-associations",
+    "feature":  "Source-confirmed schematic power-input/passive relationships through bounded retrieval and provider context",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-26T15:51:40.9712525Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.88 log=artifacts/evidence/sprint1018-source-passive-associations/preflight.log",
+                      "finished_utc":  "2026-09-26T15:51:41.9288816Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.34 log=artifacts/evidence/sprint1018-source-passive-associations/build.log",
+                      "finished_utc":  "2026-09-26T15:51:42.2795423Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=149.92 log=artifacts/evidence/sprint1018-source-passive-associations/ctest.log",
+                      "finished_utc":  "2026-09-26T15:54:12.2014798Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1018-source-passive-associations/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1018-source-passive-associations/ctest.log",
+                                         "sha256":  "F411F3D9C0B119B0459192D565C1E435F317465172C642578A8EB392A115B891"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1018-source-passive-associations/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-26T15:54:12.2664826Z"
+}

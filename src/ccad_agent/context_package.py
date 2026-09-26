@@ -220,10 +220,13 @@ def _project_retrieval_payload(value: dict | None) -> dict:
                      ("total_entities", "exact_match_count", "lexical_match_count",
                      "relationship_match_count", "spatial_match_count",
                      "near_component_match_count", "region_member_match_count",
+                     "passive_association_match_count",
                      "semantic_match_count",
                      "omitted_count")}
     for relation, key in (("near_component", "near_component_match_count"),
-                          ("region_member", "region_member_match_count")):
+                          ("region_member", "region_member_match_count"),
+                          ("shares_power_input_net_with_passive",
+                           "passive_association_match_count")):
         stats_payload[key] = sum(
             relation in entity.get("relationships", ()) or
             entity.get("relationship") == relation for entity in entities)
@@ -240,6 +243,9 @@ def _project_retrieval_payload(value: dict | None) -> dict:
             "native_net_id_association_not_physical_continuity",
         "logical_net_semantics":
             "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
+        "power_passive_association_semantics": _safe_text(
+            source.get("power_passive_association_semantics"), 180) or
+            "source_model_association_not_available",
         "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
         "geometry_relationship_semantics":
             "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
@@ -465,7 +471,9 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     if isinstance(included_retrieval_stats, dict):
         included_entities = envelope.get("project_retrieval", {}).get("entities", [])
         for relation, key in (("near_component", "near_component_match_count"),
-                              ("region_member", "region_member_match_count")):
+                              ("region_member", "region_member_match_count"),
+                              ("shares_power_input_net_with_passive",
+                               "passive_association_match_count")):
             included_retrieval_stats[key] = sum(
                 relation in entity.get("relationships", ()) or
                 entity.get("relationship") == relation

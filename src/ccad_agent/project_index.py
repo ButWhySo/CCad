@@ -1545,6 +1545,109 @@ class ProjectIndex:
                 found.append((uid, 0.0))
         return sorted(found, key=lambda item: item[0])
 
+    def _source_model_power_passive_neighbors(self, seeds: set[str]) -> dict[str, set[str]]:
+        """Find same-sheet, exact-net associations from declared schematic pin types."""
+        symbol_cache: dict[tuple[str, str], list[dict]] = {}
+
+        def symbols_with(field: str, value: str) -> list[dict]:
+            key = (field, _normalize(value))
+            if not key[1]:
+                return []
+            if key not in symbol_cache:
+                symbol_cache[key] = [
+                    self._docs[uid] for uid in self._aliases.get(key[1], ())
+                    if uid in self._docs and
+                    self._docs[uid]["fields"].get("kind") == "schematic_symbol" and
+                    _normalize(self._docs[uid]["fields"].get(field, "")) == key[1]
+                ]
+            return symbol_cache[key]
+
+        source_symbols: dict[str, dict] = {}
+        for uid in seeds:
+            doc = self._docs.get(uid)
+            if not doc:
+                continue
+            fields = doc["fields"]
+            kind = fields.get("kind")
+            if kind == "schematic_symbol":
+                candidates = [doc]
+            elif kind == "schematic_pin":
+                candidates = symbols_with("id", fields.get("symbol_id", ""))
+            elif kind == "footprint":
+                reference = _normalize(fields.get("reference", ""))
+                board_footprints = [
+                    self._docs[other_uid]
+                    for other_uid in self._aliases.get(reference, ())
+                    if other_uid in self._docs and
+                    self._docs[other_uid]["fields"].get("kind") == "footprint" and
+                    _normalize(self._docs[other_uid]["fields"].get("reference", "")) ==
+                    reference
+                ]
+                candidates = (symbols_with("reference", reference)
+                              if len(board_footprints) == 1 else ())
+            else:
+                continue
+            for symbol in candidates:
+                symbol_fields = symbol["fields"]
+                symbol_id = _normalize(symbol_fields.get("id", ""))
+                reference = _normalize(symbol_fields.get("reference", ""))
+                if (not symbol_id or len(symbols_with("id", symbol_id)) != 1 or
+                        not reference or
+                        len(symbols_with("reference", reference)) != 1):
+                    continue
+                source_symbols[symbol["uid"]] = symbol
+
+        associated: dict[str, set[str]] = defaultdict(set)
+        for source_uid, source_symbol in source_symbols.items():
+            source_fields = source_symbol["fields"]
+            source_id = _normalize(source_fields.get("id", ""))
+            source_reference = _normalize(source_fields.get("reference", ""))
+            source_component_keys = {source_id, source_reference}
+            source_pins = {
+                pin_uid: self._docs[pin_uid]
+                for component_key in source_component_keys if component_key
+                for pin_uid in self._component_docs.get(component_key, ())
+                if pin_uid in self._docs and
+                self._docs[pin_uid]["fields"].get("kind") == "schematic_pin" and
+                _normalize(self._docs[pin_uid]["fields"].get("symbol_id", "")) == source_id and
+                self._docs[pin_uid]["fields"].get("membership_kind") ==
+                "schematic_net_member" and
+                self._docs[pin_uid]["fields"].get("net_id")
+            }
+            for source_pin in source_pins.values():
+                pin_fields = source_pin["fields"]
+                pin_type = _normalize(pin_fields.get("electrical_type", ""))
+                if pin_type not in {"power_in", "passive"}:
+                    continue
+                net_id = pin_fields.get("net_id", "")
+                sheet_id = pin_fields.get("sheet_id", "")
+                for neighbor_uid in self._net_docs.get(net_id.casefold(), ()):
+                    neighbor = self._docs.get(neighbor_uid)
+                    if not neighbor or neighbor["fields"].get("kind") != "schematic_pin":
+                        continue
+                    neighbor_fields = neighbor["fields"]
+                    neighbor_type = _normalize(
+                        neighbor_fields.get("electrical_type", ""))
+                    if (neighbor_fields.get("membership_kind") != "schematic_net_member" or
+                            neighbor_fields.get("net_id") != net_id or
+                            neighbor_fields.get("sheet_id", "") != sheet_id or
+                            {pin_type, neighbor_type} != {"power_in", "passive"}):
+                        continue
+                    target_id = _normalize(neighbor_fields.get("symbol_id", ""))
+                    target_symbols = symbols_with("id", target_id)
+                    if len(target_symbols) != 1:
+                        continue
+                    target = target_symbols[0]
+                    target_reference = _normalize(
+                        target["fields"].get("reference", ""))
+                    if (not target_reference or
+                            len(symbols_with("reference", target_reference)) != 1 or
+                            target["uid"] == source_uid):
+                        continue
+                    associated[target["uid"]].add(
+                        "shares_power_input_net_with_passive")
+        return associated
+
     def _relationship_neighbors(self, seeds: set[str]) -> dict[str, set[str]]:
         found: dict[str, set[str]] = defaultdict(set)
         for uid in seeds:
@@ -1620,6 +1723,9 @@ class ProjectIndex:
                 for neighbor, relation in self._reference_docs.get(identity_key, ()):
                     if neighbor != uid and neighbor not in seeds:
                         found[neighbor].add(relation)
+        for uid, relations in self._source_model_power_passive_neighbors(seeds).items():
+            if uid not in seeds:
+                found[uid].update(relations)
         return found
 
     @staticmethod
@@ -1666,6 +1772,7 @@ class ProjectIndex:
                               "relationship_match_count": 0, "spatial_match_count": 0,
                               "near_component_match_count": 0,
                               "region_member_match_count": 0,
+                              "passive_association_match_count": 0,
                               "omitted_count": 0}}
         stats = self._sync(snapshot)
         query = _safe(query, 3072)
@@ -1871,6 +1978,9 @@ class ProjectIndex:
                           "near_component" in values for values in related.values()),
                       "region_member_match_count": sum(
                           "region_member" in values for values in related.values()),
+                      "passive_association_match_count": sum(
+                          "shares_power_input_net_with_passive" in values
+                          for values in related.values()),
                       "semantic_match_count": len(semantic),
                       "omitted_count": max(0, len(scores) - len(output)),
                       "total_entities": len(self._docs)})
@@ -1881,6 +1991,9 @@ class ProjectIndex:
                     "native_net_id_association_not_physical_continuity",
                 "logical_net_semantics":
                     "schematic_membership_is_native_netlist_assignment_not_geometric_connectivity",
+                "power_passive_association_semantics":
+                    "same_sheet_exact_net_source_declared_power_in_and_passive_pins_only; "
+                    "association_not_decoupling_inference",
                 "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
                 "geometry_relationship_semantics":
                     "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",

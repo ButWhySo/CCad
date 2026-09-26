@@ -69,7 +69,190 @@ def project_snapshot():
     }
 
 
+def power_passive_snapshot():
+    snapshot = project_snapshot()
+    project = snapshot["typed_state"]["project"]
+    project["board"]["footprints"].append({
+        "id": "board-anchor-r", "reference": "U1", "value": "Regulator",
+        "footprint_name": "Package_SO:QFN-16", "layer_id": "F.Cu",
+        "position": {"x_nm": 10_000_000, "y_nm": 10_000_000},
+    })
+    project["components"] = [
+        {"id": "sch-reg", "part": "Regulator:Example", "reference": "U1",
+         "value": "Regulator", "pins": [
+             {"name": "VIN", "number": "1", "electrical_type": "power_in"}]},
+        {"id": "sch-cap", "part": "Device:C", "reference": "C1",
+         "value": "100nF", "pins": [
+             {"name": "1", "number": "1", "electrical_type": "passive"}]},
+    ]
+    project["nets"] = [{"id": "VIN", "members": [
+        {"component_id": "sch-reg", "pin_name": "VIN"},
+        {"component_id": "sch-cap", "pin_name": "1"},
+    ]}]
+    return snapshot
+
+
 class ProjectIndexTests(unittest.TestCase):
+    def test_source_typed_power_and_passive_association_is_retrievable_and_packaged(self):
+        snapshot = power_passive_snapshot()
+        result = ProjectIndex().retrieve(snapshot, "U1 input power", limit=24)
+        capacitor = next(item for item in result["entities"]
+                         if item["kind"] == "schematic_symbol" and
+                         item.get("reference") == "C1")
+        self.assertIn("shares_power_input_net_with_passive",
+                      capacitor.get("relationships", []))
+        self.assertEqual(result["stats"]["passive_association_match_count"], 1)
+        self.assertEqual(
+            result["power_passive_association_semantics"],
+            "same_sheet_exact_net_source_declared_power_in_and_passive_pins_only; "
+            "association_not_decoupling_inference")
+
+        package = build_context_package(
+            json.dumps(snapshot), [], [], char_limit=8192,
+            project_retrieval=result)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        packaged_capacitor = next(item for item in
+                                  envelope["project_retrieval"]["entities"]
+                                  if item.get("kind") == "schematic_symbol" and
+                                  item.get("reference") == "C1")
+        self.assertIn("shares_power_input_net_with_passive",
+                      packaged_capacitor["relationships"])
+        self.assertIn("not_decoupling_inference",
+                      envelope["project_retrieval"][
+                          "power_passive_association_semantics"])
+        self.assertEqual(package["metadata"]["project_retrieval_stats"][
+            "passive_association_match_count"], 1)
+
+        query = "Which passive components share a power input net with U1?"
+        goal = "Inspect U1's source-model power-net relationships"
+        signals = extract_context_signals(
+            query, goal=goal, project_id="project-1", active_editor="schematic")
+        with tempfile.TemporaryDirectory() as memory_dir:
+            manager = MemoryManager(
+                MemoryStore(Path(memory_dir) / "memory.json"),
+                thread_id="thread-power-passive", project_id="project-1")
+            manager.configure({})
+            context = ContextBroker().prepare(
+                manager, thread_id="thread-power-passive",
+                project_revision="fixture-revision", project_id="project-1",
+                user_request=signals["query"], goal=goal,
+                active_editor="schematic", signals=signals,
+                project_snapshot=snapshot)
+        context_capacitor = next(
+            item for item in context["project_retrieval"]["entities"]
+            if item.get("kind") == "schematic_symbol" and
+            item.get("reference") == "C1")
+        self.assertIn("shares_power_input_net_with_passive",
+                      context_capacitor["relationships"])
+
+    def test_power_passive_relationship_is_retrievable_from_either_component(self):
+        snapshot = power_passive_snapshot()
+        for query, expected in (("U1", "C1"), ("C1", "U1")):
+            result = ProjectIndex().retrieve(snapshot, query, limit=24)
+            related = next(item for item in result["entities"]
+                           if item["kind"] == "schematic_symbol" and
+                           item.get("reference") == expected)
+            self.assertIn("shares_power_input_net_with_passive",
+                          related.get("relationships", []))
+        board_origin = ProjectIndex().retrieve(snapshot, "board-anchor-r", limit=24)
+        board_related = next(item for item in board_origin["entities"]
+                             if item.get("kind") == "schematic_symbol" and
+                             item.get("reference") == "C1")
+        self.assertIn("shares_power_input_net_with_passive",
+                      board_related["relationships"])
+
+    def test_power_passive_association_requires_same_sheet_and_exact_membership(self):
+        snapshot = power_passive_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["nets"][0]["members"].clear()
+        index = ProjectIndex()
+        unconnected = index.retrieve(snapshot, "U1", limit=24)
+        self.assertFalse(any("shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in unconnected["entities"]))
+
+        snapshot = power_passive_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["schematics"] = [{
+            "id": "sheet-2", "name": "Other sheet",
+            "components": [{"id": "sch-cap-2", "reference": "C2", "pins": [
+                {"name": "1", "number": "1", "electrical_type": "passive"}]}],
+            "nets": [{"id": "VIN", "members": [
+                {"component_id": "sch-cap-2", "pin_name": "1"}]}],
+        }]
+        cross_sheet = ProjectIndex().retrieve(snapshot, "U1", limit=24)
+        self.assertFalse(any(item.get("reference") == "C2" and
+                             "shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in cross_sheet["entities"]))
+
+    def test_power_passive_association_rejects_wrong_pin_types_and_net_names(self):
+        snapshot = power_passive_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["components"][0]["pins"][0]["electrical_type"] = "power_out"
+        result = ProjectIndex().retrieve(snapshot, "U1", limit=24)
+        self.assertFalse(any("shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in result["entities"]))
+
+        snapshot = power_passive_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["nets"] = [{"id": "VIN", "members": [
+            {"component_id": "sch-reg", "pin_name": "VIN"}]}]
+        project["components"][1]["pins"][0]["name"] = "VIN"
+        same_label = ProjectIndex().retrieve(snapshot, "U1", limit=24)
+        self.assertFalse(any("shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in same_label["entities"]))
+
+    def test_power_passive_association_suppresses_ambiguous_membership_and_reference(self):
+        snapshot = power_passive_snapshot()
+        project = snapshot["typed_state"]["project"]
+        project["nets"].append({"id": "VIN2", "members": [
+            {"component_id": "sch-reg", "pin_name": "VIN"}]})
+        ambiguous_pin = ProjectIndex().retrieve(snapshot, "U1", limit=24)
+        self.assertFalse(any("shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in ambiguous_pin["entities"]))
+
+        snapshot = power_passive_snapshot()
+        project = snapshot["typed_state"]["project"]
+        duplicate = dict(project["components"][0])
+        duplicate["id"] = "sch-reg-duplicate"
+        project["components"].append(duplicate)
+        ambiguous_reference = ProjectIndex().retrieve(snapshot, "U1", limit=24)
+        self.assertFalse(any("shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in ambiguous_reference["entities"]))
+
+        snapshot = power_passive_snapshot()
+        duplicate_footprint = dict(snapshot["typed_state"]["project"]["board"][
+            "footprints"][-1])
+        duplicate_footprint["id"] = "board-anchor-r-duplicate"
+        snapshot["typed_state"]["project"]["board"]["footprints"].append(
+            duplicate_footprint)
+        ambiguous_board_reference = ProjectIndex().retrieve(
+            snapshot, "board-anchor-r", limit=24)
+        self.assertFalse(any(item.get("kind") == "schematic_symbol" and
+                             item.get("reference") == "C1" and
+                             "shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in ambiguous_board_reference["entities"]))
+
+    def test_power_passive_relationship_updates_when_native_net_membership_changes(self):
+        snapshot = power_passive_snapshot()
+        index = ProjectIndex()
+        initial = index.retrieve(snapshot, "U1", limit=24)
+        self.assertTrue(any("shares_power_input_net_with_passive" in
+                            item.get("relationships", [])
+                            for item in initial["entities"]))
+        snapshot["typed_state"]["project"]["nets"][0]["members"].pop()
+        updated = index.retrieve(snapshot, "U1", limit=24)
+        self.assertEqual(updated["stats"]["index_state"], "incremental")
+        self.assertFalse(any("shares_power_input_net_with_passive" in
+                             item.get("relationships", [])
+                             for item in updated["entities"]))
+
     def test_semantic_project_retrieval_is_opt_in_and_fuses_nonlexical_matches(self):
         class Backend:
             identity = "contract:project-embeddings-v1"
