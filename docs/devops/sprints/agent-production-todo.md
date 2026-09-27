@@ -11,7 +11,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Reconcile the historical CTest red cluster against live Actions: run #540's `agent_project_index` failure was an ignored local demo-fixture dependency; subsequent hosted runs #541–#567 pass.
 - [x] Make the Python CI log tee preserve every command's exit status; add a regression contract and simulate both failing and successful shell paths.
 - [x] Move artifact uploads to Node 24-compatible `actions/upload-artifact@v6`; pin Ubuntu/Windows runner labels to avoid implicit OS image migration.
-- [ ] Pass full local verification and all hosted jobs on the exact pushed commit SHA before checking the pipeline-hardening items complete.
+- [x] Pass full local verification and all hosted jobs on exact pushed `main` SHA `eb36b3e8f617589d484c2ff2032e1e65df304c71`; run #568 passed `agent-python`, `core-linux`, `gui-linux`, `core-windows`, and `evidence-manifest`.
 - [ ] Keep CD explicitly unconfigured until the desktop release artifact, destination, trigger, signing, permissions, and rollback policy are defined; do not publish to an invented target.
 
 ### Sprint 1026 — Pyright workspace and CI integration (Tier 1)
