@@ -2,6 +2,23 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1033 — Agent startup and provider IPC reliability
+
+- [x] Defer real LangGraph `ToolNode` import and graph compilation until an agent run or checkpoint operation needs the graph.
+- [x] Fail selected remote-provider initialization as `missing_api_key` before importing its SDK when no credential exists.
+- [x] Setting an inactive provider credential must preserve other provider credentials and must not initialize the active provider adapter.
+- [x] Restore the existing model clients after a transient provider test; do not reconstruct the selected adapter as a side effect.
+- [x] Keep provider protocol cold-start test within its existing 20-second bound and retain secret-redaction assertions.
+- [x] Update the Agent UI runtime source contract to verify the actual safe `AgentChatBrowser` Markdown implementation.
+- [x] Run the exact hosted Python script set, Pyright (0 diagnostics), Python compilation, and checkpoint accept/deny/cancel restart tests.
+- [x] Pass Qt/MinGW Release and full CTest (120/120); inspect preflight/build/CTest logs and manifest `artifacts/evidence/sprint-1033-agent-lazy-graph.json` (SHA-256 `2213A62EFD3A8B994A6D55234748D263CF0DFF42F13F92F1DDF6F818FB6B7FF5`).
+- [ ] Push this branch and verify all hosted CI jobs on the exact pushed SHA before merging to `main`.
+- [ ] Repair unrelated stale assertions in the broader offline Agent gate: method-catalog parity, pending-approval metadata, provider catalog/Cerebras source contracts, tool-approval metadata/policy, tool-result ordering, and removed `ui_add_polygon` schema test.
+
+Initial hosted failure: run `36308918584` (#572) failed in `agent-python`; core Linux, core Windows, GUI Linux, and evidence-manifest lanes passed. Local reproduction identified slow, irrelevant adapter initialization in provider-control IPC. Local implementation gates now pass; hosted verification on this branch remains required.
+
+The broader offline Agent gate still fails only on the explicitly open stale-contract group above. These are not in the exact hosted Python command list; do not report that broader gate as green until repaired.
+
 ### Sprint 1032 — Agent Markdown current-runtime recheck
 
 - [x] Rebuild/run the current Qt Release app through the official mapped history scenario; verify persisted assistant Markdown is formatted, user text stays literal, and no provider request is needed.

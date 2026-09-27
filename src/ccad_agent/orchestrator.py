@@ -992,7 +992,7 @@ def bind_native_tools(model: Any):
 
 def install_native_tool_catalog(catalog: object) -> dict:
     """Install the GUI's current native catalog and rebuild live graph bindings."""
-    global native_tool_catalog, agent_tools, router_llm, librarian_llm, execute_tool_node, executor
+    global native_tool_catalog, agent_tools, router_llm, librarian_llm, executor
     native_tool_catalog = validate_native_tool_catalog(catalog)
     agent_tools = build_native_tools(native_tool_catalog)
     agent_tools.extend(build_engineering_tools())
@@ -1001,7 +1001,6 @@ def install_native_tool_catalog(catalog: object) -> dict:
     if llm is not None:
         router_llm = bind_native_tools(llm)
         librarian_llm = router_llm
-    execute_tool_node = ToolNode(agent_tools)
     if executor is not None:
         executor = create_orchestrator()
     return {"accepted": True, "method_count": len(native_tool_catalog),
@@ -1022,11 +1021,24 @@ def set_session_provider_env(name, value):
     os.environ[name] = value
     session_provider_env.add(name)
 
-def clear_session_provider_env():
-    """Remove credential aliases created by the in-process settings flow."""
-    for name in tuple(session_provider_env):
+def clear_session_provider_env(provider_id=None):
+    """Remove one provider's session credentials, or all for a transient test."""
+    provider_names = {
+        "openai": {"OPENAI_API_KEY"},
+        "anthropic": {"ANTHROPIC_API_KEY"},
+        "google_gemini": {"GEMINI_API_KEY", "GOOGLE_API_KEY"},
+        "openai_compatible": {"CCAD_OPENAI_COMPATIBLE_API_KEY"},
+        "openrouter": {"OPENROUTER_API_KEY"},
+        "cerebras": {"CEREBRAS_API_KEY"},
+        "local_model": {"CCAD_LOCAL_MODEL_API_KEY"},
+        "local_model_server": {"CCAD_LOCAL_MODEL_API_KEY"},
+        "ollama": {"CCAD_OLLAMA_API_KEY"},
+    }
+    selected_names = (provider_names.get(provider_id, set())
+                      if provider_id is not None else set(session_provider_env))
+    for name in tuple(session_provider_env.intersection(selected_names)):
         os.environ.pop(name, None)
-    session_provider_env.clear()
+        session_provider_env.discard(name)
 
 def init_checkpointer():
     """Enable durable LangGraph checkpoints only when an explicit DB path is set."""
@@ -1327,6 +1339,28 @@ def init_provider():
     
     provider, model_name = active_provider_model()
 
+    required_key_env = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "openai_compatible": "CCAD_OPENAI_COMPATIBLE_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+        "cerebras": "CEREBRAS_API_KEY",
+    }.get(provider)
+    key_configured = (bool(os.environ.get(required_key_env)) if required_key_env else True)
+    if provider == "google_gemini":
+        key_configured = bool(os.environ.get("GEMINI_API_KEY") or
+                              os.environ.get("GOOGLE_API_KEY"))
+    if not key_configured:
+        failure_category = emit_provider_failure(
+            provider, ValueError("provider API key is required"))
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": (f"Agent provider '{provider}' is not configured. "
+                     "Add its API key in Agent Settings; local CCad tools remain available."),
+            "kind": "provider_error", "category": failure_category,
+            "secret_value_visible": False,
+        }})
+        return False
+
     if provider == "anthropic":
         try:
             from langchain_anthropic import ChatAnthropic
@@ -1510,7 +1544,7 @@ def invoke_agent_run(state):
         callbacks = active_callbacks()
         if callbacks:
             run_config["callbacks"] = callbacks
-        return executor.invoke(state, config=run_config)
+        return ensure_orchestrator().invoke(state, config=run_config)
 
 
 
@@ -1682,9 +1716,6 @@ def librarian_node(state: AgentState):
         hooks.trigger_hook("post node", emit, "librarian")
     return {"messages": [response], "provider_request_accounting": accounting}
 
-from langgraph.prebuilt import ToolNode
-execute_tool_node = ToolNode(agent_tools)
-
 def should_route(state: AgentState):
     next_node = state.get("next_node", "FINISH")
     if next_node == "router":
@@ -1708,11 +1739,16 @@ def should_continue(state: AgentState):
     return END
 
 def create_orchestrator():
+    # ToolNode's package import pulls in optional model integrations in some
+    # installed environments. Delay it until an actual graph run is needed;
+    # credential/configuration IPC should not initialize the model tool stack.
+    from langgraph.prebuilt import ToolNode
+
     graph_builder = StateGraph(AgentState)
     graph_builder.add_node("supervisor", supervisor_node)
     graph_builder.add_node("router", router_node)
     graph_builder.add_node("librarian", librarian_node)
-    graph_builder.add_node("execute_tool", execute_tool_node)
+    graph_builder.add_node("execute_tool", ToolNode(agent_tools))
 
     graph_builder.set_entry_point("supervisor")
     graph_builder.add_conditional_edges("supervisor", should_route, {"router": "router", "librarian": "librarian", END: END})
@@ -1726,6 +1762,14 @@ def create_orchestrator():
         return graph_builder.compile(checkpointer=checkpoint_saver)
     return graph_builder.compile()
 
+
+def ensure_orchestrator():
+    """Build the real LangGraph executor on first execution or checkpoint access."""
+    global executor
+    if executor is None:
+        executor = create_orchestrator()
+    return executor
+
 def resume_checkpointed_run(thread_id: str, resume_value):
     """Resume an interrupted graph using same durable thread identity."""
     if checkpoint_saver is None:
@@ -1736,7 +1780,7 @@ def resume_checkpointed_run(thread_id: str, resume_value):
     callbacks = active_callbacks()
     if callbacks:
         config["callbacks"] = callbacks
-    return executor.invoke(Command(resume=resume_value), config=config)
+    return ensure_orchestrator().invoke(Command(resume=resume_value), config=config)
 
 session_messages = []
 conversation_store = ConversationStore()
@@ -1782,8 +1826,9 @@ def bound_session_history(messages):
 def migrate_checkpoint_conversation(thread_id: str, executor: Any,
                                    session_id: str, project_id: str) -> int:
     """Import an old checkpoint transcript once when the canonical store is empty."""
-    if conversation_store.load_messages(thread_id) or checkpoint_saver is None or executor is None:
+    if conversation_store.load_messages(thread_id) or checkpoint_saver is None:
         return 0
+    executor = executor or ensure_orchestrator()
     snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
     values = getattr(snapshot, "values", {})
     messages = values.get("messages", []) if isinstance(values, dict) else []
@@ -1904,7 +1949,8 @@ def compact_session_history(messages, thread_id):
 
     checkpoint_message_ids = None
     checkpoint_id = None
-    graph_executor = executor
+    graph_executor = (ensure_orchestrator()
+                      if checkpoint_saver is not None else executor)
     if checkpoint_saver is not None and graph_executor is not None:
         try:
             checkpoint_state = graph_executor.get_state({"configurable": {
@@ -2166,6 +2212,7 @@ def get_dynamic_marketplace_catalog():
     }
 
 def handle_provider_and_state_request(req, executor):
+    global llm, router_llm, librarian_llm, broker_wait_enabled
     method = req.get("method")
     if method in ("agent.test_provider", "agent.test_provider_connection"):
         # Transient tests: never update config_manager or write config.
@@ -2185,6 +2232,7 @@ def handle_provider_and_state_request(req, executor):
                           "CCAD_OLLAMA_API_KEY")
         saved_test_env = {name: os.environ.get(name) for name in test_env_names}
         saved_session_provider_env = set(session_provider_env)
+        saved_provider_runtime = (llm, router_llm, librarian_llm, broker_wait_enabled)
         os.environ["CCAD_PROVIDER"] = provider_id
         if model:
             os.environ["CCAD_MODEL"] = model
@@ -2241,7 +2289,9 @@ def handle_provider_and_state_request(req, executor):
             else:
                 os.environ[name] = value
         session_provider_env.update(saved_session_provider_env)
-        init_provider()
+        # A transient test must restore existing clients, not reconstruct the
+        # selected provider or import its SDK as an unrelated side effect.
+        llm, router_llm, librarian_llm, broker_wait_enabled = saved_provider_runtime
         if connection_requested:
             emit({"jsonrpc": "2.0", "method": "provider_connection_result", "params": {
                 "provider": provider_id,
@@ -2285,22 +2335,31 @@ def handle_provider_and_state_request(req, executor):
             "local_model_server": "CCAD_LOCAL_MODEL_API_KEY",
         }
         env_name = env_names.get(provider_id, "OPENAI_API_KEY")
-        clear_session_provider_env()
+        clear_session_provider_env(provider_id)
         if secret:
             set_session_provider_env(env_name, secret)
             if provider_id == "google_gemini":
                 set_session_provider_env("GOOGLE_API_KEY", secret)
-        provider_ready = init_provider()
+        active_provider, _ = active_provider_model()
+        normalized_provider = ("local_model" if provider_id == "local_model_server"
+                               else provider_id)
+        provider_is_active = normalized_provider == active_provider
+        provider_ready = init_provider() if provider_is_active else False
         # Complete the selected key operation with a dedicated event.
         # Ambient provider_state traffic is not reliable Settings UI
         # feedback because set_config may have emitted an earlier state.
         emit({"jsonrpc": "2.0", "method": "provider_secret_result", "params": {
             "provider": provider_id,
+            "active": provider_is_active,
             "configured": bool(secret),
             "execution_enabled": provider_ready,
             "network_access": "not_probed",
-            "error": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
-            "error_category": "" if provider_ready else ("provider_unavailable" if secret else "missing_api_key"),
+            "error": ("" if provider_ready else
+                      "provider_not_active" if secret and not provider_is_active else
+                      "provider_unavailable" if secret else "missing_api_key"),
+            "error_category": ("" if provider_ready else
+                               "provider_not_active" if secret and not provider_is_active else
+                               "provider_unavailable" if secret else "missing_api_key"),
             "secret_value_visible": False,
         }})
     elif method == "agent.set_thread_id":
@@ -2409,16 +2468,17 @@ def handle_provider_and_state_request(req, executor):
                 "resumable": False, "reason": "checkpoint_disabled",
             }})
         else:
-            snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+            graph_executor = ensure_orchestrator()
+            snapshot = graph_executor.get_state({"configurable": {"thread_id": thread_id}})
             resume_value = req.get("params", {}).get("resume")
             if resume_value is not None and snapshot.next:
                 resumed = resume_checkpointed_run(thread_id, resume_value)
                 emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
                     "thread_id": thread_id,
-                    "next": list(executor.get_state({"configurable": {"thread_id": thread_id}}).next),
+                    "next": list(graph_executor.get_state({"configurable": {"thread_id": thread_id}}).next),
                     "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
                 }})
-                snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+                snapshot = graph_executor.get_state({"configurable": {"thread_id": thread_id}})
             emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
                 "resumable": bool(snapshot.values), "thread_id": thread_id,
                 "next": list(snapshot.next), "checkpoint_id": snapshot.config.get("configurable", {}).get("checkpoint_id", ""),
@@ -3342,7 +3402,6 @@ if __name__ == "__main__":
     # metadata-only exporter configured by Agent Settings.
 
     init_checkpointer()
-    executor = create_orchestrator()
     emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Python Multi-Agent Orchestrator ready."}})
     
     inbound_queue = queue.Queue()

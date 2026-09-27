@@ -1,5 +1,26 @@
 # Implemented Features
 
+## Sprint 1033 — Agent cold-start and provider credential isolation
+
+Provider and configuration protocol messages no longer compile the LangGraph
+tool executor during child-process startup. The production graph and its real
+`ToolNode` are created on first execution or checkpoint access, and catalog
+changes rebuild it only after it exists. Missing credentials produce the
+normal redacted `missing_api_key` result before the corresponding remote SDK is
+imported. Setting a key for an inactive provider no longer initializes the
+selected adapter or removes session credentials for other providers. A
+non-network provider test restores existing provider model/binding objects
+instead of recreating them. The UI runtime contract now targets the actual
+`AgentChatBrowser` implementation and checks its Markdown safety features.
+
+The exact hosted Python test command list passes locally; Pyright reports zero
+diagnostics, Python compilation passes, and checkpoint accept/deny/cancel
+restart paths pass. Qt/MinGW Release build and all 120 CTests pass. Evidence
+manifest `artifacts/evidence/sprint-1033-agent-lazy-graph.json` (SHA-256
+`2213A62EFD3A8B994A6D55234748D263CF0DFF42F13F92F1DDF6F818FB6B7FF5`). The
+initial hosted failure is recorded as run #572; confirmation on a pushed repair
+SHA remains pending.
+
 ## Sprint 1031 — Safe Markdown in Agent chat
 
 Assistant replies render as GitHub-flavored Markdown in the native Qt chat

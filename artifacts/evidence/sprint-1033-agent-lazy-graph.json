@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1033-agent-lazy-graph",
+    "feature":  "Provider-control cold start and lazy LangGraph initialization",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-27T10:15:16.1746318Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.39 log=artifacts/evidence/sprint-1033-agent-lazy-graph/preflight.log",
+                      "finished_utc":  "2026-09-27T10:15:17.6887460Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=523.59 log=artifacts/evidence/sprint-1033-agent-lazy-graph/build.log",
+                      "finished_utc":  "2026-09-27T10:24:01.3817166Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=238.34 log=artifacts/evidence/sprint-1033-agent-lazy-graph/ctest.log",
+                      "finished_utc":  "2026-09-27T10:27:59.7427395Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1033-agent-lazy-graph/build.log",
+                                         "sha256":  "EF4DB47C4D1454CF7BA33A6008CC7CFB234FA81FA30BCFAB5E1FC2E63C5ACF75"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1033-agent-lazy-graph/ctest.log",
+                                         "sha256":  "B492A30B0368FD24CD0EAF7753BDC7991AE71898726A157FED3248320E5E2DCE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1033-agent-lazy-graph/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T10:28:00.0963232Z"
+}
