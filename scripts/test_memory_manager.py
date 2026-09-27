@@ -15,9 +15,13 @@ with tempfile.TemporaryDirectory() as temp:
     manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
                             task_id="run-1", thread_id="thread-1",
                             project_id="project-1")
+    assert manager.TIERS == ("working_memory", "ltm", "episodic")
     manager.configure({"stm": True, "ltm": True, "episodic": False})
     manager.add("Keep the return path short", tier="ltm", title="routing")
     manager.add("Current placement target is U3", tier="stm", title="goal")
+    assert manager.state("stm")["runtime_entries"] == 1
+    assert manager.state("working_memory")["runtime_entries"] == 1
+    assert manager.list(tier="working_memory")[0]["tier"] == "working_memory"
     assert [item["title"] for item in manager.retrieve("return path")] == ["routing"]
     ranked_memories, memory_sources = manager.retrieve_with_metadata("return path")
     assert ranked_memories[0]["title"] == "routing"
@@ -266,4 +270,4 @@ with tempfile.TemporaryDirectory() as temp:
     manager.enable("stm")
     assert manager.list(tier="stm") == []
 
-print("PASS STM/LTM/project/episodic memory lifecycle; no network")
+print("PASS Working Memory/LTM/project/episodic memory lifecycle; no network")

@@ -60,7 +60,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert config["grid"] == "2.5 mm"
     assert config["sandbox_mode"] is True
     assert config["approval_policy"] is False
-    assert config["memory"] == {"stm": True, "ltm": False, "episodic": True}
+    assert config["memory"] == {"working_memory": True, "ltm": False, "episodic": True}
     assert config["personalisation"]["chat_mode"] == "Detached"
     assert config["personalisation"]["show_context_usage"] is True
     assert config["personalisation"]["agent_personality"] == "CCad Engineering Assistant"
@@ -77,4 +77,16 @@ with tempfile.TemporaryDirectory() as temp:
                     if item.get("method") == "config_state")
     assert repaired["project_name"] == "sprint-demo"
     assert repaired["project_path"] == ""
+
+    # Legacy STM meant task scratch, not the durable conversation transcript.
+    contaminated["memory"] = {"stm": False, "ltm": True, "episodic": False}
+    config_path.write_text(json.dumps(contaminated), encoding="utf-8")
+    migrated_responses = run_agent(appdata, [{"method": "agent.get_config", "params": {}}])
+    migrated = next(item["params"] for item in migrated_responses
+                    if item.get("method") == "config_state")
+    assert migrated["memory"] == {
+        "working_memory": False, "ltm": True, "episodic": False}
+    persisted = json.loads(config_path.read_text(encoding="utf-8"))
+    assert "stm" not in persisted["memory"]
+    assert persisted["memory"]["working_memory"] is False
 print("PASS agent config persists across orchestrator restart")

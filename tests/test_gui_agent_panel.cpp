@@ -205,6 +205,8 @@ private slots:
     // 2. Capabilities
     auto* stm_cb = dialog.findChild<QCheckBox*>("control:stmCb");
     QVERIFY(stm_cb != nullptr);
+    QVERIFY(stm_cb->text().startsWith(QString("Working memory")));
+    QVERIFY(!stm_cb->text().contains(QString("Short-term")));
     QTest::mouseClick(stm_cb, Qt::LeftButton);
 
     auto* ltm_cb = dialog.findChild<QCheckBox*>("control:ltmCb");

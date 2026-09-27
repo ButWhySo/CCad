@@ -38,9 +38,14 @@ class AgentConfigManager:
                 # to the persisted project fields.  Repair only those exact
                 # known test values; never rewrite a real project name/path.
                 repaired = self._repair_known_test_contamination(config)
-                if repaired:
-                    with open(self.config_path, "w", encoding="utf-8") as f:
-                        json.dump(config, f, indent=4)
+                migrated = self._migrate_memory_preferences(config)
+                if repaired or migrated:
+                    try:
+                        self._write_checked(config)
+                    except ConfigPersistenceError:
+                        # Keep the validated in-memory preferences usable even
+                        # when an unwritable profile prevents disk migration.
+                        pass
                 return config
             except Exception as e:
                 print(f"Error loading config: {e}")
@@ -59,6 +64,27 @@ class AgentConfigManager:
             repaired = True
         return repaired
 
+    @staticmethod
+    def _migrate_memory_preferences(config: Dict[str, Any]) -> bool:
+        memory = config.get("memory")
+        if not isinstance(memory, dict) or "stm" not in memory:
+            return False
+        migrated = dict(memory)
+        migrated.setdefault("working_memory", migrated["stm"])
+        migrated.pop("stm", None)
+        config["memory"] = migrated
+        return True
+
+    @staticmethod
+    def _normalize_memory_preferences(value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        normalized = dict(value)
+        if "stm" in normalized:
+            normalized.setdefault("working_memory", normalized["stm"])
+            normalized.pop("stm", None)
+        return normalized
+
     def _default_config(self) -> Dict[str, Any]:
         return {
             "theme": "Dark",
@@ -74,7 +100,7 @@ class AgentConfigManager:
             "project_path": "",
             "trust_level": "Trusted",
             "memory": {
-                "stm": True,
+                "working_memory": True,
                 "ltm": False,
                 "episodic": False,
                 "semantic": {
@@ -114,6 +140,8 @@ class AgentConfigManager:
     def update(self, key: str, value: Any):
         if key == "mcp_servers":
             value = self._normalize_mcp_servers(value)
+        elif key == "memory":
+            value = self._normalize_memory_preferences(value)
         self.config[key] = value
         self.save()
 
@@ -121,6 +149,8 @@ class AgentConfigManager:
         """Persist a critical preference atomically before changing live config."""
         if key == "mcp_servers":
             value = self._normalize_mcp_servers(value)
+        elif key == "memory":
+            value = self._normalize_memory_preferences(value)
         candidate = dict(self.config)
         candidate[key] = value
         self._write_checked(candidate)

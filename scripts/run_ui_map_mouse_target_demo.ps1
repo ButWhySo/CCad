@@ -443,6 +443,26 @@ if ($Name.StartsWith("sprint976-conversation")) {
   $env:CCAD_AGENT_THREAD_ID = "sprint976-conversation-ui-thread"
   $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
 }
+if ($Name.StartsWith("sprint1027-working-memory")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1027-working-memory-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_MEMORY_PATH = Join-Path $isolatedMemoryProfile "agent_memory.json"
+  $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint1027-working-memory-thread"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $legacyConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($legacyConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 if ($Name.StartsWith("sprint980-project-retrieval") -or
     $Name.StartsWith("sprint981-schematic-project-graph") -or
     $Name.StartsWith("sprint982-multilayer-project-context") -or
@@ -569,7 +589,9 @@ try {
     if (Test-Path -LiteralPath $configFile) {
       $config = Get-Content -Raw -LiteralPath $configFile | ConvertFrom-Json
       $safePreferences = [ordered]@{
-        stm = [bool]$config.memory.stm
+        working_memory = [bool]$(if ($null -ne $config.memory.working_memory) {
+          $config.memory.working_memory
+        } else { $config.memory.stm })
         ltm = [bool]$config.memory.ltm
         episodic = [bool]$config.memory.episodic
       }
@@ -776,6 +798,36 @@ if ($Name.StartsWith("sprint974-memory")) {
     $confirmation = Join-Path $ScreenshotDir "$Name-memory-ui-delete-confirmation.png"
     if (-not (Test-Path -LiteralPath $confirmation)) {
       throw "Mapped memory deletion did not capture its confirmation dialog."
+    }
+  }
+  if ($Name.StartsWith("sprint1027-working-memory")) {
+    $configPath = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+    if (-not (Test-Path -LiteralPath $configPath)) {
+      throw "Working Memory GUI validation did not persist its isolated preference file."
+    }
+    $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
+    if ($null -eq $config.memory.working_memory -or
+        -not [bool]$config.memory.working_memory -or
+        $config.memory.PSObject.Properties.Name -contains "stm") {
+      throw "Working Memory preference was not persisted under the canonical key."
+    }
+    $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
+    foreach ($field in @("working_memory_label_visible",
+                         "working_memory_enabled_in_runtime",
+                         "conversation_tier_selected")) {
+      if (-not ($reportData.entries | Where-Object { $_.$field -eq $true })) {
+        throw "GUI did not verify '$field'. See $reportPath."
+      }
+    }
+    $clicks = @($reportData.entries | Where-Object {
+      $_.interaction -eq "ui.click" -and $_.result.result.performed -eq $true
+    })
+    if ($clicks.Count -lt 8) {
+      throw "Working Memory GUI proof had only $($clicks.Count) successful mapped clicks."
+    }
+    if (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet) {
+      throw "Provider request occurred during isolated Working Memory GUI validation."
     }
   }
   if ($Name.StartsWith("sprint976-conversation") -or $Name.StartsWith("sprint977-context") -or

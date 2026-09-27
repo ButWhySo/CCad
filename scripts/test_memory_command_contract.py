@@ -30,7 +30,7 @@ with tempfile.TemporaryDirectory() as temp:
     except RuntimeError as error:
         assert "active task" in str(error)
     else:
-        raise AssertionError("non-retained STM memory write succeeded")
+        raise AssertionError("non-retained Working Memory write succeeded")
     added, result = execute_memory_command(
         manager, 'add tier:ltm scope:conversation kind:preference importance:5 title:"route rule" Keep ground return short')
     assert added == "memory_added" and result["tier"] == "ltm"

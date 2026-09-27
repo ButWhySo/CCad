@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   agent-python:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -32,9 +32,10 @@ jobs:
       - name: Install agent dependencies
         run: python -m pip install -r src/ccad_agent/requirements.txt
       - name: Test provider and checkpoint protocols
+        shell: bash
         run: |
-          {
-          set -e
+          set -euo pipefail
+          exec > >(tee agent-python-tests.log) 2>&1
           npm exec --yes --package=pyright@1.1.414 -- pyright
           python -m py_compile src/ccad_agent/*.py scripts/test_*.py
           python scripts/test_provider_unconfigured.py
@@ -74,16 +75,15 @@ jobs:
           CCAD_RESTART_PHASE=denial python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-deny.db
           CCAD_RESTART_PHASE=first python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-cancel.db
           CCAD_RESTART_PHASE=cancel python scripts/test_agent_checkpoint_restart.py /tmp/ccad-checkpoint-cancel.db
-          } 2>&1 | tee agent-python-tests.log
       - name: Upload Python test diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: agent-python-diagnostics
           path: agent-python-tests.log
 
   core-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
@@ -168,7 +168,7 @@ jobs:
           fi
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ctest-core-linux
           path: |
@@ -179,7 +179,7 @@ jobs:
             ctest-cli-linux-verbose.log
 
   gui-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
@@ -268,7 +268,7 @@ jobs:
           fi
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ctest-gui-linux
           path: |
@@ -279,7 +279,7 @@ jobs:
             ctest-cli-gui-linux-verbose.log
 
   core-windows:
-    runs-on: windows-latest
+    runs-on: windows-2025
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
@@ -327,7 +327,7 @@ jobs:
           exit $detailExit
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ctest-core-windows
           path: |
@@ -335,7 +335,7 @@ jobs:
             ctest-failed-details.log
       - name: Upload Windows configure/build diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: configure-build-core-windows
           path: |
@@ -343,7 +343,7 @@ jobs:
             build.log
 
   evidence-manifest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5

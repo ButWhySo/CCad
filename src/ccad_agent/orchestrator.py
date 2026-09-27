@@ -2302,7 +2302,7 @@ def handle_provider_and_state_request(req, executor):
                 task_id=task_id or uuid.uuid4().hex,
                 thread_id=thread_id,
                 project_id=project_id,
-                retain_stm_task=bool(task_id))
+                retain_working_memory_task=bool(task_id))
             memory_manager.configure(config_manager.get("memory", {}))
             memory_compaction_plans.retain_current(
                 memory_manager.compaction_identities(), memory_manager.enabled)
@@ -2381,6 +2381,7 @@ def handle_provider_and_state_request(req, executor):
     elif method == "agent.memory_state":
         tier = req.get("params", {}).get("tier")
         try:
+            tier = memory_manager.normalize_tier(str(tier)) if tier else None
             if not tier:
                 memory_manager.refresh_semantic_readiness()
             state = memory_manager.state(str(tier)) if tier else memory_manager.state()
@@ -2393,7 +2394,11 @@ def handle_provider_and_state_request(req, executor):
                 "tiers": {}, "error": str(error), "secret_value_visible": False}})
     elif method == "agent.memory_set_enabled":
         params = req.get("params", {})
-        tier = str(params.get("tier", ""))
+        requested_tier = str(params.get("tier", ""))
+        try:
+            tier = memory_manager.normalize_tier(requested_tier)
+        except ValueError:
+            tier = requested_tier
         requested = params.get("enabled")
         if tier not in memory_manager.TIERS or not isinstance(requested, bool):
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
@@ -2437,8 +2442,8 @@ def handle_provider_and_state_request(req, executor):
     elif method == "agent.memory_reset":
         params = req.get("params", {})
         tier = params.get("tier")
-        tier = str(tier) if tier else None
         try:
+            tier = memory_manager.normalize_tier(str(tier)) if tier else None
             if not bool(params.get("confirmed", False)):
                 raise ValueError("explicit confirmation required to reset persistent memories")
             removed = memory_manager.reset(tier)
@@ -2458,16 +2463,17 @@ def handle_provider_and_state_request(req, executor):
         params = req.get("params", {})
         try:
             if method == "agent.memory_list":
-                tier = str(params.get("tier", "")).strip() or None
+                requested_tier = str(params.get("tier", "")).strip()
+                tier = memory_manager.normalize_tier(requested_tier) if requested_tier else None
                 scope = str(params.get("scope", "")).strip() or None
                 result = {"entries": memory_manager.list(tier=tier, scope=scope),
                           "tier": tier or "all", "secret_value_visible": False}
                 event = "memory_state"
             elif method == "agent.memory_add":
-                tier = str(params.get("tier", "ltm"))
-                if tier == "stm" and not memory_task_scopes.is_active(
-                        memory_manager.identities["stm"]):
-                    raise ValueError("start a task with `/task start` before adding STM")
+                tier = memory_manager.normalize_tier(str(params.get("tier", "ltm")))
+                if tier == "working_memory" and not memory_task_scopes.is_active(
+                        memory_manager.identities["working_memory"]):
+                    raise ValueError("start a task with `/task start` before adding Working Memory")
                 entry = memory_manager.add(
                     str(params.get("content", "")),
                     tier=tier,
@@ -2559,7 +2565,7 @@ def handle_human_message(req):
     memory_manager.set_identities(task_id=requested_task,
                                   thread_id=requested_thread,
                                   project_id=project_id,
-                                  retain_stm_task=task_is_active)
+                                  retain_working_memory_task=task_is_active)
     if previous_thread != requested_thread:
         invalidate_thread_context(previous_thread)
     memory_manager.configure(config_manager.get("memory", {}))
@@ -2611,7 +2617,7 @@ def handle_human_message(req):
         memory_query, goal=text, project_id=project_id,
         active_editor=active_editor, selected_objects=selected_objects,
         workflow=active_workflow,
-        task=memory_manager.identities["stm"], recent_turns=turn_records,
+        task=memory_manager.identities["working_memory"], recent_turns=turn_records,
         recent_context=recent_context, active_layer=active_layer,
         active_net=active_net)
     with telemetry_runtime.session(requested_thread), telemetry_runtime.observation(
@@ -2635,7 +2641,7 @@ def handle_human_message(req):
                 user_request=memory_query, goal=text,
                 project_id=project_id, active_editor=active_editor,
                 selected_objects=selected_objects, workflow=active_workflow,
-                task=memory_manager.identities["stm"], recent_turns=turn_records,
+                task=memory_manager.identities["working_memory"], recent_turns=turn_records,
                 historical_turn_count=len(turn_records), signals=signals,
                 recent_context=recent_context, thread_recap=recap,
                 project_snapshot=project_context,
@@ -2889,7 +2895,7 @@ def handle_human_message(req):
             }})
             return
         if cmd_base == "/commands":
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped Working Memory)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
             return
         elif cmd_base == "/task":
             task_action = cmd_args.strip().casefold()
@@ -2897,11 +2903,11 @@ def handle_human_message(req):
                 task_id, cleared = memory_task_scopes.start(requested_session)
                 memory_manager.set_identities(
                     task_id=task_id, thread_id=requested_thread,
-                    project_id=project_id, retain_stm_task=True)
+                    project_id=project_id, retain_working_memory_task=True)
                 invalidate_thread_context(requested_thread)
                 memory_manager.configure(config_manager.get("memory", {}))
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
-                    "text": "Task-scoped memory started. STM is isolated to this task; "
+                    "text": "Task-scoped Working Memory started; it is isolated to this task; "
                     f"a previous task scope, if any, was cleared ({cleared} records).",
                     "kind": "memory_task_state", "active": True,
                     "runtime_entries": 0, "secret_value_visible": False}})
@@ -2909,21 +2915,21 @@ def handle_human_message(req):
                 ended_id, cleared = memory_task_scopes.end(requested_session)
                 memory_manager.set_identities(
                     task_id=uuid.uuid4().hex, thread_id=requested_thread,
-                    project_id=project_id, retain_stm_task=False)
+                    project_id=project_id, retain_working_memory_task=False)
                 invalidate_thread_context(requested_thread)
                 memory_manager.configure(config_manager.get("memory", {}))
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
-                    "text": ("Task-scoped memory ended and its process-only "
-                             f"STM was cleared ({cleared} records)." if ended_id
+                    "text": ("Task-scoped Working Memory ended and its process-only "
+                             f"scratchpad was cleared ({cleared} records)." if ended_id
                              else "No active task-scoped memory."),
                     "kind": "memory_task_state", "active": False,
                     "runtime_entries": 0, "secret_value_visible": False}})
             elif task_action == "status":
                 task_id = memory_task_scopes.current(requested_session)
-                memory_state = memory_manager.state("stm")
+                memory_state = memory_manager.state("working_memory")
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
-                    "text": ("Task-scoped memory active; "
-                             f"{memory_state['runtime_entries']} STM entries loaded."
+                    "text": ("Task-scoped Working Memory active; "
+                             f"{memory_state['runtime_entries']} entries loaded."
                              if task_id else "No active task-scoped memory."),
                     "kind": "memory_task_state", "active": bool(task_id),
                     "runtime_entries": memory_state["runtime_entries"],
@@ -3057,7 +3063,7 @@ def handle_human_message(req):
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Opening agent settings panel..."}})
             return
         elif cmd_base == "/help":
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped STM)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped Working Memory)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`\n- `/route`\n- `/drc`\n- `/place`\n- `/design`\n- `/explain`\n- `/clear`\n- `/settings`"}})
             return
         else:
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})

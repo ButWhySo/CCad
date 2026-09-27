@@ -2,6 +2,18 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1027 — Working Memory semantics and CI/CTest reliability
+
+- [x] Rename task-scoped, process-only scratch memory in user-facing text and canonical runtime state to Working Memory; keep `stm` as a backward-compatible input alias.
+- [x] Preserve durable ConversationStore transcript independently from task scratch memory and persistent LTM/episodic records.
+- [x] Safely migrate saved `memory.stm` preferences to `memory.working_memory` and verify settings/runtime/context metadata agree.
+- [x] Pass targeted memory/config/orchestration contracts, Pyright, Qt MinGW Release, and full CTest; verify the Settings flow through the app-owned UI map and inspect distinct screenshots/logs. Final local evidence: `artifacts/evidence/sprint-1027-working-memory-semantics-r3.json` (SHA-256 `4B0A68AC1B3B5379C75484422EADDAE3881B9A2796086C0EA802311364E0CE9A`); CTest 120/120, 10 mapped interactions, five inspected screenshots, stderr empty.
+- [x] Reconcile the historical CTest red cluster against live Actions: run #540's `agent_project_index` failure was an ignored local demo-fixture dependency; subsequent hosted runs #541–#567 pass.
+- [x] Make the Python CI log tee preserve every command's exit status; add a regression contract and simulate both failing and successful shell paths.
+- [x] Move artifact uploads to Node 24-compatible `actions/upload-artifact@v6`; pin Ubuntu/Windows runner labels to avoid implicit OS image migration.
+- [ ] Pass full local verification and all hosted jobs on the exact pushed commit SHA before checking the pipeline-hardening items complete.
+- [ ] Keep CD explicitly unconfigured until the desktop release artifact, destination, trigger, signing, permissions, and rollback policy are defined; do not publish to an invented target.
+
 ### Sprint 1026 — Pyright workspace and CI integration (Tier 1)
 
 - [x] Configure Pyright's execution environment for CCad's script-style Agent imports, so root-workspace analysis resolves sibling modules correctly.
@@ -1874,7 +1886,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 
 ## CI / CT / CD reliability
 
-- [ ] Replace `actions/upload-artifact@v4` with a tested Node 24-compatible release and pin the Ubuntu runner baseline before the announced Ubuntu 26 migration; preserve all diagnostic artifacts and rerun every platform lane.
+- [ ] Complete hosted validation of `actions/upload-artifact@v6` and pinned `ubuntu-24.04` / `windows-2025` runners across all CI/CTest lanes.
 - [ ] Fix all Linux `-Werror` failures before claiming a green full gate.
 - [ ] Remove or use dead helper functions such as stale credential helpers rather than leaving unused-function CI failures.
 - [ ] Ensure provider error-classification helpers are defined/imported before every call site.
@@ -1891,6 +1903,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Do not quote an older `91/91` run as proof for a newer branch head.
 - [ ] Record exact tested SHA with every full-gate claim.
 - [ ] Record exact workflow/run ID for CI evidence.
+- [ ] Define a desktop CD contract before adding deployment automation: package/signing format, release channel and destination, trigger/approval policy, least-privilege credentials, and rollback.
 - [ ] Re-run CI after fixing a CI-specific Linux warning/error.
 - [ ] Do not mark a checkbox complete from a local Windows run when its required CI contract is cross-platform.
 - [ ] Add secret scan before final commit/push.

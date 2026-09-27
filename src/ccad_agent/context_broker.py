@@ -173,10 +173,10 @@ class ContextBroker:
             state = states[tier]
             tiers[tier] = {
                 "enabled": bool(state["enabled"]),
-                "available_count": (state["persistent_entries"] if tier != "stm"
+                "available_count": (state["persistent_entries"] if tier != "working_memory"
                                     else state["runtime_entries"]),
                 "loaded_count": int(state["runtime_entries"]),
-                "scope": {"stm": "active_task", "ltm": "current_thread+project",
+                "scope": {"working_memory": "active_task", "ltm": "current_thread+project",
                           "episodic": "local_user"}[tier],
                 "project_count": state.get("project_entries"),
             }
@@ -264,7 +264,7 @@ class ContextBroker:
         parts = []
         source_entries = []
         for entry in entries:
-            if not isinstance(entry, dict) or entry.get("tier") == "stm":
+            if not isinstance(entry, dict) or entry.get("tier") in {"stm", "working_memory"}:
                 continue
             title = _safe_signal(entry.get("title", ""), 80)
             content = _safe_signal(entry.get("content", ""), 240)

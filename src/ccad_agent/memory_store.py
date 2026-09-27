@@ -102,6 +102,8 @@ class MemoryStore:
 
     def add(self, content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
             namespace="project", expires_at="", importance=3):
+        if str(tier).strip().lower() in {"stm", "working_memory"}:
+            raise ValueError("Working Memory is process-only and cannot be persisted")
         entry = self._normalise_entry(content, title=title, scope=scope, tags=tags,
                                       tier=tier, kind=kind, namespace=namespace,
                                       expires_at=expires_at, importance=importance)
@@ -127,8 +129,10 @@ class MemoryStore:
         title = str(title or "").strip()[:200]
         scope = str(scope or "project").strip()[:100]
         tier = str(tier or "ltm").strip().lower()
-        if tier not in {"stm", "ltm", "episodic"}:
-            raise ValueError("memory tier must be stm, ltm, or episodic")
+        if tier == "stm":
+            tier = "working_memory"
+        if tier not in {"working_memory", "ltm", "episodic"}:
+            raise ValueError("memory tier must be working_memory, ltm, or episodic")
         kind = str(kind or "fact").strip().lower()
         if kind not in {"fact", "preference", "correction"}:
             raise ValueError("memory kind must be fact, preference, or correction")

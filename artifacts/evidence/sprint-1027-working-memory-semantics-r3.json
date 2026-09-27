@@ -1,0 +1,103 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1027-working-memory-semantics-r3",
+    "feature":  "Truthfully distinguish process-only Working Memory from durable conversation history and harden CI failure reporting and runner stability",
+    "validation_mode":  "gui",
+    "interaction_plan":  "docs/devops/sprints/validation-plans/sprint-1027-working-memory.json",
+    "target_sequence":  "sprint1027-working-memory-sprint-1027-working-memory-semantics-r3",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-27T00:55:18.6655244Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.99 log=artifacts/evidence/sprint-1027-working-memory-semantics-r3/preflight.log",
+                      "finished_utc":  "2026-09-27T00:55:19.7666985Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=102.27 log=artifacts/evidence/sprint-1027-working-memory-semantics-r3/build.log",
+                      "finished_utc":  "2026-09-27T00:57:02.0507663Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=177.62 log=artifacts/evidence/sprint-1027-working-memory-semantics-r3/ctest.log",
+                      "finished_utc":  "2026-09-27T00:59:59.6693262Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=24.6 log=artifacts/evidence/sprint-1027-working-memory-semantics-r3/ui_harness.log",
+                      "finished_utc":  "2026-09-27T01:00:24.2734643Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=5",
+                      "finished_utc":  "2026-09-27T01:00:24.4519989Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-27T01:00:24.4940066Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/build.log",
+                                         "sha256":  "E1CC1DD76F4C907CEB1DF00A5A1A3021D74BF09CA0E329341563C96C4DE2F9F1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/ctest.log",
+                                         "sha256":  "1542E74CEDDB310A355EA1FA100A3D4C0C422A8E723FC657009829BA41F5F822"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3.stdout.log",
+                                         "sha256":  "8569414E412F736AA89BB4B0127F12A0460C26AE7260F940664AFE23868DB1A8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3-memory-manager-conversation-tier-selected.png",
+                                         "sha256":  "1C0AAFE5F2BF94EDC0CAA81FDB6340D849A3DD90F38C7307CDA45BB2241DB0E7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3-target-sequence.json",
+                                         "sha256":  "0DA4C49B4EAE491915C703FC556DF1EA4B21C4B0DEBFD12B1B4CFC13C9EC64AC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3-working-memory-manager-open.png",
+                                         "sha256":  "1C0E0A2C4A1F403C4E0D8948110899B918ACA71341D49490203FEF9D2B1412CD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3-working-memory-personalisation.png",
+                                         "sha256":  "50120DD298C561B42E893FA05F9FA217F75459B8878EB1669A83746093B18C6D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3-working-memory-settings-closed.png",
+                                         "sha256":  "D0F8483D68CCDA6B9615AE564D3679D297E08C5B93E293D98A4CFF3D29929956"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/sprint1027-working-memory-sprint-1027-working-memory-semantics-r3-working-memory-toggle-applied.png",
+                                         "sha256":  "EC7322B9CE5DA3E9E623EAA70A1FBB5CE7A9CACC726F89C377E5C3D8BA32D882"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1027-working-memory-semantics-r3/ui_harness.log",
+                                         "sha256":  "B3C4D4AF6DF5C5574F5771063F92B7D203DBA2839E70BFFCF0E00B3E4BC35D7C"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T01:00:24.5780006Z"
+}

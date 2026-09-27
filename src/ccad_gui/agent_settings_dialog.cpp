@@ -692,9 +692,9 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 
   auto* mem_group = new QGroupBox("Memory Settings", parent_widget);
   auto* mem_layout = new QVBoxLayout(mem_group);
-  stm_cb_ = new QCheckBox("Short-term memory — current task/session only", mem_group);
+  stm_cb_ = new QCheckBox("Working memory — active task scratchpad", mem_group);
   stm_cb_->setObjectName("control:stmCb");
-  stm_cb_->setToolTip("Temporary working memory. Cleared when this agent process ends.");
+  stm_cb_->setToolTip("Temporary task-specific scratch. Cleared when the task ends; the full conversation is stored separately.");
   ltm_cb_ = new QCheckBox("Conversation memory — this chat thread", mem_group);
   ltm_cb_->setObjectName("control:ltmCb");
   ltm_cb_->setToolTip("Durable records scoped to the current conversation thread.");
@@ -776,7 +776,7 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
     }
   };
   connect(stm_cb_, &QCheckBox::toggled, this,
-          [setMemoryTier](bool enabled) { setMemoryTier("stm", enabled); });
+          [setMemoryTier](bool enabled) { setMemoryTier("working_memory", enabled); });
   connect(ltm_cb_, &QCheckBox::toggled, this,
           [setMemoryTier](bool enabled) { setMemoryTier("ltm", enabled); });
   connect(episodic_cb_, &QCheckBox::toggled, this,
@@ -1180,7 +1180,7 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (project_path_ && config.contains("project_path")) project_path_->setText(config["project_path"].toString());
     if (trust_level_ && config.contains("trust_level")) trust_level_->setCurrentText(config["trust_level"].toString());
     const QJsonObject memory = config.value("memory").toObject();
-    if (stm_cb_ && memory.contains("stm")) { const QSignalBlocker blocker(stm_cb_); stm_cb_->setChecked(memory["stm"].toBool()); }
+    if (stm_cb_ && (memory.contains("working_memory") || memory.contains("stm"))) { const QSignalBlocker blocker(stm_cb_); stm_cb_->setChecked(memory.value(memory.contains("working_memory") ? "working_memory" : "stm").toBool()); }
     if (ltm_cb_ && memory.contains("ltm")) { const QSignalBlocker blocker(ltm_cb_); ltm_cb_->setChecked(memory["ltm"].toBool()); }
     if (episodic_cb_ && memory.contains("episodic")) { const QSignalBlocker blocker(episodic_cb_); episodic_cb_->setChecked(memory["episodic"].toBool()); }
     const QJsonObject semantic = memory.value("semantic").toObject();
@@ -1236,7 +1236,8 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
   QStringList summary;
   const auto applyTier = [&tiers, &summary](const QString& tier,
                                                   QCheckBox* checkbox) {
-    const QJsonObject item = tiers.value(tier).toObject();
+    const QJsonObject item = tiers.value(tier == "working_memory" && !tiers.contains(tier)
+                                             ? "stm" : tier).toObject();
     if (item.isEmpty()) return;
     const bool enabled = item.value("enabled").toBool(false);
     if (checkbox) {
@@ -1245,8 +1246,9 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
     }
     const QString persistent_count = item.value("persistent_count_known").toBool(true)
         ? QString::number(item.value("persistent_entries").toInt()) : QString("?");
+    const QString label = tier == "working_memory" ? "Working memory" : tier.toUpper();
     QString tier_summary = QString("%1 %2 %3/%4")
-                   .arg(tier.toUpper(), enabled ? "on" : "off")
+                   .arg(label, enabled ? "on" : "off")
                    .arg(item.value("runtime_entries").toInt())
                    .arg(persistent_count);
     const QString storage_error = item.value("storage_error").toString();
@@ -1257,7 +1259,7 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
       tier_summary += QString(" !%1 hidden").arg(unsafe);
     summary << tier_summary;
   };
-  applyTier("stm", stm_cb_);
+  applyTier("working_memory", stm_cb_);
   applyTier("ltm", ltm_cb_);
   applyTier("episodic", episodic_cb_);
   const QJsonObject semantic = tiers.value("semantic").toObject();
@@ -1370,7 +1372,7 @@ void AgentSettingsDialog::openMemoryManager() {
   auto* form = new QFormLayout();
   memory_tier_ = new QComboBox(dialog);
   memory_tier_->setObjectName("control:memoryTier");
-  memory_tier_->addItem("Short-term (task)", "stm");
+  memory_tier_->addItem("Working memory (task scratch)", "working_memory");
   memory_tier_->addItem("Conversation (thread)", "ltm");
   memory_tier_->addItem("Episodic (local user)", "episodic");
   memory_kind_ = new QComboBox(dialog);
@@ -1589,7 +1591,7 @@ void AgentSettingsDialog::saveAllSettings() {
   if (trust_level_) config["trust_level"] = trust_level_->currentText();
 
   QJsonObject memory;
-  if (stm_cb_) memory["stm"] = stm_cb_->isChecked();
+  if (stm_cb_) memory["working_memory"] = stm_cb_->isChecked();
   if (ltm_cb_) memory["ltm"] = ltm_cb_->isChecked();
   if (episodic_cb_) memory["episodic"] = episodic_cb_->isChecked();
   QJsonObject semantic;

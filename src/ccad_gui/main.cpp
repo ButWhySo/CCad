@@ -6,6 +6,7 @@
 #include <QApplication>
 #include <QAbstractButton>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QCursor>
 #include <QElapsedTimer>
 #include <QDir>
@@ -464,6 +465,7 @@ int main(int argc, char** argv) {
           name.startsWith("sprint986-project-spatial-index") ||
           name.startsWith("sprint987-schematic-metadata") ||
           name.startsWith("sprint998-functional-block-net-context") ||
+          name.startsWith("sprint1027-working-memory") ||
           name.startsWith("sprint975-memory-ui") ||
           name.startsWith("sprint974-memory")) {
         const auto interact = [window, &entries, &output_dir, &name,
@@ -483,7 +485,10 @@ int main(int argc, char** argv) {
           QApplication::processEvents();
           const QStringList memory_checkpoints = {
               "memory-ui-settings-open", "memory-ui-manager-open",
-              "memory-ui-settings-closed"};
+              "memory-ui-settings-closed", "working-memory-personalisation",
+              "working-memory-toggle-applied", "working-memory-manager-open",
+              "memory-manager-conversation-tier-selected",
+              "working-memory-settings-closed"};
           QString screenshot_path;
           if ((!name.startsWith("sprint975-memory-ui") &&
                !name.startsWith("sprint976-conversation") &&
@@ -495,7 +500,8 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint984-board-net-retrieval") &&
                !name.startsWith("sprint986-project-spatial-index") &&
                !name.startsWith("sprint987-schematic-metadata") &&
-               !name.startsWith("sprint998-functional-block-net-context")) ||
+               !name.startsWith("sprint998-functional-block-net-context") &&
+               !name.startsWith("sprint1027-working-memory")) ||
               memory_checkpoints.contains(action_name)) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
@@ -1024,6 +1030,55 @@ int main(int argc, char** argv) {
                            .arg(transcript_retained ? "true" : "false");
             ok = transcript_retained && capture("restored-final") && ok;
           }
+        } else if (name.startsWith("sprint1027-working-memory")) {
+          ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                        "tab:pcb", "working-memory-pcb-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                        "tab:schematic", "working-memory-schematic-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                        "tab:agent", "working-memory-agent-tab") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                        "action:settingsBtn", "working-memory-settings-open") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
+                        "control:categoryList", "working-memory-personalisation") && ok;
+          auto* working_memory_checkbox = window->findChild<QCheckBox*>("control:stmCb");
+          const bool truthful_label = working_memory_checkbox &&
+              working_memory_checkbox->text().startsWith("Working memory") &&
+              !working_memory_checkbox->text().contains("Short-term");
+          entries << QString("{\"working_memory_label_visible\":%1}")
+                         .arg(truthful_label ? "true" : "false");
+          ok = truthful_label && ok;
+          if (working_memory_checkbox && !working_memory_checkbox->isChecked()) {
+            ok = interact("ui.click", "{\"id\":\"control:stmCb\"}",
+                          "control:stmCb", "working-memory-toggle-applied") && ok;
+          }
+          auto* memory_status = window->findChild<QLabel*>("label:memoryState");
+          for (int attempt = 0; attempt < 40; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (memory_status && memory_status->text().contains("Working memory on")) break;
+          }
+          const bool runtime_enabled = working_memory_checkbox &&
+              working_memory_checkbox->isChecked() && memory_status &&
+              memory_status->text().contains("Working memory on");
+          entries << QString("{\"working_memory_enabled_in_runtime\":%1}")
+                         .arg(runtime_enabled ? "true" : "false");
+          ok = runtime_enabled && ok;
+          ok = interact("ui.click", "{\"id\":\"action:agent_memory_manage\"}",
+                        "action:agent_memory_manage", "working-memory-manager-open") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:memoryTier\",\"value\":\"ltm\"}",
+                        "control:memoryTier", "memory-manager-conversation-tier-selected") && ok;
+          auto* memory_tier = window->findChild<QComboBox*>("control:memoryTier");
+          const bool conversation_tier_selected = memory_tier &&
+              memory_tier->currentData().toString() == "ltm" &&
+              memory_tier->currentText() == "Conversation (thread)";
+          entries << QString("{\"conversation_tier_selected\":%1}")
+                         .arg(conversation_tier_selected ? "true" : "false");
+          ok = conversation_tier_selected && ok;
+          ok = interact("ui.click", "{\"id\":\"action:closeMemoryManager\"}",
+                        "action:closeMemoryManager", "working-memory-manager-closed") && ok;
+          ok = interact("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                        "action:cancelSettingsButton", "working-memory-settings-closed") && ok;
         } else if (name.startsWith("sprint975-memory-ui")) {
           const auto captureMemoryResult = [&]() {
             const QString path = QString::fromStdString(

@@ -101,9 +101,9 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertNotIn("recent_conversation", meta["sources"])
         self.assertFalse(meta["history_in_context_package"])
         self.assertTrue(meta["history_sent_as_provider_messages"])
-        self.assertEqual(meta["memory_tier_counts"], {"stm": 1})
+        self.assertEqual(meta["memory_tier_counts"], {"working_memory": 1})
         self.assertEqual(meta["memory_retrieval"][0]["bm25_score"], 1.25)
-        self.assertTrue(meta["memory_runtime"]["stm"]["enabled"])
+        self.assertTrue(meta["memory_runtime"]["working_memory"]["enabled"])
         self.assertEqual(meta["memory_retrieval"][0]["rank"], 1)
         self.assertEqual(meta["memory_retrieval"][0]["kind_weight"], 1.08)
         self.assertEqual(meta["memory_retrieval"][0]["importance_weight"], 1.1)
@@ -228,7 +228,7 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertEqual(report["context_package_limit_chars"], 1024)
         self.assertEqual(report["project_counts"]["tracks"], 1)
         explanation = CONTEXT.format_large_context_explanation(report, meta)
-        for expected in ("STM is transient and scoped to an explicit `/task start`",
+        for expected in ("Working Memory is transient task scratch scoped to an explicit `/task start`",
                          "stored scope label is descriptive metadata",
                          "Memory capture remains explicit",
                          "unsafe legacy records are excluded",
@@ -316,7 +316,8 @@ class ContextBudgetTests(unittest.TestCase):
             manager.add("USB project uses 5V input", tier="episodic")
             entries, provenance = manager.retrieve_with_metadata("USB power return")
             self.assertEqual(len(entries), 2)
-            self.assertEqual({entry["tier"] for entry in entries}, {"stm", "ltm"})
+            self.assertEqual({entry["tier"] for entry in entries},
+                             {"working_memory", "ltm"})
             self.assertEqual([item["rank"] for item in provenance], [1, 2])
             self.assertTrue(all(item["bm25_score"] > 0 for item in provenance))
             self.assertTrue(all(item["matched_terms"] for item in provenance))

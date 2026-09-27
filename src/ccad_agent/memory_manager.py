@@ -17,8 +17,9 @@ from semantic_retrieval import EmbeddingError, OllamaEmbeddingBackend
 
 
 class MemoryManager:
-    TIERS = ("stm", "ltm", "episodic")
-    MAX_STM_TASKS = 32
+    TIERS = ("working_memory", "ltm", "episodic")
+    LEGACY_TIER_ALIASES = {"stm": "working_memory"}
+    MAX_WORKING_MEMORY_TASKS = 32
     MAX_EMBEDDING_CACHE = 2048
     MAX_SEMANTIC_CANDIDATES = 32
     MIN_SEMANTIC_SIMILARITY = 0.25
@@ -28,14 +29,14 @@ class MemoryManager:
     def __init__(self, store: MemoryStore, *, task_id="ccad-task", thread_id="ccad-local",
                  project_id="", user_id="local-user"):
         self.store = store
-        self.identities = {"stm": str(task_id), "ltm": str(thread_id),
+        self.identities = {"working_memory": str(task_id), "ltm": str(thread_id),
                            "episodic": str(user_id)}
         self.project_id = str(project_id)
         self.enabled = {tier: False for tier in self.TIERS}
         self.runtime: dict[str, list[dict[str, Any]]] = {tier: [] for tier in self.TIERS}
         self.storage_errors: dict[str, str] = {}
-        self._stm_tasks: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
-        self._retain_stm_task = True
+        self._working_memory_tasks: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
+        self._retain_working_memory_task = True
         self._embedding_backend_override = None
         self._embedding_backend = None
         self._embedding_config_identity = ""
@@ -50,8 +51,11 @@ class MemoryManager:
                                  "model_version": "", "cache_entries": 0}
 
     def set_identities(self, *, task_id: str, thread_id: str, project_id: str,
-                       user_id="local-user", retain_stm_task=True):
-        identities = {"stm": str(task_id), "ltm": str(thread_id),
+                       user_id="local-user", retain_working_memory_task=True,
+                       retain_stm_task=None):
+        if retain_stm_task is not None:
+            retain_working_memory_task = retain_stm_task
+        identities = {"working_memory": str(task_id), "ltm": str(thread_id),
                       "episodic": str(user_id)}
         project_changed = str(project_id) != self.project_id
         changed = {tier for tier in self.TIERS
@@ -62,9 +66,9 @@ class MemoryManager:
             self._clear_embedding_cache()
         self.identities = identities
         self.project_id = str(project_id)
-        self._retain_stm_task = bool(retain_stm_task)
-        if not self._retain_stm_task:
-            self.runtime["stm"] = []
+        self._retain_working_memory_task = bool(retain_working_memory_task)
+        if not self._retain_working_memory_task:
+            self.runtime["working_memory"] = []
         for tier in changed:
             if self.enabled[tier]:
                 try:
@@ -85,6 +89,8 @@ class MemoryManager:
 
     def configure(self, flags: dict[str, Any] | None):
         flags = flags if isinstance(flags, dict) else {}
+        if "working_memory" not in flags and "stm" in flags:
+            flags = {**flags, "working_memory": flags["stm"]}
         failures = {}
         for tier in self.TIERS:
             try:
@@ -199,8 +205,8 @@ class MemoryManager:
         self._query_embedding_cache.clear()
 
     def enable(self, tier: str):
-        self._check_tier(tier)
-        if tier != "stm":
+        tier = self._check_tier(tier)
+        if tier != "working_memory":
             for namespace in self._namespaces(tier):
                 self.store.ensure_namespace(tier, namespace)
         loaded = self._load(tier)
@@ -210,23 +216,23 @@ class MemoryManager:
         return self.state(tier)
 
     def disable(self, tier: str):
-        self._check_tier(tier)
+        tier = self._check_tier(tier)
         self.enabled[tier] = False
         self.runtime[tier] = []
         self._clear_embedding_cache()
-        if tier == "stm":
-            self._stm_tasks.clear()
+        if tier == "working_memory":
+            self._working_memory_tasks.clear()
         return self.state(tier)
 
     def _load(self, tier: str):
-        if tier == "stm":
-            if not self._retain_stm_task:
+        if tier == "working_memory":
+            if not self._retain_working_memory_task:
                 return []
             namespace = self.identities[tier]
-            entries = self._stm_tasks.pop(namespace, [])
-            self._stm_tasks[namespace] = entries
-            while len(self._stm_tasks) > self.MAX_STM_TASKS:
-                self._stm_tasks.popitem(last=False)
+            entries = self._working_memory_tasks.pop(namespace, [])
+            self._working_memory_tasks[namespace] = entries
+            while len(self._working_memory_tasks) > self.MAX_WORKING_MEMORY_TASKS:
+                self._working_memory_tasks.popitem(last=False)
             return entries
         now = self._now()
         entries = []
@@ -255,7 +261,7 @@ class MemoryManager:
     def _bounded_runtime(self, tier: str, entries=None, limit=64):
         source = self.runtime[tier] if entries is None else entries
         limit = max(1, min(64, int(limit)))
-        if tier == "stm":
+        if tier == "working_memory":
             return list(source[-limit:])
         by_namespace: dict[str, list[dict[str, Any]]] = {}
         for entry in source:
@@ -275,6 +281,7 @@ class MemoryManager:
             self.project_id.strip().encode("utf-8")).hexdigest()
 
     def namespace_for(self, tier: str, scope: str | None):
+        tier = self._check_tier(tier)
         if scope == "project" and tier != "ltm":
             raise ValueError("project-scoped memory must use the durable LTM tier")
         if tier == "ltm" and scope == "project":
@@ -366,7 +373,7 @@ class MemoryManager:
                                        similarity_fn=self._candidate_similarity)
         selected = diversified
         durable_ids = [item["document"]["entry"]["id"] for item in selected
-                       if item["document"]["tier"] != "stm"]
+                       if item["document"]["tier"] != "working_memory"]
         try:
             recorded_usage = self.store.record_usage(durable_ids,
                                                      used_at=ranked_at.isoformat())
@@ -375,7 +382,7 @@ class MemoryManager:
         for item in selected:
             document = item["document"]
             entry = document["entry"]
-            if document["tier"] == "stm":
+            if document["tier"] == "working_memory":
                 entry["use_count"] = min(1_000_000, max(
                     0, self._safe_use_count(entry.get("use_count", 0))) + 1)
                 entry["last_used_at"] = ranked_at.isoformat()
@@ -565,17 +572,17 @@ class MemoryManager:
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
             kind=None,
             expires_at="", importance=None):
-        self._check_tier(tier)
+        tier = self._check_tier(tier)
         if not self.enabled[tier]:
             raise RuntimeError(f"memory tier disabled: {tier}")
         if (importance is not None and
                 (isinstance(importance, bool) or not isinstance(importance, int)
                  or not 1 <= importance <= 5)):
             raise ValueError("memory importance must be an integer from 1 to 5")
-        if tier == "stm" and not self._retain_stm_task:
-            raise RuntimeError("STM requires an active task; use /task start")
+        if tier == "working_memory" and not self._retain_working_memory_task:
+            raise RuntimeError("Working Memory requires an active task; use /task start")
         normalized = " ".join(str(content).casefold().split())
-        scope = str(scope or {"stm": "task", "ltm": "conversation",
+        scope = str(scope or {"working_memory": "task", "ltm": "conversation",
                               "episodic": "user"}[tier])
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
@@ -598,7 +605,7 @@ class MemoryManager:
                                      tier=tier, kind=kind or "fact", namespace=namespace,
                                      expires_at=expires_at, importance=importance)
         entry["project_id"] = self.project_id
-        if tier != "stm":
+        if tier != "working_memory":
             entry = self.store.add(content, title=title, scope=scope, tags=tags,
                                    kind=kind or "fact",
                                    tier=tier, namespace=namespace,
@@ -608,11 +615,11 @@ class MemoryManager:
         self.runtime[tier].append(entry)
         self._clear_embedding_cache()
         self.runtime[tier] = self._bounded_runtime(tier)
-        if tier == "stm":
-            self._stm_tasks[self.identities[tier]] = self.runtime[tier]
-            self._stm_tasks.move_to_end(self.identities[tier])
-            while len(self._stm_tasks) > self.MAX_STM_TASKS:
-                self._stm_tasks.popitem(last=False)
+        if tier == "working_memory":
+            self._working_memory_tasks[self.identities[tier]] = self.runtime[tier]
+            self._working_memory_tasks.move_to_end(self.identities[tier])
+            while len(self._working_memory_tasks) > self.MAX_WORKING_MEMORY_TASKS:
+                self._working_memory_tasks.popitem(last=False)
         return entry
 
     def _near_duplicate(self, content: str, tier: str, *, exclude_id="", scope=None):
@@ -623,7 +630,7 @@ class MemoryManager:
         namespace = self.namespace_for(tier, scope)
         duplicate_scope = "project" if tier == "ltm" and scope == "project" else None
         for entry in self.list(tier=tier, scope=duplicate_scope):
-            if tier != "stm" and entry.get("namespace") != namespace:
+            if tier != "working_memory" and entry.get("namespace") != namespace:
                 continue
             if entry.get("id") == exclude_id:
                 continue
@@ -639,11 +646,12 @@ class MemoryManager:
 
     def list(self, *, tier=None, scope=None):
         self._prune_expired()
+        tier = self._check_tier(tier) if tier is not None else None
         tiers = self.TIERS if tier is None else (tier,)
         entries = []
         for current in tiers:
             self._check_tier(current)
-            durable = ([] if current == "stm" else [
+            durable = ([] if current == "working_memory" else [
                 item for namespace in self._namespaces(current)
                 for item in self.store.list(tier=current, namespace=namespace, scope=scope)
                 if not self.store.contains_secret(item) and
@@ -663,7 +671,7 @@ class MemoryManager:
         for tier in self.TIERS:
             namespace = self.identities[tier]
             candidates = list(self.runtime[tier])
-            if tier != "stm":
+            if tier != "working_memory":
                 try:
                     candidates.extend(item for namespace in self._namespaces(tier)
                                      for item in self.store.list(tier=tier,
@@ -689,20 +697,20 @@ class MemoryManager:
                 self._clear_embedding_cache()
                 self.runtime[tier] = [item for item in self.runtime[tier]
                                       if item.get("id") not in expired_ids]
-                if tier == "stm":
-                    for namespace, entries in list(self._stm_tasks.items()):
-                        self._stm_tasks[namespace] = [
+                if tier == "working_memory":
+                    for namespace, entries in list(self._working_memory_tasks.items()):
+                        self._working_memory_tasks[namespace] = [
                             item for item in entries
                             if item.get("id") not in expired_ids]
                 for entry_id in expired_ids:
-                    if entry_id and tier != "stm":
+                    if entry_id and tier != "working_memory":
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
                expires_at=None, kind=None, importance=None):
         for tier in self.TIERS:
             if not self.enabled[tier]:
-                if tier != "stm" and any(
+                if tier != "working_memory" and any(
                         item.get("id") == entry_id
                         for namespace in self._namespaces(tier)
                         for item in self.store.list(tier=tier, namespace=namespace)):
@@ -729,7 +737,7 @@ class MemoryManager:
                       "importance": entry.get("importance", 3) if importance is None else importance,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
-            if tier == "stm":
+            if tier == "working_memory":
                 replacement = self.store.normalise(content, **fields)
                 replacement.update(id=entry_id, project_id=self.project_id,
                                    created_at=entry.get("created_at", ""))
@@ -744,8 +752,8 @@ class MemoryManager:
                 replacement["project_id"] = self.project_id
             self.runtime[tier] = [replacement if item.get("id") == entry_id else item
                                   for item in self.runtime[tier]]
-            if tier == "stm":
-                self._stm_tasks[self.identities[tier]] = self.runtime[tier]
+            if tier == "working_memory":
+                self._working_memory_tasks[self.identities[tier]] = self.runtime[tier]
             self._clear_embedding_cache()
             return replacement
         return None
@@ -756,12 +764,12 @@ class MemoryManager:
             if matching:
                 self.runtime[tier] = [item for item in self.runtime[tier]
                                       if item.get("id") != entry_id]
-                if tier == "stm":
-                    for namespace, entries in list(self._stm_tasks.items()):
-                        self._stm_tasks[namespace] = [
+                if tier == "working_memory":
+                    for namespace, entries in list(self._working_memory_tasks.items()):
+                        self._working_memory_tasks[namespace] = [
                             item for item in entries
                             if item.get("id") != entry_id]
-                removed = tier == "stm" or self.store.delete(entry_id)
+                removed = tier == "working_memory" or self.store.delete(entry_id)
                 if removed:
                     self._clear_embedding_cache()
                 return removed
@@ -778,9 +786,9 @@ class MemoryManager:
             return False
         self.runtime[tier] = [item for item in self.runtime[tier]
                               if item.get("id") != entry_id]
-        if tier == "stm":
-            for namespace, entries in list(self._stm_tasks.items()):
-                self._stm_tasks[namespace] = [
+        if tier == "working_memory":
+            for namespace, entries in list(self._working_memory_tasks.items()):
+                self._working_memory_tasks[namespace] = [
                     item for item in entries if item.get("id") != entry_id]
             return True
         removed = self.store.delete(entry_id)
@@ -789,15 +797,16 @@ class MemoryManager:
         return removed
 
     def clear_scope(self, scope, *, tier=None):
+        tier = self._check_tier(tier) if tier is not None else None
         tiers = self.TIERS if tier is None else (tier,)
         removed = 0
         for current in tiers:
             self._check_tier(current)
-            if current == "stm":
-                runtime_matches = {item.get("id") for entries in self._stm_tasks.values()
+            if current == "working_memory":
+                runtime_matches = {item.get("id") for entries in self._working_memory_tasks.values()
                                    for item in entries if item.get("scope") == scope}
-                for namespace, entries in list(self._stm_tasks.items()):
-                    self._stm_tasks[namespace] = [
+                for namespace, entries in list(self._working_memory_tasks.items()):
+                    self._working_memory_tasks[namespace] = [
                         item for item in entries if item.get("scope") != scope]
             else:
                 runtime_matches = {item.get("id") for item in self.runtime[current]
@@ -805,12 +814,12 @@ class MemoryManager:
             namespaces = self._namespaces(current)
             if current == "ltm" and scope == "project":
                 namespaces = [self.namespace_for(current, scope)]
-            persistent_matches = set() if current == "stm" else {
+            persistent_matches = set() if current == "working_memory" else {
                 item.get("id") for namespace in namespaces
                 for item in self.store.list(tier=current, namespace=namespace, scope=scope)}
             self.runtime[current] = [item for item in self.runtime[current]
                                      if item.get("scope") != scope]
-            if current != "stm":
+            if current != "working_memory":
                 for namespace in namespaces:
                     removed += self.store.clear_scope(scope, tier=current,
                                                       namespace=namespace)
@@ -820,16 +829,17 @@ class MemoryManager:
         return removed
 
     def reset(self, tier=None, *, persistent=True):
+        tier = self._check_tier(tier) if tier is not None else None
         tiers = self.TIERS if tier is None else (tier,)
         removed = 0
         for current in tiers:
             self._check_tier(current)
             runtime_ids = {item.get("id") for item in self.runtime[current]}
             self.runtime[current] = []
-            if current == "stm":
-                runtime_ids.update(item.get("id") for entries in self._stm_tasks.values()
+            if current == "working_memory":
+                runtime_ids.update(item.get("id") for entries in self._working_memory_tasks.values()
                                    for item in entries)
-                self._stm_tasks.clear()
+                self._working_memory_tasks.clear()
             if persistent:
                 stored_ids = {item.get("id") for item in self.store.list(tier=current)}
                 removed += self.store.clear_tier(current)
@@ -841,11 +851,11 @@ class MemoryManager:
         return removed
 
     def clear_task(self, task_id: str):
-        """Discard one process-only STM task without touching durable tiers."""
+        """Discard one process-only Working Memory task without touching durable tiers."""
         task_id = str(task_id)
-        entries = self._stm_tasks.pop(task_id, [])
-        if self.identities["stm"] == task_id:
-            self.runtime["stm"] = []
+        entries = self._working_memory_tasks.pop(task_id, [])
+        if self.identities["working_memory"] == task_id:
+            self.runtime["working_memory"] = []
         if entries:
             self._clear_embedding_cache()
         return len(entries)
@@ -854,9 +864,9 @@ class MemoryManager:
                          source_entries: list[dict[str, Any]], summary: str,
                          title: str, tags: list[str], expires_at=""):
         """Commit a reviewed durable summary iff every source is unchanged."""
-        self._check_tier(tier)
-        if tier == "stm":
-            raise ValueError("short-term task memory is not durable and cannot be compacted")
+        tier = self._check_tier(tier)
+        if tier == "working_memory":
+            raise ValueError("Working Memory is process-only and cannot be compacted")
         if not self.enabled[tier] or self.storage_errors.get(tier):
             raise RuntimeError(f"memory tier is unavailable: {tier}")
         if str(namespace) != self.namespace_for(tier, scope):
@@ -871,11 +881,11 @@ class MemoryManager:
         return entry
 
     def compact(self, tier: str, limit=64):
-        self._check_tier(tier)
+        tier = self._check_tier(tier)
         self.runtime[tier] = self._bounded_runtime(tier, limit=limit)
-        if tier == "stm":
-            self._stm_tasks[self.identities[tier]] = self.runtime[tier]
-        removed = (0 if tier == "stm" else sum(
+        if tier == "working_memory":
+            self._working_memory_tasks[self.identities[tier]] = self.runtime[tier]
+        removed = (0 if tier == "working_memory" else sum(
             self.store.keep_latest(tier, namespace, max(1, min(64, int(limit))))
             for namespace in self._namespaces(tier)))
         if removed:
@@ -883,6 +893,7 @@ class MemoryManager:
         return {"runtime_entries": len(self.runtime[tier]), "persistent_removed": removed}
 
     def state(self, tier=None):
+        tier = self._check_tier(tier) if tier is not None else None
         tiers = self.TIERS if tier is None else (tier,)
         self._prune_expired()
         result = {}
@@ -890,7 +901,7 @@ class MemoryManager:
             self._check_tier(current)
             raw_persistent = []
             persistent_count_known = True
-            if current != "stm":
+            if current != "working_memory":
                 try:
                     raw_persistent = [entry for namespace in self._namespaces(current)
                                       for entry in self.store.list(
@@ -910,7 +921,7 @@ class MemoryManager:
                                "persistent_count_known": persistent_count_known,
                                "storage_error": self.storage_errors.get(current, ""),
                                "loaded_into_process": self.enabled[current] and
-                               (current != "stm" or self._retain_stm_task) and
+                               (current != "working_memory" or self._retain_working_memory_task) and
                                not self.storage_errors.get(current),
                                "unsafe_persistent_entries_omitted": (
                                    len(raw_persistent) - (persistent or 0)
@@ -928,9 +939,15 @@ class MemoryManager:
         return result if tier is None else result[tier]
 
     @classmethod
-    def _check_tier(cls, tier):
+    def normalize_tier(cls, tier):
+        tier = cls.LEGACY_TIER_ALIASES.get(str(tier), str(tier))
         if tier not in cls.TIERS:
             raise ValueError("unknown memory tier")
+        return tier
+
+    @classmethod
+    def _check_tier(cls, tier):
+        return cls.normalize_tier(tier)
 
 
 class MemoryTaskScopes:

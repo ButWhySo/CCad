@@ -141,8 +141,10 @@ def _memory_manifest(value: dict | None) -> dict:
     source = value if isinstance(value, dict) else {}
     source_tiers = source.get("tiers", {})
     tiers = {}
-    for tier in ("stm", "ltm", "episodic"):
-        item = source_tiers.get(tier, {}) if isinstance(source_tiers, dict) else {}
+    for tier in ("working_memory", "ltm", "episodic"):
+        source_tier = ("stm" if tier == "working_memory" and
+                       isinstance(source_tiers, dict) and tier not in source_tiers else tier)
+        item = source_tiers.get(source_tier, {}) if isinstance(source_tiers, dict) else {}
         if not isinstance(item, dict):
             continue
         tiers[tier] = {
@@ -349,6 +351,15 @@ def _project_counts(project: Any) -> dict[str, int]:
     return counts
 
 
+def _memory_runtime_tier_state(memory_runtime: dict | None, tier: str) -> dict:
+    """Read canonical runtime metadata while accepting legacy STM callers."""
+    states = memory_runtime if isinstance(memory_runtime, dict) else {}
+    state = states.get(tier)
+    if not isinstance(state, dict) and tier == "working_memory":
+        state = states.get("stm")
+    return state if isinstance(state, dict) else {}
+
+
 def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           history: Iterable[Any], *, char_limit: int,
                           memory_retrieval: Iterable[dict] = (),
@@ -548,7 +559,9 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     memory_tier_counts: dict[str, int] = {}
     memory_tier_chars: dict[str, int] = {}
     for entry in included_memories:
-        tier = entry["tier"] if entry["tier"] in ("stm", "ltm", "episodic") else "other"
+        tier = entry["tier"] if entry["tier"] in (
+            "working_memory", "ltm", "episodic") else (
+                "working_memory" if entry["tier"] == "stm" else "other")
         memory_tier_counts[tier] = memory_tier_counts.get(tier, 0) + 1
         memory_tier_chars[tier] = memory_tier_chars.get(tier, 0) + len(json.dumps(
             entry, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
@@ -604,12 +617,17 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "turn_context_signal_digest": envelope["turn_context"]["signal_digest"],
             "memory_runtime": {
                 tier: {
-                    "enabled": bool((memory_runtime or {}).get(tier, {}).get("enabled", False)),
-                    "runtime_entries": int((memory_runtime or {}).get(tier, {}).get("runtime_entries", 0)),
-                    "persistent_entries": int((memory_runtime or {}).get(tier, {}).get("persistent_entries", 0)),
-                    "loaded_into_process": bool((memory_runtime or {}).get(tier, {}).get("loaded_into_process", False)),
-                    "namespace_hash": str((memory_runtime or {}).get(tier, {}).get("namespace_hash", "")),
-                } for tier in ("stm", "ltm", "episodic")},
+                    "enabled": bool(_memory_runtime_tier_state(
+                        memory_runtime, tier).get("enabled", False)),
+                    "runtime_entries": int(_memory_runtime_tier_state(
+                        memory_runtime, tier).get("runtime_entries", 0)),
+                    "persistent_entries": int(_memory_runtime_tier_state(
+                        memory_runtime, tier).get("persistent_entries", 0)),
+                    "loaded_into_process": bool(_memory_runtime_tier_state(
+                        memory_runtime, tier).get("loaded_into_process", False)),
+                    "namespace_hash": str(_memory_runtime_tier_state(
+                        memory_runtime, tier).get("namespace_hash", "")),
+                } for tier in ("working_memory", "ltm", "episodic")},
             "project_snapshot_chars": project_chars,
             "project_summary_chars": (
                 len(json.dumps(envelope["project"], ensure_ascii=False,
@@ -751,6 +769,11 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
     except (TypeError, ValueError):
         threshold = 4096
     tiers = context_metadata.get("memory_tier_counts", {})
+    tier_runtime = context_metadata.get("memory_runtime", {})
+    runtime_entry = lambda tier: tier_runtime.get(
+        tier, tier_runtime.get("stm", {}) if tier == "working_memory" else {})
+    tier_count = lambda tier: tiers.get(
+        tier, tiers.get("stm", 0) if tier == "working_memory" else 0)
     return {
         "schema_version": 1,
         "provider": str(provider),
@@ -776,15 +799,15 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
             context_metadata.get("omitted_memory_entry_count", 0)),
         "memory_tier_chars": {
             tier: max(0, int(context_metadata.get("memory_tier_chars", {}).get(tier, 0)))
-            for tier in ("stm", "ltm", "episodic")},
+            for tier in ("working_memory", "ltm", "episodic")},
         "context_package_limit_chars": int(context_metadata.get("context_limit", 0)),
         "context_package_sources": list(context_metadata.get("sources", [])),
         "project_counts": {
             str(key): max(0, int(value)) for key, value in
             context_metadata.get("project_counts", {}).items()
             if isinstance(value, int)},
-        "memory_tier_counts": {tier: int(tiers.get(tier, 0))
-                                for tier in ("stm", "ltm", "episodic")},
+        "memory_tier_counts": {tier: int(tier_count(tier))
+                                for tier in ("working_memory", "ltm", "episodic")},
         "memory_retrieval": [
             _safe_retrieval_metadata(item, include_bm25=False)
             for item in context_metadata.get("memory_retrieval", [])
@@ -796,12 +819,12 @@ def build_provider_request_report(system_text: str, messages: Iterable[Any],
                            "explicit_deep_retrieval")},
         "memory_runtime": {
             tier: {
-                "enabled": bool(context_metadata.get("memory_runtime", {}).get(tier, {}).get("enabled", False)),
-                "runtime_entries": int(context_metadata.get("memory_runtime", {}).get(tier, {}).get("runtime_entries", 0)),
-                "persistent_entries": int(context_metadata.get("memory_runtime", {}).get(tier, {}).get("persistent_entries", 0)),
-                "loaded_into_process": bool(context_metadata.get("memory_runtime", {}).get(tier, {}).get("loaded_into_process", False)),
-                "namespace_hash": str(context_metadata.get("memory_runtime", {}).get(tier, {}).get("namespace_hash", "")),
-            } for tier in ("stm", "ltm", "episodic")},
+                "enabled": bool(runtime_entry(tier).get("enabled", False)),
+                "runtime_entries": int(runtime_entry(tier).get("runtime_entries", 0)),
+                "persistent_entries": int(runtime_entry(tier).get("persistent_entries", 0)),
+                "loaded_into_process": bool(runtime_entry(tier).get("loaded_into_process", False)),
+                "namespace_hash": str(runtime_entry(tier).get("namespace_hash", "")),
+            } for tier in ("working_memory", "ltm", "episodic")},
         "conversation_in_context_package": False,
         "conversation_sent_as_messages": bool(message_items),
         "model_context_limit": model_context_limit if isinstance(model_context_limit, int) and model_context_limit > 0 else None,
@@ -840,11 +863,12 @@ def format_large_context_explanation(report: dict,
     tiers = report["memory_tier_counts"]
     lifecycle = context_metadata.get("memory_runtime", {})
     tier_text = "\n".join(
-        f"{tier.upper()}: {'enabled' if lifecycle.get(tier, {}).get('enabled') else 'disabled'}; "
+        f"{('WORKING MEMORY' if tier == 'working_memory' else tier.upper())}: "
+        f"{'enabled' if lifecycle.get(tier, {}).get('enabled') else 'disabled'}; "
         f"{lifecycle.get(tier, {}).get('runtime_entries', 0)} cached in this process; "
         f"{tiers.get(tier, 0)} retrieved for this request; "
         f"{lifecycle.get(tier, {}).get('persistent_entries', 0)} durable records"
-        for tier in ("stm", "ltm", "episodic"))
+        for tier in ("working_memory", "ltm", "episodic"))
     retrieval = context_metadata.get("memory_retrieval", [])
     ranking = "; ".join(
         f"#{item['rank']} {item['tier']} overlap={item['query_overlap_terms']}"
@@ -862,11 +886,11 @@ def format_large_context_explanation(report: dict,
         "End-to-end assembly: Qt supplies the active project snapshot with this user "
         "turn and binds its durable session ID, LangGraph thread ID, and project ID before "
         "provider execution. The runtime loads only enabled namespaces (up to 64 records "
-        "per durable namespace and 64 records in each of at most 32 cached STM tasks), "
+        "per durable namespace and 64 records in each of at most 32 cached Working Memory tasks), "
         "removes expired entries during load and retrieval, then ranks matches by query-term overlap, "
         "recency, and tier order, retaining at most 8 by default. Retrieval actually "
         "filters by tier plus namespace; the stored scope label is descriptive metadata, "
-        "not a retrieval filter. STM is transient and scoped to an explicit `/task start` "
+        "not a retrieval filter. Working Memory is transient task scratch scoped to an explicit `/task start` "
         "to `/task end` interval; without one, each turn gets an isolated short-lived scope. "
         "At most 32 task scopes are active per process, each retaining up to 64 records. "
         "LTM is durable and "
