@@ -15,6 +15,8 @@
 #include <QLabel>
 #include <QTableWidget>
 #include <QDialog>
+#include <QMenu>
+#include <QUrl>
 
 #include "ccad_gui/agent_settings_dialog.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
@@ -415,6 +417,87 @@ private slots:
     QVERIFY(chat_input->isEnabled());
     QVERIFY(panel.findChild<QPushButton*>("action:agent_quick_summarize") == nullptr);
     QVERIFY(panel.findChild<QPushButton*>("action:agent_quick_route") == nullptr);
+  }
+
+  void testConversationHistoryAndNewChatActionsAreTargetable() {
+    AgentPanel panel;
+    auto* history = panel.findChild<QPushButton*>("action:agent_history");
+    auto* new_chat = panel.findChild<QPushButton*>("action:agent_new_chat");
+    auto* menu = panel.findChild<QMenu*>("menu:agent_conversation_history");
+    auto* title = panel.findChild<QLabel*>("label:agent_conversation_title");
+    QVERIFY(history != nullptr);
+    QVERIFY(new_chat != nullptr);
+    QVERIFY(menu != nullptr);
+    QVERIFY(title != nullptr);
+    QVERIFY(history->isEnabled());
+    QVERIFY(new_chat->isEnabled());
+  }
+
+  void testNewChatDoesNotSwitchDuringPendingApprovalOrProposal() {
+    AgentPanel panel;
+    panel.show();
+    QCoreApplication::processEvents();
+    auto* new_chat = panel.findChild<QPushButton*>("action:agent_new_chat");
+    auto* title = panel.findChild<QLabel*>("label:agent_conversation_title");
+    QVERIFY(new_chat != nullptr);
+    QVERIFY(title != nullptr);
+    const QString initial_title = title->text();
+    const QString initial_thread = QJsonDocument::fromJson(
+        panel.workspaceStateJson().toUtf8()).object().value("conversation_thread_id").toString();
+
+    panel.setApprovalRequestText("Approve a pending PCB change");
+    panel.requestApproval();
+    QTest::mouseClick(new_chat, Qt::LeftButton);
+    QCOMPARE(panel.pendingApprovalCount(), 1);
+    QCOMPARE(title->text(), initial_title);
+    QCOMPARE(QJsonDocument::fromJson(panel.workspaceStateJson().toUtf8())
+                 .object().value("conversation_thread_id").toString(), initial_thread);
+
+    panel.declineNextApproval();
+    panel.showProposal("Pending PCB proposal", {"Adjust track T1"});
+    QTest::mouseClick(new_chat, Qt::LeftButton);
+    QVERIFY(panel.proposalVisible());
+    QCOMPARE(title->text(), initial_title);
+    QCOMPARE(QJsonDocument::fromJson(panel.workspaceStateJson().toUtf8())
+                 .object().value("conversation_thread_id").toString(), initial_thread);
+  }
+
+  void testChatMarkdownRenderingAndSafety() {
+    AgentChatBrowser browser;
+    browser.appendMessage(
+        "CCad Agent",
+        "# DRC summary\n\n**Four violations** remain.\n\n"
+        "| Rule | Count |\n| --- | ---: |\n| Clearance | 4 |\n\n"
+        "- Inspect U3\n- [Open report](https://example.com/report)\n\n"
+        "```cpp\nconst int violations = 4;\n```\n\n"
+        "<script>alert(1)</script>\n"
+        "![remote](https://example.com/image.png)", true);
+    const QString rendered = browser.document()->toHtml();
+    const QString plain = browser.toPlainText();
+    QVERIFY(rendered.contains("<table"));
+    QVERIFY(rendered.contains("https://example.com/report"));
+    QVERIFY(rendered.contains("const int violations = 4;"));
+    QVERIFY(!rendered.contains("<script"));
+    QVERIFY(!plain.contains("**Four violations**"));
+    QVERIFY(plain.contains("Four violations"));
+    QVERIFY(!browser.document()->resource(
+        QTextDocument::ImageResource,
+        QUrl("https://example.com/image.png")).isValid());
+
+    QStringList opened;
+    browser.setSafeLinkHandler([&opened](const QUrl& url) {
+      opened.append(url.toString());
+    });
+    browser.anchorClicked(QUrl("https://example.com/report"));
+    browser.anchorClicked(QUrl("file:///C:/private/design.kicad_pcb"));
+    browser.anchorClicked(QUrl("javascript:alert(1)"));
+    browser.anchorClicked(QUrl("https://user:pass@example.com/"));
+    QCOMPARE(opened, QStringList{"https://example.com/report"});
+
+    browser.clear();
+    browser.appendMessage("You", "## literal **text** <b>untrusted</b>", false);
+    QCOMPARE(browser.toPlainText(),
+             QString("You\n## literal **text** <b>untrusted</b>"));
   }
 
   void testModelPresetSwitch() {

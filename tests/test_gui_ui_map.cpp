@@ -1,8 +1,10 @@
 #include <QApplication>
+#include <QAction>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLineEdit>
+#include <QMenu>
 #include <QScrollArea>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -13,6 +15,7 @@
 #include "ccad_core/geometry.hpp"
 #include "ccad_core/model.hpp"
 #include "ccad_core/serialize.hpp"
+#include "ccad_gui/agent_panel.hpp"
 #include "ccad_gui/agent_settings_dialog.hpp"
 #include "ccad_gui/review_window.hpp"
 
@@ -108,6 +111,41 @@ int main(int argc, char** argv) {
       !board_map.contains("control:agent_approval_request")) {
     return 6;
   }
+
+  auto* agent_panel = dynamic_cast<AgentPanel*>(window.findChild<QWidget*>("agentPanel"));
+  auto* history_menu = agent_panel == nullptr
+                           ? nullptr
+                           : agent_panel->findChild<QMenu*>("menu:agent_conversation_history");
+  if (history_menu == nullptr) return 20;
+  QAction* history_item = history_menu->addAction("Saved thread");
+  history_item->setObjectName("action:conversation_contract-thread");
+  history_item->setProperty("ccadConversationAction", true);
+  bool history_item_triggered = false;
+  QObject::connect(history_item, &QAction::triggered, &window,
+                   [&history_item_triggered]() { history_item_triggered = true; });
+  history_menu->popup(QPoint(300, 240));
+  QCoreApplication::processEvents();
+  const QJsonObject history_map = QJsonDocument::fromJson(window.uiMapJson().toUtf8())
+                                      .object();
+  QJsonObject history_node;
+  for (const QJsonValue& value : history_map.value("nodes").toArray()) {
+    const QJsonObject node = value.toObject();
+    if (node.value("id").toString() == history_item->objectName()) {
+      history_node = node;
+      break;
+    }
+  }
+  const QJsonObject history_target = QJsonDocument::fromJson(
+      window.uiTargetJsonById(history_item->objectName()).toUtf8()).object();
+  if (history_node.value("role").toString() != "action" ||
+      !history_node.value("visible").toBool() ||
+      !history_target.value("found").toBool()) {
+    return 21;
+  }
+  const QJsonObject history_click = QJsonDocument::fromJson(
+      window.uiClickJson(history_item->objectName(), false, false).toUtf8()).object();
+  if (!history_click.value("performed").toBool() || !history_item_triggered) return 22;
+  history_menu->hide();
 
   const QString methods = window.runAgentUiQueryJson("agent.methods", "{}");
   const QString context = window.runAgentUiQueryJson("project.context", "{}");

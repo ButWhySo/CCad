@@ -68,6 +68,7 @@
 #include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainter>
@@ -4385,6 +4386,34 @@ QString ReviewWindow::buildUiMapJson() const {
     }
   }
 
+  for (QMenu* menu : findChildren<QMenu*>()) {
+    if (menu == nullptr || menu->objectName() != "menu:agent_conversation_history" ||
+        !menu->isVisible()) {
+      continue;
+    }
+    for (QAction* action : menu->actions()) {
+      if (action == nullptr || !action->property("ccadConversationAction").toBool() ||
+          action->objectName().isEmpty()) {
+        continue;
+      }
+      const QRect local_rect = menu->actionGeometry(action);
+      if (!local_rect.isValid()) {
+        continue;
+      }
+      const QRect global_rect(menu->mapToGlobal(local_rect.topLeft()), local_rect.size());
+      nodes << QString("{\"id\":%1,\"role\":\"action\",\"label\":%2,"
+                       "\"visible\":%3,\"enabled\":%4,\"global_rect\":%5,"
+                       "\"target_x\":%6,\"target_y\":%7}")
+                   .arg(jsonString(action->objectName()))
+                   .arg(jsonString(action->text()))
+                   .arg(boolJson(action->isVisible()))
+                   .arg(boolJson(action->isEnabled()))
+                   .arg(rectJson(global_rect))
+                   .arg(global_rect.center().x())
+                   .arg(global_rect.center().y());
+    }
+  }
+
   const auto appendPanelNode = [&nodes, root](const QString& id, const QString& label,
                                               const QWidget* widget,
                                               const QString& dock_area) {
@@ -5683,6 +5712,21 @@ QString ReviewWindow::uiTargetJsonById(const QString& id) const {
     }
   }
 
+  if (id.startsWith("action:conversation_")) {
+    for (QMenu* menu : findChildren<QMenu*>()) {
+      if (menu->objectName() != "menu:agent_conversation_history") continue;
+      for (QAction* action : menu->actions()) {
+        if (action->objectName() != id ||
+            !action->property("ccadConversationAction").toBool()) continue;
+        const QRect local_rect = menu->actionGeometry(action);
+        const QRect global_rect(menu->mapToGlobal(local_rect.topLeft()), local_rect.size());
+        return foundTarget(id, "action", action->text(),
+                           menu->isVisible() && action->isVisible(),
+                           action->isEnabled(), global_rect.center());
+      }
+    }
+  }
+
   if (id == "control:active_pcb_layer" && active_layer_selector_ != nullptr) {
     const QRect global_rect(active_layer_selector_->mapToGlobal(QPoint(0, 0)),
                             active_layer_selector_->size());
@@ -6196,6 +6240,28 @@ QString ReviewWindow::uiClickJson(const QString& id, const bool dry_run, const b
       response.insert("reason", "top_level_dialog_button_clicked");
       markUiMapChanged();
       return jsonObjectLine(response);
+    }
+  }
+
+  if (trimmed_id.startsWith("action:conversation_")) {
+    for (QMenu* menu : findChildren<QMenu*>()) {
+      if (menu->objectName() != "menu:agent_conversation_history" ||
+          !menu->isVisible()) continue;
+      for (QAction* action : menu->actions()) {
+        if (action->objectName() != trimmed_id ||
+            !action->property("ccadConversationAction").toBool()) continue;
+        if (!action->isEnabled() || !action->isVisible()) {
+          response.insert("performed", false);
+          response.insert("reason", "disabled_or_hidden");
+          return jsonObjectLine(response);
+        }
+        action->trigger();
+        QApplication::processEvents();
+        response.insert("performed", true);
+        response.insert("reason", "conversation_history_item_selected");
+        markUiMapChanged({trimmed_id}, {"action"});
+        return jsonObjectLine(response);
+      }
     }
   }
 

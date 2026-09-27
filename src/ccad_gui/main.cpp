@@ -5,6 +5,7 @@
 
 #include <QApplication>
 #include <QAbstractButton>
+#include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QCursor>
@@ -19,6 +20,7 @@
 #include <QListWidget>
 #include <QLabel>
 #include <QMessageBox>
+#include <QMenu>
 #include <QProxyStyle>
 #include <QRegularExpression>
 #include <QScreen>
@@ -1382,6 +1384,11 @@ int main(int argc, char** argv) {
           name.startsWith("sprint1007-gemini-exact-count");
       const bool memory_secret_target_sequence =
           name.startsWith("sprint1023-memory-secret-redaction");
+      const bool markdown_target_sequence =
+          name.startsWith("sprint1031-agent-markdown");
+      const bool conversation_history_target_sequence =
+          name.startsWith("sprint1030-conversation-history") ||
+          markdown_target_sequence;
       const bool memory_target_sequence = name.startsWith("sprint967-memory") ||
                                           name.startsWith("sprint971-memory") ||
                                           name.startsWith("sprint1001-memory-kind") ||
@@ -1389,7 +1396,12 @@ int main(int argc, char** argv) {
       const bool memory_kind_target_sequence = name.startsWith("sprint1001-memory-kind");
       const bool memory_importance_target_sequence = name.startsWith("sprint1003-memory-importance");
       const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
-      const QStringList target_ids = memory_secret_target_sequence
+      const QStringList target_ids = conversation_history_target_sequence
+          ? QStringList{"tab:pcb", "tab:schematic", "tab:agent",
+                        "action:agent_history", "action:agent_new_chat",
+                        "control:agent_chat_input", "action:agent_submit_chat",
+                        "action:agent_history"}
+          : memory_secret_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "action:agent_memory_manage", "control:memoryTier",
                         "control:memoryEntries", "control:memoryTitle",
@@ -1435,7 +1447,9 @@ int main(int argc, char** argv) {
                                       "control:providerCombo", "control:modelCombo",
                                       "control:apiKeyInput", "control:mcpServersTable",
                                       "action:addMcpServerBtn", "action:removeMcpServerBtn"};
-      const QStringList trigger_before_capture_ids = memory_target_sequence ||
+      const QStringList trigger_before_capture_ids = conversation_history_target_sequence
+          ? QStringList{}
+          : memory_target_sequence ||
           semantic_memory_target_sequence || provider_target_sequence ||
           gemini_count_target_sequence || memory_secret_target_sequence
           ? QStringList{"action:settingsBtn"}
@@ -1466,6 +1480,12 @@ int main(int argc, char** argv) {
                                                     "action:cancelSettingsButton",
                                                     "action:primaryButton",
                                                     "action:testProviderBtn"};
+      QStringList scoped_click_before_capture_ids = click_before_capture_ids;
+      if (conversation_history_target_sequence) {
+        scoped_click_before_capture_ids << "tab:pcb" << "tab:schematic" << "tab:agent"
+                                        << "action:agent_history" << "action:agent_new_chat"
+                                        << "control:agent_chat_input" << "action:agent_submit_chat";
+      }
       bool memory_target_actions_ok = true;
       bool gemini_checkbox_changed = false;
       QJsonObject initial_memory_toggle_state;
@@ -1478,18 +1498,20 @@ int main(int argc, char** argv) {
         return nullptr;
       };
       const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
+                            markdown_target_sequence,
                             memory_target_sequence,
                             memory_kind_target_sequence,
                             memory_importance_target_sequence,
                             memory_secret_target_sequence,
                             semantic_memory_target_sequence,
+                            conversation_history_target_sequence,
                             provider_target_sequence,
                             gemini_count_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
                             &gemini_checkbox_changed,
                             &visibleMemoryCheckbox,
                             &trigger_before_capture_ids,
-                            &click_before_capture_ids,
+                            &scoped_click_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
         int target_index = 0;
@@ -1551,7 +1573,7 @@ int main(int argc, char** argv) {
               break;
             }
           }
-          if (click_before_capture_ids.contains(id) &&
+          if (scoped_click_before_capture_ids.contains(id) &&
               !(gemini_count_target_sequence &&
                 id == "control:geminiExactInputCounting" &&
                 gemini_checkbox_changed)) {
@@ -1723,6 +1745,119 @@ int main(int argc, char** argv) {
             }
             }
           }
+          if (conversation_history_target_sequence && id == "action:agent_history" &&
+              target_index == 7) {
+            QJsonParseError state_error;
+            const QJsonDocument state_doc = QJsonDocument::fromJson(
+                window->agentWorkspaceStateJson().toUtf8(), &state_error);
+            const QString active_thread = state_error.error == QJsonParseError::NoError &&
+                    state_doc.isObject()
+                ? state_doc.object().value("conversation_thread_id").toString()
+                : QString();
+            QString dynamic_action;
+            if (markdown_target_sequence) {
+              dynamic_action = "action:conversation_sprint1031-markdown-fixture";
+            }
+            QString history_menu_screenshot;
+            for (int attempt = 0; attempt < 20; ++attempt) {
+              QApplication::processEvents();
+              for (QWidget* widget : QApplication::allWidgets()) {
+                auto* menu = qobject_cast<QMenu*>(widget);
+                if (!menu || menu->objectName() != "menu:agent_conversation_history") continue;
+                for (QAction* action : menu->actions()) {
+                  if (action->objectName() == (markdown_target_sequence
+                          ? dynamic_action : "action:conversation_" + active_thread)) {
+                    dynamic_action = action->objectName();
+                    const auto menu_path = output_dir /
+                        (name + "-" + pass_name + "-history-populated.png").toStdString();
+                    menu->grab().save(QString::fromStdString(menu_path.string()));
+                    history_menu_screenshot = QString::fromStdString(menu_path.string());
+                    break;
+                  }
+                }
+              }
+              if (dynamic_action.isEmpty()) QThread::msleep(100);
+            }
+            QString dynamic_map_node;
+            if (!dynamic_action.isEmpty()) {
+              const QJsonDocument live_map = QJsonDocument::fromJson(
+                  window->uiMapJson().toUtf8());
+              for (const QJsonValue& node_value :
+                   live_map.object().value("nodes").toArray()) {
+                const QJsonObject node = node_value.toObject();
+                if (node.value("id").toString() == dynamic_action) {
+                  dynamic_map_node = QString::fromUtf8(
+                      QJsonDocument(node).toJson(QJsonDocument::Compact));
+                  break;
+                }
+              }
+            }
+            const QString dynamic_target = dynamic_map_node.isEmpty()
+                ? QString("{\"schema_version\":1,\"found\":false}")
+                : window->uiTargetJsonById(dynamic_action);
+            const bool target_mapped = !dynamic_map_node.isEmpty() &&
+                dynamic_map_node.contains("\"role\":\"action\"") &&
+                dynamic_target.contains("\"found\":true");
+            const QString selection_result = !target_mapped
+                ? QString("{\"ok\":false,\"error\":\"conversation_action_not_found\"}")
+                : window->runAgentUiQueryJson("ui.click", QString("{\"id\":%1}")
+                    .arg(jsonStringLocal(dynamic_action)));
+            const QJsonDocument selection_doc = QJsonDocument::fromJson(
+                selection_result.toUtf8());
+            const bool selected = target_mapped && selection_doc.isObject() &&
+                selection_doc.object().value("ok").toBool() &&
+                selection_doc.object().value("result").toObject()
+                    .value("performed").toBool();
+            const QString restored_thread = dynamic_action.startsWith(
+                    QStringLiteral("action:conversation_"))
+                ? dynamic_action.mid(QStringLiteral("action:conversation_").size())
+                : active_thread;
+            if (selected) {
+              QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
+              QApplication::processEvents();
+            }
+            bool transcript_restored = false;
+            for (int attempt = 0; selected && attempt < 20 && !transcript_restored; ++attempt) {
+              QApplication::processEvents();
+              const QTextBrowser* transcript = window->findChild<QTextBrowser*>(
+                  "control:agent_chat_stream");
+              const QLabel* title = window->findChild<QLabel*>(
+                  "label:agent_conversation_title");
+              if (markdown_target_sequence) {
+                const QString html = transcript ? transcript->document()->toHtml() : QString();
+                transcript_restored = transcript && title &&
+                    transcript->toPlainText().contains("Routing review") &&
+                    title->text().contains("Show the persisted Markdown") &&
+                    html.contains("<table") && html.contains("const bool ready = true;");
+              } else {
+                transcript_restored = transcript && title &&
+                    transcript->toPlainText().contains(
+                        "Conversation history resume validation.") &&
+                    title->text().contains("Conversation history resume validation.");
+              }
+              if (!transcript_restored) QThread::msleep(100);
+            }
+            QString restored_screenshot;
+            if (transcript_restored) {
+              const auto restored_path = output_dir /
+                  (name + "-" + pass_name + "-history-resumed.png").toStdString();
+              restored_screenshot = QString::fromStdString(restored_path.string());
+              window->grab().save(restored_screenshot);
+            }
+            entries << QString("{\"id\":%1,\"interaction\":\"ui.click\",\"result\":%2,"
+                               "\"mapped_node\":%3,\"target\":%4,"
+                               "\"history_menu_screenshot\":%5,\"restored_screenshot\":%6,"
+                               "\"conversation_thread_id\":%7,\"transcript_restored\":%8}")
+                .arg(jsonStringLocal(dynamic_action.isEmpty() ? "history_item" : dynamic_action),
+                     selection_result.trimmed(),
+                     dynamic_map_node.isEmpty() ? QString("null") : dynamic_map_node,
+                     dynamic_target.trimmed(),
+                     jsonStringLocal(history_menu_screenshot),
+                     jsonStringLocal(restored_screenshot),
+                     jsonStringLocal(restored_thread),
+                     transcript_restored ? "true" : "false");
+            memory_target_actions_ok = memory_target_actions_ok && selected && transcript_restored;
+          }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
           if (gemini_count_target_sequence &&
@@ -1742,6 +1877,8 @@ int main(int argc, char** argv) {
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
           QString screenshot_path;
           if (found && x.has_value() && y.has_value() &&
+              (!conversation_history_target_sequence ||
+               id == "action:agent_new_chat" || id == "action:agent_submit_chat") &&
               (!memory_secret_target_sequence ||
                id == "action:agent_memory_manage") &&
               (!semantic_memory_target_sequence || id == "action:settingsBtn" ||
@@ -1768,7 +1905,8 @@ int main(int argc, char** argv) {
                 break;
               }
             }
-            if ((semantic_memory_target_sequence || memory_kind_target_sequence ||
+            if ((conversation_history_target_sequence || semantic_memory_target_sequence ||
+                 memory_kind_target_sequence ||
                  memory_secret_target_sequence ||
                  gemini_count_target_sequence) &&
                 id == "action:settingsBtn") {
@@ -1787,7 +1925,8 @@ int main(int argc, char** argv) {
                              local_target.y() + 16);
             painter.end();
             screenshot.save(screenshot_path);
-          } else if ((click_before_capture_ids.contains(id) &&
+          } else if (!conversation_history_target_sequence &&
+                     ((scoped_click_before_capture_ids.contains(id) &&
                       (!memory_secret_target_sequence ||
                        id == "action:closeMemoryManager" ||
                        id == "action:cancelSettingsButton") &&
@@ -1799,7 +1938,7 @@ int main(int argc, char** argv) {
                          id == "action:primaryButton" ||
                          id == "control:semanticMemoryEndpoint" ||
                          id == "control:semanticMemoryModel"))) ||
-                     (semantic_memory_target_sequence && id == "label:semanticMemoryState")) {
+                     (semantic_memory_target_sequence && id == "label:semanticMemoryState"))) {
             QWidget* active = QApplication::activeWindow();
             if (active && active->isVisible()) {
               const std::filesystem::path path = output_dir /
@@ -1809,10 +1948,13 @@ int main(int argc, char** argv) {
             }
           }
           if ((id == "control:memoryContent" || id == "control:memoryTitle" ||
+               (conversation_history_target_sequence && id == "control:agent_chat_input") ||
                id == "control:memoryScope") && found &&
               !memory_secret_target_sequence &&
               (!memory_target_sequence || pass_name == "initial")) {
-            const QString value = memory_importance_target_sequence
+            const QString value = conversation_history_target_sequence
+                ? QStringLiteral("Conversation history resume validation.")
+                : memory_importance_target_sequence
                 ? (id == "control:memoryContent"
                     ? "Keep ground return routing short in future edits"
                     : (id == "control:memoryTitle" ? "Memory importance proof" : "conversation"))
@@ -1916,6 +2058,8 @@ int main(int argc, char** argv) {
         entries << QString("{\"test_thread_set\":%1}")
                        .arg(test_thread_set ? "true" : "false");
         if (!test_thread_set) memory_target_actions_ok = false;
+      }
+      if (memory_secret_target_sequence || conversation_history_target_sequence) {
         QApplication::processEvents();
         QThread::msleep(500);
         QApplication::processEvents();
@@ -1931,6 +2075,7 @@ int main(int argc, char** argv) {
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
       if (!semantic_memory_target_sequence && !gemini_count_target_sequence &&
+          !conversation_history_target_sequence &&
           !memory_secret_target_sequence &&
           !memory_kind_target_sequence &&
           !memory_importance_target_sequence)

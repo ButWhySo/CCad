@@ -13,6 +13,7 @@
 #include <memory>
 
 #include "ccad_core/agent_orchestrator.hpp"
+#include "ccad_gui/agent_chat_browser.hpp"
 class QLabel;
 class QFrame;
 class QPushButton;
@@ -21,11 +22,11 @@ class QComboBox;
 class QLineEdit;
 class QPlainTextEdit;
 class QTextEdit;
-class QTextBrowser;
 class QVBoxLayout;
 class QProcess;
 class QProgressBar;
 class QListWidget;
+class QMenu;
 class AgentSettingsDialog;
 
 class AgentPanel final : public QWidget {
@@ -201,7 +202,7 @@ class AgentPanel final : public QWidget {
   void resetSessionBinding(const QString& status);
   
   // New UI mapping methods for the Chat layout
-  void appendChatMessage(const QString& role, const QString& text);
+  void appendChatMessage(const QString& role, const QString& text, bool markdown = false);
   void renderChatChecklist();
 
   // Python IPC
@@ -216,11 +217,16 @@ class AgentPanel final : public QWidget {
   void filterSlashCommands();
   void executeSlashCommand(const QString& cmd);
   void openSettingsDialog();
+  void startNewConversation();
+  void requestConversationHistory();
 
   // Chat UI Elements
-  QTextBrowser* chat_stream_ = nullptr;
+  AgentChatBrowser* chat_stream_ = nullptr;
   QTextEdit* chat_input_ = nullptr;
   QListWidget* slash_popup_ = nullptr;
+  QMenu* history_menu_ = nullptr;
+  QPushButton* history_button_ = nullptr;
+  bool history_menu_requested_ = false;
 
   // Preserved logic labels (hidden or refactored as needed)
   QLabel* session_title_label_ = nullptr;
@@ -317,6 +323,10 @@ class AgentPanel final : public QWidget {
   QString session_file_path_;
   QString durable_session_id_;
   QString durable_thread_id_;
+  QString pending_conversation_thread_id_;
+  QString pending_conversation_session_id_;
+  QJsonObject pending_loaded_conversation_;
+  bool pending_new_conversation_ = false;
   QString latest_checkpoint_id_;
   bool durable_session_bound_ = false;
   bool session_replayable_ = false;

@@ -1779,6 +1779,31 @@ def bound_session_history(messages):
                                    max_messages=limit)
 
 
+def migrate_checkpoint_conversation(thread_id: str, executor: Any,
+                                   session_id: str, project_id: str) -> int:
+    """Import an old checkpoint transcript once when the canonical store is empty."""
+    if conversation_store.load_messages(thread_id) or checkpoint_saver is None or executor is None:
+        return 0
+    snapshot = executor.get_state({"configurable": {"thread_id": thread_id}})
+    values = getattr(snapshot, "values", {})
+    messages = values.get("messages", []) if isinstance(values, dict) else []
+    if not isinstance(messages, list) or not messages:
+        return 0
+    grouped = []
+    current_turn = ""
+    for index, message in enumerate(messages):
+        if getattr(message, "type", "") == "human":
+            message_id = str(getattr(message, "id", "") or index)
+            current_turn = "legacy-" + hashlib.sha256(
+                f"{thread_id}:{message_id}".encode("utf-8")).hexdigest()[:32]
+        elif not current_turn:
+            current_turn = "legacy-" + hashlib.sha256(
+                f"{thread_id}:initial".encode("utf-8")).hexdigest()[:32]
+        grouped.append((message, current_turn))
+    return conversation_store.import_checkpoint_messages(
+        thread_id, grouped, session_id=session_id, project_id=project_id)
+
+
 def activate_conversation(thread_id: str, session_id: str = "",
                           project_id: str = "") -> None:
     """Load one thread's canonical model projection; never mix thread caches."""
@@ -2281,18 +2306,25 @@ def handle_provider_and_state_request(req, executor):
     elif method == "agent.set_thread_id":
         params = req.get("params", {})
         thread_id = str(params.get("thread_id", "")).strip()
+        migrated_message_count = 0
         if thread_id:
             previous_thread = str(memory_manager.identities["ltm"])
             if previous_thread != thread_id:
                 invalidate_thread_context(previous_thread)
-            os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
             session_id = str(params.get("session_id") or thread_id)
             project_id = str(params.get("project_id") or "")
             try:
+                conversation_store.ensure_thread(
+                    thread_id, session_id=session_id, project_id=project_id,
+                    show_in_history=bool(params.get("show_in_history", False)))
+                migrated_message_count = migrate_checkpoint_conversation(
+                    thread_id, executor, session_id, project_id)
                 activate_conversation(thread_id, session_id, project_id)
+                os.environ["CCAD_AGENT_THREAD_ID"] = thread_id
             except (ConversationStoreError, ValueError) as error:
                 emit({"jsonrpc": "2.0", "method": "conversation_state", "params": {
                     "thread_id": thread_id,
+                    "session_id": session_id,
                     "available": False,
                     "error": getattr(error, "category", "conversation_history_unavailable"),
                     "secret_value_visible": False}})
@@ -2310,10 +2342,66 @@ def handle_provider_and_state_request(req, executor):
             os.environ.pop("CCAD_AGENT_THREAD_ID", None)
         emit({"jsonrpc": "2.0", "method": "thread_state", "params": {
             "configured": bool(thread_id), "memory_tiers": memory_manager.state(),
+            "thread_id": thread_id,
+            "session_id": str(params.get("session_id") or thread_id),
+            "project_id": str(params.get("project_id") or ""),
             "conversation_loaded": bool(thread_id),
             "conversation_message_count": len(session_messages),
+            "migrated_checkpoint_message_count": migrated_message_count,
             "secret_value_visible": False,
         }})
+    elif method == "agent.list_conversations":
+        params = req.get("params", {})
+        try:
+            limit = max(1, min(200, int(params.get("limit", 100))))
+            threads = conversation_store.list_threads(limit=limit)
+            for thread in threads:
+                if not thread["title"]:
+                    thread["title"] = "New conversation"
+            emit({"jsonrpc": "2.0", "method": "conversation_list", "params": {
+                "available": True, "threads": threads,
+                "active_thread_id": active_conversation_thread_id,
+                "secret_value_visible": False}})
+        except (ConversationStoreError, TypeError, ValueError) as error:
+            emit({"jsonrpc": "2.0", "method": "conversation_list", "params": {
+                "available": False, "threads": [],
+                "error": getattr(error, "category", "invalid_limit"),
+                "secret_value_visible": False}})
+    elif method == "agent.get_conversation":
+        params = req.get("params", {})
+        thread_id = str(params.get("thread_id", "")).strip()
+        try:
+            thread = conversation_store.get_thread(thread_id) if thread_id else None
+            if thread is None:
+                raise ValueError("conversation_not_found")
+            messages = []
+            for message in conversation_store.load_messages(thread_id):
+                role = {"human": "user", "ai": "assistant", "tool": "tool"}.get(
+                    str(getattr(message, "type", "")), "")
+                if not role:
+                    continue
+                content = getattr(message, "content", "")
+                if isinstance(content, list):
+                    content = " ".join(
+                        str(part.get("text", "")) for part in content
+                        if isinstance(part, dict) and isinstance(part.get("text"), str))
+                item = {"id": str(getattr(message, "id", "") or ""),
+                        "role": role, "content": str(content or "")}
+                if role == "tool":
+                    item["name"] = str(getattr(message, "name", "") or "")
+                messages.append(item)
+            emit({"jsonrpc": "2.0", "method": "conversation_loaded", "params": {
+                "available": True, "thread_id": thread_id,
+                "session_id": thread["session_id"] or thread_id,
+                "project_id": thread["project_id"],
+                "title": thread["title"] or "New conversation",
+                "messages": messages, "secret_value_visible": False}})
+        except (ConversationStoreError, TypeError, ValueError) as error:
+            emit({"jsonrpc": "2.0", "method": "conversation_loaded", "params": {
+                "available": False, "thread_id": thread_id,
+                "messages": [],
+                "error": getattr(error, "category", "conversation_not_found"),
+                "secret_value_visible": False}})
     elif method == "agent.resume_thread":
         thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
         if checkpoint_saver is None:
@@ -3121,6 +3209,7 @@ def handle_human_message(req):
             "text": unavailable_text,
             "kind": "provider_unavailable",
             "context_received": bool(context_str),
+            "provider_request_sent": False,
         }})
         return
 
@@ -3240,7 +3329,8 @@ def handle_human_message(req):
         if "post tool call" in [h.lower() for h in active_hooks]:
             hooks.trigger_hook("post tool call", emit, tool_name)
     else:
-        emit({"jsonrpc": "2.0", "method": "message", "params": {"text": last_msg.content}})
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": last_msg.content, "content_format": "markdown"}})
         if "pre exit/end" in [h.lower() for h in active_hooks]:
             hooks.trigger_hook("pre exit/end", emit)
 

@@ -2204,8 +2204,23 @@ a provider call. `scripts/verify_conversation_ui_state.py` is a read-only
 postcondition check used by the isolated seven-action GUI-map scenario. The
 scoped screenshots/logs are in ignored `artifacts/screenshots/`; review the
 progress and memory-context lifecycle note for exact visual/database results
-and remaining limits. No history UI, legacy-checkpoint migration, cross-thread
-search, or semantic retrieval is claimed by this slice.
+and remaining limits. Sprint 1030 adds atomic import of checkpoint-only
+LangGraph messages when the canonical transcript is empty, plus JSON-RPC
+conversation list/read operations and mapped History/New Chat/resume controls.
+History displays the full redacted transcript while provider history stays on
+the separate compact projection. Semantic history retrieval remains open.
+
+`src/ccad_gui/agent_chat_browser.hpp` owns chat message formatting. Actual final
+assistant responses carry `content_format=markdown`; resumed canonical
+assistant messages use their role to choose the same parser. User messages,
+warnings, statuses, tool output, and other non-assistant content are inserted
+as literal text. GitHub-flavored Markdown is parsed with `MarkdownNoHTML`;
+links open only after an explicit click and only when they are credential-free
+HTTP(S) URLs. All image/resource requests are denied, including local files.
+`testChatMarkdownRenderingAndSafety` covers headings, emphasis, tables, links,
+lists, code, raw HTML, unsafe URLs, blocked images, and literal user content.
+The saved-transcript UI proof is `sprint1031-agent-markdown-r2`; the code-block
+content is selectable text, not executed or interpreted code.
 ### Sprint 986 bounded project spatial and diagnostic retrieval
 
 `ProjectIndex._sync()` now fingerprints the authoritative typed project (including the live diagnostics copied beside `typed_state`) before extracting entity documents. Unchanged project state reuses the in-memory index even when transient GUI selection or active-layer values change; edits still refresh signatures and indexes against the full authoritative snapshot. A reproducible command, `python scripts/benchmark_project_index.py --objects 10000`, reports cold-build, cached-query, and single-entity-update timings without asserting machine-specific thresholds. Current local results are recorded in the sprint TODO; single-entity edits still pay for a full snapshot extraction and transaction-delta maintenance remains open.

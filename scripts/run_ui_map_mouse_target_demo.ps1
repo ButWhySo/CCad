@@ -63,6 +63,15 @@ $priorCheckpointPath = $env:CCAD_AGENT_CHECKPOINT_DB
 $priorThreadId = $env:CCAD_AGENT_THREAD_ID
 $priorDeferProvider = $env:CCAD_AGENT_DEFER_PROVIDER_INIT
 $priorConversationDb = $env:CCAD_AGENT_CONVERSATION_DB
+$priorAgentPython = $env:CCAD_AGENT_PYTHON
+$providerSecretNames = @('OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY',
+  'GOOGLE_API_KEY','OPENROUTER_API_KEY','CEREBRAS_API_KEY',
+  'CCAD_OPENAI_COMPATIBLE_API_KEY','CCAD_LOCAL_MODEL_API_KEY',
+  'CCAD_OLLAMA_API_KEY')
+$priorProviderSecrets = @{}
+foreach ($secretName in $providerSecretNames) {
+  $priorProviderSecrets[$secretName] = [Environment]::GetEnvironmentVariable($secretName, 'Process')
+}
 $isolatedMemoryProfile = $null
 $isolatedProjectPath = $null
 if ($Name.StartsWith("sprint982-multilayer-project-context") -or
@@ -276,6 +285,52 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
   }
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
+if ($Name.StartsWith("sprint1030-conversation-history") -or
+    $Name.StartsWith("sprint1031-agent-markdown")) {
+  $agentPython = Join-Path $PSScriptRoot "..\src\ccad_agent\venv\Scripts\python.exe"
+  $agentPython = [IO.Path]::GetFullPath($agentPython)
+  if (-not (Test-Path -LiteralPath $agentPython)) {
+    $agentPython = (& py -3.12 -c "import sys; print(sys.executable)" 2>$null | Select-Object -Last 1).Trim()
+  }
+  if (-not $agentPython -or -not (Test-Path -LiteralPath $agentPython)) {
+    throw "Conversation-history UI validation requires the CCad Agent Python runtime."
+  }
+  $agentVenv = Split-Path -Parent (Split-Path -Parent $agentPython)
+  $agentSitePackages = Join-Path $agentVenv "Lib\site-packages"
+  $runtimeModules = @(
+    (Join-Path $agentSitePackages "langchain_core\__init__.py"),
+    (Join-Path $agentSitePackages "langgraph\checkpoint\sqlite\__init__.py")
+  )
+  if (@($runtimeModules | Where-Object { -not (Test-Path -LiteralPath $_) }).Count -gt 0) {
+    throw "The selected Python interpreter is missing the isolated CCad Agent dependencies."
+  }
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint1030-history-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $env:CCAD_AGENT_PYTHON = $agentPython
+  Remove-Item Env:CCAD_AGENT_THREAD_ID -ErrorAction SilentlyContinue
+  foreach ($secretName in $providerSecretNames) {
+    [Environment]::SetEnvironmentVariable($secretName, $null, 'Process')
+  }
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+  if ($Name.StartsWith("sprint1031-agent-markdown")) {
+    & $agentPython src/ccad_agent/seed_markdown_conversation_fixture.py
+    if ($LASTEXITCODE -ne 0) {
+      throw "Could not prepare persisted assistant Markdown for the mapped rendering test."
+    }
+  }
 }
 if ($Name.StartsWith("sprint1001-memory-kind") -or $Name.StartsWith("sprint1003-memory-importance")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-$Name-" + [Guid]::NewGuid().ToString("N"))
@@ -544,6 +599,27 @@ try {
       $_.gemini_exact_count_reloaded_checked -eq $true
     })) {
       throw "Settings did not reload the saved Gemini count preference as checked."
+    }
+  }
+  if ($Name.StartsWith("sprint1030-conversation-history") -or
+      $Name.StartsWith("sprint1031-agent-markdown")) {
+    $reportFile = Join-Path $ScreenshotDir "$Name-target-sequence.json"
+    $report = Get-Content -Raw -LiteralPath $reportFile | ConvertFrom-Json
+    $resume = @($report.entries | Where-Object {
+      $_.transcript_restored -eq $true -and $_.conversation_thread_id
+    } | Select-Object -Last 1)
+    if ($resume.Count -ne 1) {
+      throw "History did not reopen the active conversation and restore its transcript."
+    }
+    $database = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+    & $agentPython scripts/verify_conversation_history_state.py $database `
+      $resume[0].conversation_thread_id
+    if ($LASTEXITCODE -ne 0) {
+      throw "Persisted GUI conversation failed the read-only transcript and redaction check."
+    }
+    $populatedHistoryShot = Join-Path $ScreenshotDir "$Name-initial-history-populated.png"
+    if (-not (Test-Path -LiteralPath $populatedHistoryShot)) {
+      throw "History menu screenshot was not captured after the new conversation was persisted."
     }
   }
   if ($Name.Contains("sprint997")) {
@@ -1044,6 +1120,11 @@ if ($Name.StartsWith("sprint974-memory")) {
   else { $env:CCAD_AGENT_DEFER_PROVIDER_INIT = $priorDeferProvider }
   if ($null -eq $priorConversationDb) { Remove-Item Env:CCAD_AGENT_CONVERSATION_DB -ErrorAction SilentlyContinue }
   else { $env:CCAD_AGENT_CONVERSATION_DB = $priorConversationDb }
+  if ($null -eq $priorAgentPython) { Remove-Item Env:CCAD_AGENT_PYTHON -ErrorAction SilentlyContinue }
+  else { $env:CCAD_AGENT_PYTHON = $priorAgentPython }
+  foreach ($secretName in $providerSecretNames) {
+    [Environment]::SetEnvironmentVariable($secretName, $priorProviderSecrets[$secretName], 'Process')
+  }
   if ($isolatedMemoryProfile -and (Test-Path -LiteralPath $isolatedMemoryProfile)) {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $profilePath = [IO.Path]::GetFullPath($isolatedMemoryProfile)

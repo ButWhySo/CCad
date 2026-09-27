@@ -1,5 +1,49 @@
 # Implemented Features
 
+## Sprint 1031 — Safe Markdown in Agent chat
+
+Assistant replies render as GitHub-flavored Markdown in the native Qt chat
+transcript, including headings, emphasis, lists, tables, links, and fenced
+code. The same renderer is used when persisted assistant messages are resumed.
+User-authored text, provider/status notices, warnings, and tool output remain
+literal text, so Markdown in those sources is never reinterpreted. The parser
+discards raw HTML, blocks all image/resource loads, and only opens an explicitly
+clicked credential-free HTTP(S) link; local-file and other URL schemes are not
+opened. Fenced code is displayed as selectable text and never executed.
+
+Qt contracts exercise the content and link-safety boundaries. The app-owned
+History/New Chat GUI sequence loads an assistant Markdown transcript from the
+isolated SQLite store, checks rendered table/code content, and verifies the
+persisted thread without a provider request. Qt Release and full CTest pass
+120/120; Pyright reports zero diagnostics. The six inspected visual checkpoints
+and stdout/stderr are in `artifacts/evidence/sprint-1031-agent-markdown-r2.json`
+(SHA-256 `782F76E6033FB34DE0AACEA3C0F91DF10D53AF34E32561B06231D85239A52572`).
+
+## Sprint 1030 — Durable conversation History and New Chat
+
+The Agent backend registers new threads in the SQLite conversation store and
+exposes bounded conversation metadata plus full redacted transcripts through
+JSON-RPC. The Agent header now has History and New Chat actions. Selecting a
+saved conversation rebinds the same stable thread/session IDs, then restores
+the canonical human-visible user, assistant, and tool transcript; the compact
+model projection remains separate. New Chat creates a unique persistent thread
+without deleting prior history. Thread switching is deferred while a project
+proposal or approval is pending.
+
+On first activation of a thread whose canonical store is empty, the backend
+reads resolved messages from its prior LangGraph checkpoint and imports them
+atomically with existing message IDs and deterministic legacy turn IDs. It does
+not infer old turn outcomes or fabricate TurnRecords. Import is idempotent and
+leaves checkpoint storage intact. The isolated JSON-RPC contract verifies this
+migration, restart/thread isolation, list/read restoration, and zero provider
+calls. The mapped GUI run covers 10 interactions and six inspected checkpoints;
+Qt Release and full CTest pass 120/120. Evidence is recorded in
+`artifacts/evidence/sprint-1030-conversation-history-r11.json` (SHA-256
+`93AFA82AF574A432D09526641319E9483C8FBD31BEF3F9D831C4A00467BD059C`).
+
+The UI currently presents History as a native menu, not the larger collapsible
+sidebar. Pin/recent grouping and semantic history search remain unimplemented.
+
 ## Sprint 1029 — Current hosted CI / CTest / CD status
 
 GitHub Actions run [`36286955736`](https://github.com/ButWhySo/CCad/actions/runs/36286955736) passes all five jobs on exact `main` SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; the Linux core, Linux GUI, and Windows core CTest steps are green. The recent red cluster on superseded SHAs failed because `agent_project_index` depended on an ignored local demo-board fixture; that dependency was removed by the self-contained fixture repair. The official nonvisual local verifier passes using the already successful Sprint 1028 Release/full-CTest logs, recorded in `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json` (SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`). `.github/workflows/ci.yml` is the only configured workflow. There is no CD workflow or release destination, so CD is unconfigured, not failing; deployment remains open until the desktop artifact, destination, trigger, signing, permissions, and rollback policy are specified.
@@ -353,7 +397,7 @@ This document tracks user-visible and agent-visible features that exist in the r
 
 The Python Agent now stores sanitized canonical messages in a per-thread SQLite database at `%APPDATA%/CCad/agent_conversations.sqlite3` (override with `CCAD_AGENT_CONVERSATION_DB`). User, assistant, and tool messages retain stable message/tool-call IDs; recognized credential-like values are redacted before persistence. Provider input history is a bounded projection that keeps recent complete turns under `CCAD_AGENT_HISTORY_TOKENS` and `CCAD_AGENT_HISTORY_LIMIT`. `/cc` updates only that projection, while `/clear` empties active model context; neither deletes the canonical transcript. Completed and terminally unavailable turns produce a structured, source-message-linked TurnRecord and a recap of up to six recent turns. Historical TurnRecords are retrieved per thread by deterministic lexical token overlap and included in the versioned provider context with source IDs; this is not semantic/vector search.
 
-The current boundary is deliberate: old LangGraph checkpoint-only sessions are not migrated automatically, the new durable thread list/resume UI is not yet wired, and retrieval does not cross thread boundaries or use embeddings. Verification is through `scripts/test_conversation_store.py`, `scripts/test_conversation_runtime.py`, context-package contracts, and the isolated seven-action GUI-map scenario `sprint976-conversation-20260924`; the latter validates one persisted user/assistant pair, one TurnRecord, preserved canonical rows after `/clear`, and an empty model projection without making a provider request.
+The current boundary is deliberate: Sprint 1030 imports old LangGraph checkpoint-only messages when canonical history is empty and adds mapped History/New Chat/resume controls. Retrieval still does not cross thread boundaries or use embeddings. Earlier verification is through `scripts/test_conversation_store.py`, `scripts/test_conversation_runtime.py`, context-package contracts, and the isolated seven-action GUI-map scenario `sprint976-conversation-20260924`; Sprint 1030 adds checkpoint migration, process restart, and restored-transcript coverage without making a provider request.
 
 ## Sprint 967 request context and memory lifecycle
 

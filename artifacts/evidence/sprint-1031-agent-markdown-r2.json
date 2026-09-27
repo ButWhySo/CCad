@@ -1,0 +1,107 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1031-agent-markdown-r2",
+    "feature":  "Verify persisted assistant Markdown rendering and safe links in the Agent chat panel",
+    "validation_mode":  "gui",
+    "interaction_plan":  "docs/devops/sprints/validation-plans/sprint-1031-agent-markdown.json",
+    "target_sequence":  "sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-27T07:49:46.5241897Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.48 log=artifacts/evidence/sprint-1031-agent-markdown-r2/preflight.log",
+                      "finished_utc":  "2026-09-27T07:49:48.1263280Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1031-agent-markdown-r1; source timestamps precede test log",
+                      "finished_utc":  "2026-09-27T07:50:29.2584093Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1031-agent-markdown-r1; 120/120 passed",
+                      "finished_utc":  "2026-09-27T07:50:29.2584093Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=30.31 log=artifacts/evidence/sprint-1031-agent-markdown-r2/ui_harness.log",
+                      "finished_utc":  "2026-09-27T07:50:59.5710299Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=6",
+                      "finished_utc":  "2026-09-27T07:51:00.0680255Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-27T07:51:00.1910316Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/build.log",
+                                         "sha256":  "3EDAEF3576204339A8FBFC0545F861D41979E16C7144887954CEB1235EE6DA2E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/ctest.log",
+                                         "sha256":  "E28656456CE0465AFD265ADA483518985A5763774EEA0DAC2C67D877D51AB3B5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2.stdout.log",
+                                         "sha256":  "073C4EE68A1903EDBB7DB2AC8D636F9802F014704A2EB7293DD4BB75F74DFAB5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-before.png",
+                                         "sha256":  "488C449ED1256A1167FD9BD7B813F3F5AEF2E48B694D99D1F6BFEE15EA38AE00"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-initial-action_agent_new_chat.png",
+                                         "sha256":  "1F44645A50BDC2AF6DB5D24763913B61592DF758DB1507933F434966DBCDA858"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-initial-action_agent_submit_chat.png",
+                                         "sha256":  "51E035013184A0ED19D07595E18404CD102921FCAF681A16E612C87F523CC8BC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-initial-agent_chat_input-typed.png",
+                                         "sha256":  "F25292BD5E1DA66CEC9EC19CE4212A2EAEF008012EF385479EBA76FFE7FE48EE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-initial-history-populated.png",
+                                         "sha256":  "435F40DC742A0519A2EDAE10AEF54912C49CCCA2E093EB0558FB8DD1681446CF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-initial-history-resumed.png",
+                                         "sha256":  "FDA4D4301E16727CB96338BB9DD822E82BE826E3AB84348047DF7E482BD36375"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/sprint1031-agent-markdown-r1-sprint-1031-agent-markdown-r2-target-sequence.json",
+                                         "sha256":  "16393A1B4AAC6415D32BF723AB6FEB3625F07FCDF39B18C533B12593276F6484"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1031-agent-markdown-r2/ui_harness.log",
+                                         "sha256":  "BEFFEE164EFBFF0C7A8ECE57F6FD18D4CBE488A0DDD623E7C2039BCA4743D52F"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T07:51:00.3860280Z"
+}

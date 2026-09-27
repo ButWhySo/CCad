@@ -39,6 +39,7 @@ def run():
             "APPDATA": str(appdata),
             "LOCALAPPDATA": str(appdata),
             "CCAD_AGENT_CONVERSATION_DB": str(db_path),
+            "CCAD_AGENT_CHECKPOINT_DB": str(appdata / "checkpoints.sqlite3"),
             "CCAD_AGENT_MEMORY_PATH": str(appdata / "memories.json"),
             "CCAD_AGENT_DEFER_PROVIDER_INIT": "1",
             "CCAD_TRACE_EXPORT_ENABLED": "0",
@@ -63,9 +64,35 @@ def run():
                    item.get("params", {}).get("conversation_message_count") == 0
                    for item in first)
         assert any(item.get("method") == "message" and
-                   item.get("params", {}).get("kind") == "provider_unavailable"
+                   item.get("params", {}).get("kind") == "provider_unavailable" and
+                   item.get("params", {}).get("provider_request_sent") is False
                    for item in first)
         assert db_path.is_file()
+
+        sys.path.insert(0, str(AGENT_DIR))
+        from langchain_core.messages import AIMessage, HumanMessage
+        from langgraph.checkpoint.sqlite import SqliteSaver
+        import importlib
+        checkpoint_context = SqliteSaver.from_conn_string(
+            str(appdata / "checkpoints.sqlite3"))
+        saver = checkpoint_context.__enter__()
+        runtime = importlib.import_module("orchestrator")
+        prior_saver = runtime.checkpoint_saver
+        try:
+            runtime.checkpoint_saver = saver
+            graph = runtime.create_orchestrator()
+            graph.update_state(
+                {"configurable": {"thread_id": "roundtrip-thread"}},
+                {"messages": [
+                    HumanMessage(id="legacy-user", content="Legacy conversation request."),
+                    AIMessage(id="legacy-assistant", content="Legacy checkpoint reply."),
+                ]})
+        finally:
+            runtime.checkpoint_saver = prior_saver
+            checkpoint_context.__exit__(None, None, None)
+
+        for suffix in ("", "-wal", "-shm"):
+            Path(str(db_path) + suffix).unlink(missing_ok=True)
 
         second = exchange(env, [
             {"jsonrpc": "2.0", "id": 3, "method": "agent.set_thread_id", "params": thread},
@@ -80,7 +107,45 @@ def run():
         ])
         loaded_counts = [item["params"].get("conversation_message_count")
                          for item in second if item.get("method") == "thread_state"]
-        assert loaded_counts == [2, 2, 2]
+        assert loaded_counts == [2, 2, 2], [
+            item.get("params", {}) for item in second
+            if item.get("method") == "thread_state"]
+        migrated = next(item["params"] for item in second
+                        if item.get("method") == "thread_state")
+        assert migrated["migrated_checkpoint_message_count"] >= 2
+
+        from conversation_store import ConversationStore
+        store = ConversationStore(db_path)
+        store.ensure_thread("empty-startup-thread", session_id="empty-startup-thread")
+
+        history = exchange(env, [
+            {"jsonrpc": "2.0", "id": 18, "method": "agent.set_thread_id",
+             "params": {"thread_id": "visible-empty-thread",
+                        "session_id": "visible-empty-session",
+                        "project_id": "isolated-project", "show_in_history": True}},
+            {"jsonrpc": "2.0", "id": 16, "method": "agent.list_conversations",
+             "params": {"limit": 100}},
+            {"jsonrpc": "2.0", "id": 17, "method": "agent.get_conversation",
+             "params": {"thread_id": "roundtrip-thread"}},
+        ])
+        listed = next(item["params"] for item in history
+                      if item.get("method") == "conversation_list")
+        assert listed["available"] is True
+        assert all(thread["thread_id"] != "empty-startup-thread"
+                   for thread in listed["threads"])
+        visible_empty = next(thread for thread in listed["threads"]
+                             if thread["thread_id"] == "visible-empty-thread")
+        assert visible_empty["message_count"] == 0
+        assert visible_empty["session_id"] == "visible-empty-session"
+        assert any(thread["thread_id"] == "roundtrip-thread" and
+                   thread["title"] == "Legacy conversation request."
+                   for thread in listed["threads"])
+        restored = next(item["params"] for item in history
+                        if item.get("method") == "conversation_loaded")
+        assert restored["thread_id"] == "roundtrip-thread"
+        assert [message["role"] for message in restored["messages"]] == [
+            "user", "assistant"]
+        assert restored["messages"][0]["content"] == "Legacy conversation request."
 
         memory_lifecycle = exchange(env, [
             {"jsonrpc": "2.0", "id": 7, "method": "agent.set_thread_id",
@@ -123,19 +188,16 @@ def run():
                    item.get("params", {}).get("conversation_message_count") == 2
                    for item in memory_lifecycle)
 
-        sys.path.insert(0, str(AGENT_DIR))
-        from conversation_store import ConversationStore
-        store = ConversationStore(db_path)
-        records = store.search_turn_records("roundtrip-thread", "Inspect U3 preserve position")
+        records = store.search_turn_records("other-thread", "Check J4 B.Cu")
         assert records and records[0]["outcome"] == "provider_unavailable"
         assert records[0]["source_message_ids"]
-        assert store.thread_recap("roundtrip-thread")["source_turn_ids"] == [
+        assert store.thread_recap("other-thread")["source_turn_ids"] == [
             records[0]["turn_id"]]
-        assert "Inspect U3" in store.load_messages("roundtrip-thread")[0].content
+        assert [message.content for message in store.load_messages("roundtrip-thread")] == [
+            "Legacy conversation request.", "Legacy checkpoint reply."]
         assert [message.content for message in store.load_messages("other-thread")
                 if message.type == "human"] == ["Check J4 on B.Cu."]
         assert not store.search_turn_records("roundtrip-thread", "J4 B.Cu")
-        assert store.search_turn_records("other-thread", "J4 B.Cu")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QDesktopServices>
 #include <QDockWidget>
 #include <QCoreApplication>
 #include <QDir>
@@ -24,6 +25,7 @@
 #include <QJsonParseError>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMenu>
 #include <QPlainTextEdit>
 #include <QProcess>
 #include <QProcessEnvironment>
@@ -733,6 +735,21 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   top_bar->setProperty("agentRole", "section");
   auto* top_layout = new QHBoxLayout(top_bar);
   top_layout->setContentsMargins(8, 8, 8, 8);
+
+  history_button_ = new QPushButton("History", top_bar);
+  history_button_->setObjectName("action:agent_history");
+  history_button_->setToolTip("Open saved conversations");
+  history_button_->setProperty("agentRole", "iconButton");
+  connect(history_button_, &QPushButton::clicked, this,
+          &AgentPanel::requestConversationHistory);
+  auto* new_chat_button = new QPushButton("+ New", top_bar);
+  new_chat_button->setObjectName("action:agent_new_chat");
+  new_chat_button->setToolTip("Start a new conversation");
+  new_chat_button->setProperty("agentRole", "iconButton");
+  connect(new_chat_button, &QPushButton::clicked, this,
+          &AgentPanel::startNewConversation);
+  history_menu_ = new QMenu(history_button_);
+  history_menu_->setObjectName("menu:agent_conversation_history");
   
   auto* title = new QLabel("Chat", top_bar);
   title->setProperty("agentRole", "panelTitle");
@@ -772,6 +789,8 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
     }
   });
 
+  top_layout->addWidget(history_button_);
+  top_layout->addWidget(new_chat_button);
   top_layout->addStretch();
   top_layout->addWidget(title);
   top_layout->addStretch();
@@ -782,10 +801,12 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
   main_layout->addWidget(top_bar);
 
   // --- CHAT HISTORY ---
-  chat_stream_ = new QTextBrowser(this);
+  chat_stream_ = new AgentChatBrowser(this);
   chat_stream_->setObjectName("control:agent_chat_stream");
-  chat_stream_->setOpenExternalLinks(true);
   chat_stream_->setReadOnly(true);
+  chat_stream_->setSafeLinkHandler([](const QUrl& url) {
+    QDesktopServices::openUrl(url);
+  });
   chat_stream_->setFrameShape(QFrame::NoFrame);
   chat_stream_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   chat_stream_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -1065,6 +1086,7 @@ AgentPanel::AgentPanel(QWidget* parent) : QWidget(parent), orchestrator_(std::ma
 
   auto* info_row = new QHBoxLayout();
   session_title_label_ = new QLabel("New Session", status_container);
+  session_title_label_->setObjectName("label:agent_conversation_title");
   session_title_label_->setProperty("agentRole", "panelTitle");
   session_title_label_->setStyleSheet("font-size: 12px; font-weight: normal; color: #9ca3af;");
   
@@ -1225,7 +1247,7 @@ AgentPanel::~AgentPanel() {
   }
 }
 
-void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
+void AgentPanel::appendChatMessage(const QString& role, const QString& text, bool markdown) {
   // Backend startup can emit identical dependency/provider warnings more than
   // once. Keep stream readable; do not add consecutive duplicate entries.
   // Collapse repeated backend warnings, but never hide repeated user prompts
@@ -1238,14 +1260,9 @@ void AgentPanel::appendChatMessage(const QString& role, const QString& text) {
   last_chat_role_ = role;
   last_chat_text_ = text;
   if (!chat_stream_) return;
-  QTextCursor cursor = chat_stream_->textCursor();
-  cursor.movePosition(QTextCursor::End);
-  if (!chat_stream_->toPlainText().isEmpty()) cursor.insertText("\n\n");
-  const QString prefix = role == "user" ? QStringLiteral("You\n")
-                                       : QStringLiteral("CCad Agent\n");
-  cursor.insertText(prefix + text);
-  chat_stream_->setTextCursor(cursor);
-  chat_stream_->ensureCursorVisible();
+  const QString display_role = role == "user" ? QStringLiteral("You")
+                                               : QStringLiteral("CCad Agent");
+  chat_stream_->appendMessage(display_role, text, markdown && role != "user");
 }
 
 void AgentPanel::openSettingsDialog() {
@@ -1400,8 +1417,10 @@ void AgentPanel::handlePythonOutput() {
           python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
         }
       } else if (obj.contains("method") && obj["method"].toString() == "message") {
-        const QString message = obj["params"].toObject()["text"].toString();
-        appendChatMessage("agent", message);
+        const QJsonObject params = obj["params"].toObject();
+        const QString message = params.value("text").toString();
+        appendChatMessage("agent", message,
+                          params.value("content_format").toString() == "markdown");
         if (result_state_label_) {
           if (!tool_result_ack_visible_) {
             result_state_label_->setText("Result Chat response received");
@@ -1590,6 +1609,20 @@ void AgentPanel::handlePythonOutput() {
           backend_config_requested_ = true;
           sendJsonRpc("agent.get_config", QJsonObject());
         }
+        if (backend_ready_ && durable_thread_id_.isEmpty()) {
+          startNewConversation();
+        } else if (backend_ready_ && !durable_session_bound_) {
+          const QString session_id = durable_session_id_.isEmpty()
+                                         ? durable_thread_id_ : durable_session_id_;
+          pending_conversation_thread_id_ = durable_thread_id_;
+          pending_conversation_session_id_ = session_id;
+          pending_new_conversation_ = false;
+          if (!sendJsonRpc("agent.set_thread_id", QJsonObject{
+                  {"thread_id", durable_thread_id_}, {"session_id", session_id}})) {
+            pending_conversation_thread_id_.clear();
+            pending_conversation_session_id_.clear();
+          }
+        }
       } else if (obj.contains("method") && obj["method"].toString() == "provider_state") {
         const QJsonObject params = obj["params"].toObject();
         if (!params["model"].toString().trimmed().isEmpty()) {
@@ -1617,6 +1650,48 @@ void AgentPanel::handlePythonOutput() {
         if (observability_state_cb_) observability_state_cb_(obj["params"].toObject());
       } else if (obj.contains("method") && obj["method"].toString() == "thread_state") {
         const QJsonObject params = obj["params"].toObject();
+        if (params.value("configured").toBool(false)) {
+          const QString thread_id = params.value("thread_id").toString();
+          if (thread_id == pending_conversation_thread_id_ && !thread_id.isEmpty()) {
+            durable_thread_id_ = thread_id;
+            durable_session_id_ = params.value("session_id").toString(thread_id);
+            durable_session_bound_ = true;
+            if (pending_new_conversation_) {
+              session_title_label_->setText("New conversation");
+              session_status_label_->setText("New conversation");
+              chat_stream_->clear();
+              last_chat_role_.clear();
+              last_chat_text_.clear();
+            } else if (!pending_loaded_conversation_.isEmpty()) {
+              const QJsonObject conversation = pending_loaded_conversation_;
+              session_title_label_->setText(
+                  conversation.value("title").toString("New conversation"));
+              chat_stream_->clear();
+              last_chat_role_.clear();
+              last_chat_text_.clear();
+              for (const QJsonValue& value : conversation.value("messages").toArray()) {
+                if (!value.isObject()) continue;
+                const QJsonObject message = value.toObject();
+                const QString role = message.value("role").toString();
+                QString content = message.value("content").toString();
+                if (role == "tool") {
+                  content = QString("Tool %1\n%2").arg(message.value("name").toString(), content);
+                }
+                appendChatMessage(role == "user" ? "user" : "agent", content,
+                                  role == "assistant");
+              }
+              session_status_label_->setText("Conversation resumed");
+              status_label_->setText("Conversation loaded");
+            }
+            pending_conversation_thread_id_.clear();
+            pending_conversation_session_id_.clear();
+            pending_loaded_conversation_ = QJsonObject();
+            pending_new_conversation_ = false;
+          } else if (thread_id == durable_thread_id_) {
+            durable_session_bound_ = true;
+          }
+          continue;
+        }
         const bool resumable = params["resumable"].toBool(false);
         const QString status = resumable ? QStringLiteral("Checkpoint resumable")
                                          : QStringLiteral("Checkpoint unavailable");
@@ -1631,6 +1706,112 @@ void AgentPanel::handlePythonOutput() {
           addActivityEvent("session", status,
                            params["reason"].toString("No checkpoint backend"),
                            "agent.resume_thread");
+        }
+      } else if (obj.contains("method") && obj["method"].toString() == "conversation_list") {
+        const QJsonObject params = obj["params"].toObject();
+        if (!params.value("available").toBool(false)) {
+          history_menu_requested_ = false;
+          addActivityEvent("error", "Conversation history unavailable",
+                           params.value("error").toString("conversation_store_read_failed"),
+                           "agent.list_conversations");
+          return;
+        }
+        history_menu_->clear();
+        for (const QJsonValue& value : params.value("threads").toArray()) {
+          if (!value.isObject()) continue;
+          const QJsonObject thread = value.toObject();
+          const QString thread_id = thread.value("thread_id").toString();
+          if (thread_id.isEmpty()) continue;
+          const QString title_text = thread.value("title").toString("New conversation");
+          const QString updated = thread.value("updated_at").toString();
+          const QString date = updated.size() >= 16
+                                   ? updated.left(10) + " " + updated.mid(11, 5)
+                                   : updated;
+          auto* action = history_menu_->addAction(
+              QString("%1    %2    (%3)").arg(title_text, date)
+                  .arg(thread.value("message_count").toInt()));
+          action->setObjectName("action:conversation_" + thread_id);
+          action->setProperty("ccadConversationAction", true);
+          action->setToolTip("Resume saved conversation");
+          connect(action, &QAction::triggered, this, [this, thread]() {
+            if (pendingApprovalCount() > 0 || proposalVisible()) {
+              addActivityEvent("warning", "Conversation switch deferred",
+                               "Finish or reject the pending project change before switching threads.",
+                               "agent.get_conversation");
+              return;
+            }
+            if (!pending_conversation_thread_id_.isEmpty()) {
+              addActivityEvent("warning", "Conversation switch already in progress",
+                               "Wait for the current conversation binding to finish.",
+                               "agent.get_conversation");
+              return;
+            }
+            const QString thread_id = thread.value("thread_id").toString();
+            const QString session_id = thread.value("session_id").toString(thread_id);
+            pending_conversation_thread_id_ = thread_id;
+            pending_conversation_session_id_ = session_id;
+            pending_new_conversation_ = false;
+            if (!sendJsonRpc("agent.get_conversation", QJsonObject{{"thread_id", thread_id}})) {
+              pending_conversation_thread_id_.clear();
+              pending_conversation_session_id_.clear();
+              addActivityEvent("error", "Conversation could not be resumed",
+                               "Agent backend did not accept the history request.",
+                               "agent.get_conversation");
+            }
+          });
+        }
+        if (history_menu_->isEmpty()) {
+          QAction* empty = history_menu_->addAction("No saved conversations");
+          empty->setEnabled(false);
+        }
+        const bool should_open_history = history_menu_requested_;
+        history_menu_requested_ = false;
+        if (should_open_history) {
+          history_menu_->popup(history_button_->mapToGlobal(
+              QPoint(0, history_button_->height())));
+        }
+      } else if (obj.contains("method") && obj["method"].toString() == "conversation_loaded") {
+        const QJsonObject params = obj["params"].toObject();
+        if (params.value("thread_id").toString() != pending_conversation_thread_id_ ||
+            pending_conversation_thread_id_.isEmpty()) {
+          addActivityEvent("warning", "Stale conversation response ignored",
+                           "The requested thread is no longer the pending selection.",
+                           "agent.get_conversation");
+          return;
+        }
+        if (!params.value("available").toBool(false)) {
+          pending_conversation_thread_id_.clear();
+          pending_conversation_session_id_.clear();
+          addActivityEvent("error", "Conversation could not be resumed",
+                           params.value("error").toString("conversation_not_found"),
+                           "agent.get_conversation");
+          return;
+        }
+        pending_loaded_conversation_ = params;
+        const QJsonObject binding{{"thread_id", pending_conversation_thread_id_},
+                                  {"session_id", params.value("session_id").toString(
+                                                      pending_conversation_session_id_)},
+                                  {"project_id", params.value("project_id").toString()}};
+        if (!sendJsonRpc("agent.set_thread_id", binding)) {
+          pending_conversation_thread_id_.clear();
+          pending_conversation_session_id_.clear();
+          pending_loaded_conversation_ = QJsonObject();
+          addActivityEvent("error", "Conversation could not be resumed",
+                           "Agent backend did not accept the thread binding.",
+                           "agent.set_thread_id");
+        }
+      } else if (obj.contains("method") &&
+                 obj["method"].toString() == "conversation_state") {
+        const QJsonObject params = obj["params"].toObject();
+        if (params.value("thread_id").toString() == pending_conversation_thread_id_) {
+          pending_conversation_thread_id_.clear();
+          pending_conversation_session_id_.clear();
+          pending_loaded_conversation_ = QJsonObject();
+          pending_new_conversation_ = false;
+          addActivityEvent("error", "Conversation could not be activated",
+                           params.value("error").toString(
+                               "conversation_history_unavailable"),
+                           "agent.set_thread_id");
         }
       } else if (obj.contains("method") && obj["method"].toString() == "thread_resumed") {
         const QJsonObject params = obj["params"].toObject();
@@ -1721,39 +1902,110 @@ void AgentPanel::handlePythonError() {
 void AgentPanel::submitChat() {
   QString text = chat_input_->toPlainText().trimmed();
   if (text.isEmpty()) return;
+  if (durable_thread_id_.isEmpty()) startNewConversation();
+  if (!durable_session_bound_ || !pending_conversation_thread_id_.isEmpty()) {
+    status_label_->setText("Conversation is still connecting");
+    addActivityEvent("warning", "Message not sent",
+                     "Wait for the conversation to be saved and activated; your draft remains in the composer.",
+                     "agent.set_thread_id");
+    return;
+  }
+  if (!python_process_ || python_process_->state() != QProcess::Running) {
+    status_label_->setText("Agent backend unavailable");
+    addActivityEvent("error", "Message not sent",
+                     "Agent backend is not running; your draft remains in the composer.",
+                     "human_message");
+    return;
+  }
+  if (session_title_label_ &&
+      (session_title_label_->text() == "New conversation" ||
+       session_title_label_->text() == "New Session")) {
+    session_title_label_->setText(text.section('\n', 0, 0).left(48));
+  }
   tool_result_ack_visible_ = false;
   
   appendChatMessage("user", text);
   chat_input_->clear();
 
-  if (python_process_ && python_process_->state() == QProcess::Running) {
-    QJsonObject payload;
-    payload["jsonrpc"] = "2.0";
-    payload["method"] = "human_message";
-    QJsonObject params;
-    params["text"] = text;
-    params["session_id"] = durable_session_id_;
-    params["thread_id"] = durable_thread_id_;
-    if (context_provider_) {
-        const QString context = QString::fromStdString(context_provider_());
-        params["context"] = context;
-        QJsonParseError context_error;
-        const QJsonDocument context_document =
-            QJsonDocument::fromJson(context.toUtf8(), &context_error);
-        if (context_error.error == QJsonParseError::NoError &&
-            context_document.isObject()) {
-          const QJsonObject project_context = context_document.object();
-          const QJsonObject typed_state = project_context.value("typed_state").toObject();
-          const QJsonObject project = typed_state.value("project").toObject();
-          const QString project_id = project.value("id").toString().trimmed();
-          if (!project_id.isEmpty()) params["project_id"] = project_id;
-        }
-        if (context_usage_label_) {
-          context_usage_label_->setText(QString("%1 / 128k context").arg((context.size() + 3) / 4));
-        }
+  QJsonObject payload;
+  payload["jsonrpc"] = "2.0";
+  payload["method"] = "human_message";
+  QJsonObject params;
+  params["text"] = text;
+  params["session_id"] = durable_session_id_;
+  params["thread_id"] = durable_thread_id_;
+  if (context_provider_) {
+      const QString context = QString::fromStdString(context_provider_());
+      params["context"] = context;
+      QJsonParseError context_error;
+      const QJsonDocument context_document =
+          QJsonDocument::fromJson(context.toUtf8(), &context_error);
+      if (context_error.error == QJsonParseError::NoError &&
+          context_document.isObject()) {
+        const QJsonObject project_context = context_document.object();
+        const QJsonObject typed_state = project_context.value("typed_state").toObject();
+        const QJsonObject project = typed_state.value("project").toObject();
+        const QString project_id = project.value("id").toString().trimmed();
+        if (!project_id.isEmpty()) params["project_id"] = project_id;
+      }
+      if (context_usage_label_) {
+        context_usage_label_->setText(QString("%1 / 128k context").arg((context.size() + 3) / 4));
+      }
+  }
+  payload["params"] = params;
+  python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
+}
+
+void AgentPanel::requestConversationHistory() {
+  history_menu_requested_ = true;
+  if (!sendJsonRpc("agent.list_conversations", QJsonObject{{"limit", 100}})) {
+    history_menu_requested_ = false;
+    addActivityEvent("error", "Conversation history unavailable",
+                     "Agent backend is not running.", "agent.list_conversations");
+  }
+}
+
+void AgentPanel::startNewConversation() {
+  if (pendingApprovalCount() > 0 || proposalVisible()) {
+    addActivityEvent("warning", "New conversation deferred",
+                     "Finish or reject the pending project change before starting another thread.",
+                     "agent.set_thread_id");
+    return;
+  }
+  if (!pending_conversation_thread_id_.isEmpty()) {
+    addActivityEvent("warning", "Conversation change already in progress",
+                     "Wait for the pending thread binding to finish.",
+                     "agent.set_thread_id");
+    return;
+  }
+  const QString session_id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+  pending_loaded_conversation_ = QJsonObject();
+  pending_conversation_session_id_ = session_id;
+  pending_conversation_thread_id_ = session_id;
+  pending_new_conversation_ = true;
+
+  QJsonObject binding{{"thread_id", session_id},
+                      {"session_id", session_id},
+                      {"show_in_history", true}};
+  if (context_provider_) {
+    const QString context = QString::fromStdString(context_provider_());
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(context.toUtf8(), &error);
+    if (error.error == QJsonParseError::NoError && document.isObject()) {
+      const QString project_id = document.object().value("typed_state").toObject()
+          .value("project").toObject().value("id").toString().trimmed();
+      if (!project_id.isEmpty()) binding.insert("project_id", project_id);
     }
-    payload["params"] = params;
-    python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
+  }
+  if (!sendJsonRpc("agent.set_thread_id", binding)) {
+    pending_conversation_thread_id_.clear();
+    pending_conversation_session_id_.clear();
+    pending_new_conversation_ = false;
+    addActivityEvent("error", "New conversation not connected",
+                     "Agent backend did not accept the conversation binding.",
+                     "agent.set_thread_id");
+  } else {
+    status_label_->setText("Connecting conversation");
   }
 }
 
@@ -2309,11 +2561,24 @@ void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, cons
   session_file_path_ = QFileInfo(path).absoluteFilePath();
   durable_session_id_ = metadata.session_id;
   durable_thread_id_ = metadata.thread_id;
+  durable_session_bound_ = false;
   if (python_process_ && python_process_->state() == QProcess::Running) {
-    sendJsonRpc("agent.set_thread_id", QJsonObject{
+    pending_conversation_thread_id_ = durable_thread_id_;
+    pending_conversation_session_id_ = durable_session_id_;
+    pending_new_conversation_ = false;
+    if (!sendJsonRpc("agent.set_thread_id", QJsonObject{
         {"thread_id", durable_thread_id_},
         {"session_id", durable_session_id_},
-        {"project_id", cached_config_state_.value("project_name").toString("project")}});
+        {"project_id", cached_config_state_.value("project_name").toString("project")}})) {
+      pending_conversation_thread_id_.clear();
+      pending_conversation_session_id_.clear();
+    }
+  } else {
+    pending_conversation_thread_id_.clear();
+    pending_conversation_session_id_.clear();
+    // Local session files remain checkpointable when the Python runtime is
+    // absent; only backend-owned conversation restores need its bind ack.
+    durable_session_bound_ = true;
   }
   latest_checkpoint_id_ = metadata.latest_checkpoint_id;
   session_checkpoint_count_ = metadata.checkpoint_count;
@@ -2329,16 +2594,15 @@ void AgentPanel::applySessionMetadata(const AgentSessionMetadata& metadata, cons
     run_queue_cancelable_ = metadata.queue_state.value("run_queue_cancelable").toBool(run_queue_cancelable_);
     updateRunQueueLabels();
   }
-  durable_session_bound_ = true;
   session_path_input_->setText(session_file_path_);
   const QString compact_id = durable_session_id_.isEmpty() ? "local" : durable_session_id_;
   session_chip_label_->setText("Session: " + compact_id);
   session_status_label_->setText(
       "Session " + compact_id + " | thread " + durable_thread_id_ + " | checkpoints " +
       QString::number(session_checkpoint_count_));
-  status_label_->setText("Session loaded");
-  result_state_label_->setText("Result Session loaded");
-  addActivityEvent("session", "Session loaded",
+  status_label_->setText("Connecting session");
+  result_state_label_->setText("Result session pending");
+  addActivityEvent("session", "Session selected",
                    compact_id + " | checkpoints " + QString::number(session_checkpoint_count_),
                    "agent.session_state");
 }
@@ -2397,19 +2661,8 @@ void AgentPanel::checkpointSession() {
   if (path.isEmpty()) {
     path = session_path_input_->text().trimmed();
   }
-  if (!durable_session_bound_) {
-    if (!path.isEmpty()) {
-      bindSessionFile(path);
-    }
-    if (!durable_session_bound_) {
-      status_label_->setText("Session checkpoint skipped");
-      result_state_label_->setText("Result Error session_not_bound");
-      addActivityEvent("error", "Session checkpoint skipped",
-                       "No valid local session is bound", "agent.checkpoint");
-      return;
-    }
-  }
-
+  // GUI checkpoint metadata is persisted locally and does not depend on the
+  // asynchronous Python thread-binding acknowledgement used by chat turns.
   QString error_message;
   QJsonObject object = readJsonFileObject(path, &error_message);
   if (object.isEmpty()) {
@@ -3201,6 +3454,8 @@ QString AgentPanel::workspaceStateJson() const {
                   QJsonArray{"header_action_bar",
                              "command_composer"});
   response.insert("session_title", session_title_label_->text());
+  response.insert("conversation_history_available", backend_ready_);
+  response.insert("conversation_thread_id", durable_thread_id_);
   response.insert("model_label", model_chip_label_->text());
   response.insert("mode_label", mode_chip_label_->text());
   response.insert("permission_label", permission_chip_label_->text());

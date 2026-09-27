@@ -172,7 +172,7 @@ def budgeted_history_window(messages: Iterable[Any], *, token_budget: int = 8192
 class ConversationStore:
     """SQLite source of truth for full message history and derived TurnRecords."""
 
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
 
     def __init__(self, path: str | Path | None = None):
         self.path = Path(path) if path is not None else conversation_path()
@@ -201,7 +201,8 @@ class ConversationStore:
                 thread_id TEXT PRIMARY KEY, session_id TEXT NOT NULL DEFAULT '',
                 project_id TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-                message_count INTEGER NOT NULL DEFAULT 0);
+                message_count INTEGER NOT NULL DEFAULT 0,
+                history_visible INTEGER NOT NULL DEFAULT 0 CHECK(history_visible IN (0,1)));
             CREATE TABLE IF NOT EXISTS messages(
                 sequence INTEGER PRIMARY KEY AUTOINCREMENT,
                 thread_id TEXT NOT NULL REFERENCES threads(thread_id) ON DELETE CASCADE,
@@ -232,6 +233,9 @@ class ConversationStore:
                 base_sequence INTEGER NOT NULL, messages_json TEXT NOT NULL,
                 updated_at TEXT NOT NULL);
         """)
+        thread_columns = {str(row[1]) for row in db.execute("PRAGMA table_info(threads)")}
+        if "history_visible" not in thread_columns:
+            db.execute("ALTER TABLE threads ADD COLUMN history_visible INTEGER NOT NULL DEFAULT 0")
         db.execute(f"PRAGMA user_version={self.SCHEMA_VERSION}")
 
     def append_messages(self, thread_id: str, messages: Iterable[Any], *, turn_id="",
@@ -274,6 +278,91 @@ class ConversationStore:
                 return inserted
         except sqlite3.Error as error:
             raise ConversationStoreError("conversation_store_write_failed") from error
+        finally:
+            db.close()
+
+    def ensure_thread(self, thread_id: str, *, session_id="", project_id="",
+                      show_in_history=False) -> None:
+        """Register a new/resumed conversation without storing prompt content."""
+        thread_id = str(thread_id).strip()
+        if not thread_id:
+            raise ValueError("thread_id_required")
+        now = _now()
+        db = self._connect()
+        try:
+            with db:
+                db.execute("""INSERT INTO threads
+                    (thread_id,session_id,project_id,created_at,updated_at,history_visible)
+                    VALUES(?,?,?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
+                    session_id=CASE WHEN excluded.session_id='' THEN threads.session_id
+                                    ELSE excluded.session_id END,
+                    project_id=CASE WHEN excluded.project_id='' THEN threads.project_id
+                                    ELSE excluded.project_id END,
+                    history_visible=MAX(threads.history_visible,excluded.history_visible),
+                    updated_at=excluded.updated_at""",
+                    (thread_id, str(session_id or ""), str(project_id or ""), now, now,
+                     int(bool(show_in_history))))
+        except sqlite3.Error as error:
+            raise ConversationStoreError("conversation_store_write_failed") from error
+        finally:
+            db.close()
+
+    def import_checkpoint_messages(self, thread_id: str, messages: Iterable[tuple[Any, str]], *,
+                                   session_id="", project_id="") -> int:
+        """Atomically seed an empty canonical transcript from an old checkpoint."""
+        thread_id = str(thread_id).strip()
+        if not thread_id:
+            raise ValueError("thread_id_required")
+        prepared = []
+        for message, turn_id in messages:
+            payload = _message_payload(message)
+            if payload is not None and payload["id"]:
+                prepared.append((payload, str(turn_id or "")))
+        db = self._connect()
+        now = _now()
+        try:
+            with db:
+                db.execute("""INSERT INTO threads
+                    (thread_id,session_id,project_id,created_at,updated_at)
+                    VALUES(?,?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
+                    session_id=CASE WHEN excluded.session_id='' THEN threads.session_id
+                                    ELSE excluded.session_id END,
+                    project_id=CASE WHEN excluded.project_id='' THEN threads.project_id
+                                    ELSE excluded.project_id END""",
+                    (thread_id, str(session_id or ""), str(project_id or ""), now, now))
+                existing = db.execute(
+                    "SELECT COUNT(*) FROM messages WHERE thread_id=?", (thread_id,)).fetchone()[0]
+                if existing:
+                    return 0
+                inserted = 0
+                for payload, turn_id in prepared:
+                    cursor = db.execute("""INSERT OR IGNORE INTO messages
+                        (thread_id,message_id,turn_id,role,payload_json,created_at)
+                        VALUES(?,?,?,?,?,?)""",
+                        (thread_id, payload["id"], turn_id, payload["role"],
+                         json.dumps(payload, ensure_ascii=False, separators=(",", ":")), now))
+                    inserted += cursor.rowcount
+                    if cursor.rowcount and payload["role"] == "user":
+                        title = _content_text(payload.get("content", "")).strip().splitlines()[0][:100]
+                        db.execute("UPDATE threads SET title=CASE WHEN title='' THEN ? ELSE title END WHERE thread_id=?",
+                                   (title, thread_id))
+                db.execute("UPDATE threads SET message_count=?,updated_at=? WHERE thread_id=?",
+                           (inserted, now, thread_id))
+                return inserted
+        except sqlite3.Error as error:
+            raise ConversationStoreError("conversation_store_write_failed") from error
+        finally:
+            db.close()
+
+    def get_thread(self, thread_id: str) -> dict[str, Any] | None:
+        db = self._connect()
+        try:
+            row = db.execute("""SELECT thread_id,session_id,project_id,title,created_at,
+                updated_at,message_count FROM threads WHERE thread_id=?""",
+                (str(thread_id),)).fetchone()
+            return dict(row) if row else None
+        except sqlite3.Error as error:
+            raise ConversationStoreError("conversation_store_read_failed") from error
         finally:
             db.close()
 
@@ -653,7 +742,8 @@ class ConversationStore:
         db = self._connect()
         try:
             rows = db.execute("""SELECT thread_id,session_id,project_id,title,created_at,
-                updated_at,message_count FROM threads ORDER BY updated_at DESC LIMIT ?""",
+                updated_at,message_count FROM threads WHERE message_count>0 OR history_visible=1
+                ORDER BY updated_at DESC LIMIT ?""",
                 (max(1, min(500, int(limit))),)).fetchall()
             return [dict(row) for row in rows]
         except sqlite3.Error as error:

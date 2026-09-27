@@ -1,0 +1,107 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1030-conversation-history-r11",
+    "feature":  "Validate persisted conversation history, guarded New Chat, and transcript restoration",
+    "validation_mode":  "gui",
+    "interaction_plan":  "docs/devops/sprints/validation-plans/sprint-1030-conversation-history.json",
+    "target_sequence":  "sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-27T06:56:34.0851100Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.07 log=artifacts/evidence/sprint-1030-conversation-history-r11/preflight.log",
+                      "finished_utc":  "2026-09-27T06:56:35.2786380Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=96.19 log=artifacts/evidence/sprint-1030-conversation-history-r11/build.log",
+                      "finished_utc":  "2026-09-27T06:58:11.4834916Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=195.99 log=artifacts/evidence/sprint-1030-conversation-history-r11/ctest.log",
+                      "finished_utc":  "2026-09-27T07:01:27.4760385Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=20.79 log=artifacts/evidence/sprint-1030-conversation-history-r11/ui_harness.log",
+                      "finished_utc":  "2026-09-27T07:01:48.2671986Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=6",
+                      "finished_utc":  "2026-09-27T07:01:48.4807262Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-27T07:01:48.5227248Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/build.log",
+                                         "sha256":  "D1DC3F7E4E109724F153477BB9094232D5E67E2AD08744BE571594AF0AFE4655"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/ctest.log",
+                                         "sha256":  "AFC9866EC7B228B790819A9C33854FCF1C1DD63B07BA8ABF1E3D2B66E962AEA9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11.stdout.log",
+                                         "sha256":  "C02D8BAF66994390EBEFC51FC2BC189F33B494E03CF3F29ADC0F54DED8EA2DAB"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-before.png",
+                                         "sha256":  "2C361D78FD5294B88FAEAB078A11EB09BBA075A0C3AF87D35B341EAF987FC325"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-initial-action_agent_new_chat.png",
+                                         "sha256":  "1F44645A50BDC2AF6DB5D24763913B61592DF758DB1507933F434966DBCDA858"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-initial-action_agent_submit_chat.png",
+                                         "sha256":  "823F3190D3ECE898495A2ACB0EC592040C2EC630F71D8415F81E63F072598EF7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-initial-agent_chat_input-typed.png",
+                                         "sha256":  "F25292BD5E1DA66CEC9EC19CE4212A2EAEF008012EF385479EBA76FFE7FE48EE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-initial-history-populated.png",
+                                         "sha256":  "07EEA4550D783A54E5C19C236891770C1597C77DEE9706F416C53FF07DF311FE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-initial-history-resumed.png",
+                                         "sha256":  "C6F9C3E33D3669FBA14F7C93F377FC47A404B7EB77ACDEE63050519D37BFE6D1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/sprint1030-conversation-history-r11-sprint-1030-conversation-history-r11-target-sequence.json",
+                                         "sha256":  "725CA1C916DF365984FF9157374CCD84D093AED9B8CB939407BA591824D03E59"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1030-conversation-history-r11/ui_harness.log",
+                                         "sha256":  "ED228CF458BE49D6218EA7FC44A579D790A19B52EFB504D281DC79126607335B"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T07:01:48.6057277Z"
+}

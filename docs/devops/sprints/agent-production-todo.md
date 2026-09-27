@@ -2,8 +2,39 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1030 — Conversation history and checkpoint migration
+
+References checked: [LangGraph checkpoint reference](https://langchain-ai.github.io/langgraph/reference/checkpoints/) documents checkpoints as graph-state snapshots grouped by stable `thread_id`; `get_state` is the authoritative read path. CCad imports only the resolved messages for the matching thread into its separate canonical transcript, leaving LangGraph checkpoint data unchanged.
+
+- [x] Register empty threads and return safe conversation metadata through JSON-RPC.
+- [x] Restore full redacted transcripts in Agent chat by stable thread ID.
+- [x] Add History and New Chat controls; prevent thread switches while proposals/approvals are pending.
+- [x] Import legacy LangGraph checkpoint messages atomically when canonical history is empty.
+- [x] Verify checkpoint migration, restart isolation, full transcript restoration, and zero provider calls.
+- [x] Run official mapped GUI interaction and inspect screenshots/stdout/stderr; 10 mapped interactions and six reviewed images. Evidence: `artifacts/evidence/sprint-1030-conversation-history-r11.json` (SHA-256 `93AFA82AF574A432D09526641319E9483C8FBD31BEF3F9D831C4A00467BD059C`).
+- [x] Pass Pyright (0 diagnostics), Qt Release build, full CTest (120/120), docs, and secret-scan gates for the verified source diff.
+- [ ] Complete a clean clangd diagnostic pass for the changed Qt translation units; clangd 19.1.7 stalled beyond two minutes on `agent_panel.cpp` and emitted internal `ExtractFunction` break/continue errors, so this check remains unverified.
+- [ ] Commit and push the verified Sprint 1030 slice.
+
+Scope: Group M1 only. Sidebar/pin/recent UX and semantic history search remain open.
+
+### Sprint 1031 — Safe end-to-end Markdown in Agent chat
+
+References checked before implementation: [Qt 6 `QTextDocument` Markdown support](https://doc.qt.io/qt-6/qtextdocument.html) provides CommonMark/GitHub-dialect parsing, including tables, and `MarkdownNoHTML` to discard embedded HTML; [Qt 6 `QTextBrowser` link handling](https://doc.qt.io/qt-6/qtextbrowser.html) allows automatic navigation to be disabled and links to be filtered through `anchorClicked`. CCad will use those native facilities only for assistant-authored message blocks and will separately prevent remote image loading and unsafe URL navigation.
+
+- [x] Render assistant Markdown as formatted chat content instead of showing raw Markdown delimiters.
+- [x] Preserve headings, lists, GitHub tables, links, inline emphasis, and fenced code in live messages and resumed transcripts.
+- [x] Keep user text and system/status notices plain text; distinguish them from assistant-authored Markdown.
+- [x] Apply a bounded, safe Markdown rendering policy: disable raw HTML, allow only explicit credential-free HTTP(S) links, and block file navigation plus all image/resource loading.
+- [x] Add Qt contracts for Markdown structure, literal user text, link policy, code blocks, and persisted transcript rendering.
+- [x] Validate a persisted engineering reply in the live Agent panel; inspect six distinct screenshots and stdout/stderr. Evidence: `artifacts/evidence/sprint-1031-agent-markdown-r2.json` (SHA-256 `782F76E6033FB34DE0AACEA3C0F91DF10D53AF34E32561B06231D85239A52572`).
+- [x] Pass Qt Release build, full CTest (120/120), Pyright (0 diagnostics), and update feature/handover/progress docs. clangd's incomplete result is tracked above rather than claimed passed.
+
+Scope: native Qt rich-text rendering only; no provider prompt or response semantics change.
+
 ### Sprint 1029 — CI / CTest / CD incident recheck
 
+- [x] Refresh live main status: run `36288660706` (#571) succeeds on exact SHA `be0275e7bce37f2b4a4ba8d773b0aaabd5968732`; all five jobs pass, including Linux core, Linux GUI, and Windows core CTest. The latest 30 main-branch runs contain no failures.
 - [x] Inspect current main run `36286955736` on exact SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; all five jobs pass, including the Linux core, Linux GUI, and Windows core CTest jobs.
 - [x] Inspect the latest historical red cluster (#539/#540): all three native CTest lanes failed the same `agent_project_index` test because it read an ignored local demo-board fixture absent from clean runners; later source repair removed that dependency.
 - [x] Run the official nonvisual Release/full-CTest verifier on unchanged source, reusing the previously passing Sprint 1028 build/test logs; manifest `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json` (SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`).
@@ -627,7 +658,7 @@ References Checked: [Langfuse SDK instrumentation](https://langfuse.com/docs/obs
 - [x] Verify chat, persistence status, and `/clear` through the isolated live GUI-map flow.
 - [x] Run focused Python tests, Pyright, clangd, Release build, full CTest, visual inspection, and secret scan.
 - [x] Update handover, feature, lifecycle, progress, backlog, and TODO documentation in the implementation commit.
-- [ ] Follow-on: migrate existing checkpoint-only history, add history UI/resume integration, and semantic retrieval beyond lexical turn search.
+- [x] Follow-on: migrate existing checkpoint-only history and add History/New Chat/resume integration (Sprint 1030); semantic history retrieval remains open.
 
 ## Update protocol and active slice
 
