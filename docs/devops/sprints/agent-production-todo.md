@@ -2,6 +2,14 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1028 — CI, CTest, and CD status reconciliation
+
+- [x] Inspect live GitHub Actions status: latest run `36285258780` succeeds on current `main` SHA `21e0368c74df21cd99246af55258a46ac9af47b`; all five jobs pass, with CTest in the Linux core, Linux GUI, and Windows core jobs.
+- [x] Trace latest historical failure `36234661589` (SHA `fc1b960e340d4634fa412f91c6a8a7ae7e810a63`) to the already-repaired test dependency on an ignored local demo-board fixture; subsequent runs pass.
+- [x] Run official Qt/MinGW Release verification locally; preflight and build pass and full CTest passes 120/120. Workspace-only manifest `artifacts/evidence/sprint-1028-ci-ct-cd-reconciliation.json` (SHA-256 `2CE020755EA214FB5E3B000B11B805CD75C763CD5314B52FB467D0AE7453C8B9`).
+- [x] Pass CI failure-propagation and clean-checkout regression contracts.
+- [x] Confirm `.github/workflows/ci.yml` is the only workflow; CD is not configured because no release artifact, destination, or publishing policy is defined. Do not treat missing CD as a failed pipeline or invent a deployment target.
+
 ### Sprint 1027 — Working Memory semantics and CI/CTest reliability
 
 - [x] Rename task-scoped, process-only scratch memory in user-facing text and canonical runtime state to Working Memory; keep `stm` as a backward-compatible input alias.

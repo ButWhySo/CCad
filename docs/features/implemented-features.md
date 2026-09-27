@@ -1,6 +1,10 @@
 # Implemented Features
 
-## Sprint 1027 — Working Memory and CI/CTest reliability (local verification passed; hosted verification pending)
+## Sprint 1028 — CI/CTest health reconciliation
+
+The live Actions run `36285258780` passes all five configured jobs on current `main` SHA `21e0368c74df21cd99246af55258a46ac9af47b`; the Linux core, Linux GUI, and Windows core jobs each run CTest. The latest historical failed run `36234661589` used older SHA `fc1b960e340d4634fa412f91c6a8a7ae7e810a63` and is superseded; its fixture dependency was already removed. Local Qt/MinGW Release verification passes all 120 CTests, and CI failure-propagation/clean-checkout contracts pass. Manifest `artifacts/evidence/sprint-1028-ci-ct-cd-reconciliation.json` (SHA-256 `2CE020755EA214FB5E3B000B11B805CD75C763CD5314B52FB467D0AE7453C8B9`). This repository has no CD workflow or deployment target; CD is unconfigured, not failing.
+
+## Sprint 1027 — Working Memory and CI/CTest reliability (hosted verification passed)
 
 Agent Settings and runtime now call the task-scoped, process-only scratch tier **Working Memory**. Existing `memory.stm` config migrates to canonical `memory.working_memory`; the `stm` alias remains accepted for compatibility. Working Memory does not enter durable memory storage, and disabling/resetting it does not delete ConversationStore transcript or durable LTM/episodic records. The Manage Memories tier selector distinguishes task scratch from conversation/thread storage.
 
@@ -8,7 +12,7 @@ The Python CI lane captures diagnostic output without piping the test-command gr
 
 Local verification: Qt MinGW Release build passed, full CTest passed 120/120, and the app-owned GUI-map sequence passed 10 mapped interactions with five distinct screenshots inspected and empty stderr. Workspace-only evidence manifest: `artifacts/evidence/sprint-1027-working-memory-semantics-r3.json` (SHA-256 `4B0A68AC1B3B5379C75484422EADDAE3881B9A2796086C0EA802311364E0CE9A`).
 
-The sole active workflow, `.github/workflows/ci.yml`, retains its Python, Linux core, Linux GUI, Windows core, and evidence-manifest jobs. The Python contract step uses Bash process-substitution logging so a failing check exits the step rather than being hidden by a `tee` pipeline. Artifact upload uses `actions/upload-artifact@v6`, and runner labels are pinned to `ubuntu-24.04` and `windows-2025`. Local workflow contracts and shell failure simulation passed; hosted confirmation on the pushed SHA remains required. This project currently defines no desktop release artifact or publishing destination, so no CD workflow is claimed or fabricated.
+The sole active workflow, `.github/workflows/ci.yml`, retains its Python, Linux core, Linux GUI, Windows core, and evidence-manifest jobs. The Python contract step uses Bash process-substitution logging so a failing check exits the step rather than being hidden by a `tee` pipeline. Artifact upload uses `actions/upload-artifact@v6`, and runner labels are pinned to `ubuntu-24.04` and `windows-2025`. Local workflow contracts and shell failure simulation passed; the exact pushed implementation SHA was confirmed green in run `36284734768`. This project currently defines no desktop release artifact or publishing destination, so no CD workflow is claimed or fabricated.
 
 ## Agent Python analysis in workspace and CI (Sprint 1026)
 
