@@ -86,6 +86,7 @@ class TelemetryRuntime:
         self._last_span_id = ""
         self._observation_count = 0
         self._turn_scope = None
+        self._turn_observation = None
         self._development_logging = os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}
         self._status = self._state(False, False, "disabled")
 
@@ -188,7 +189,7 @@ class TelemetryRuntime:
                 self._exporter.last_result = None
                 self._exporter.last_span_count = 0
 
-    def start_agent_turn(self, thread_id, metadata=None):
+    def start_agent_turn(self, thread_id, metadata=None, *, input_data=None):
         """Open one active root so context and graph observations share a trace."""
         self.finish_agent_turn()
         self.begin_turn()
@@ -197,13 +198,16 @@ class TelemetryRuntime:
                 return False
         scope = ExitStack()
         try:
-            scope.enter_context(self.session(thread_id))
-            scope.enter_context(self.observation("agent.turn", "agent", metadata or {}))
+            turn_id = str((metadata or {}).get("turn_id", ""))
+            scope.enter_context(self.session(thread_id, turn_id=turn_id))
+            root = scope.enter_context(self.observation(
+                "agent.turn", "agent", metadata or {}, input_data=input_data))
         except Exception:
             scope.close()
             raise
         with self._lock:
             self._turn_scope = scope
+            self._turn_observation = root
         return True
 
     def finish_agent_turn(self):
@@ -211,9 +215,15 @@ class TelemetryRuntime:
         with self._lock:
             scope = self._turn_scope
             self._turn_scope = None
+            observation = self._turn_observation
+            self._turn_observation = None
         if scope is None:
             return False
-        scope.close()
+        try:
+            if observation is not None:
+                observation.update(output={"terminal_state": "closed"})
+        finally:
+            scope.close()
         return True
 
     def flush_turn(self):
@@ -280,14 +290,16 @@ class TelemetryRuntime:
         return self.observation(name)
 
     @contextmanager
-    def observation(self, name, as_type="span", metadata=None, model=None):
+    def observation(self, name, as_type="span", metadata=None, model=None,
+                    input_data=None):
         with self._lock:
             client = self._langfuse_client
         if client is None:
             yield None
             return
         with client.start_as_current_observation(name=name, as_type=as_type,
-                metadata=redact(metadata or {}), model=model) as observation:
+                metadata=redact(metadata or {}), model=model,
+                input=redact(input_data) if input_data is not None else None) as observation:
             if observation is None:
                 raise RuntimeError("observation_not_created")
             observation = cast(Any, observation)
@@ -302,11 +314,17 @@ class TelemetryRuntime:
                 with self._lock:
                     self._active_trace_id = self._active_span_id = ""
 
-    def session(self, thread_id):
+    def session(self, thread_id, *, turn_id=""):
         if self._langfuse_client is None:
             return nullcontext()
         from langfuse import propagate_attributes
-        return propagate_attributes(session_id=str(thread_id), tags=["ccad"])
+        attributes = {"session_id": str(thread_id), "tags": ["ccad"]}
+        if turn_id:
+            attributes.update(
+                trace_name="ccad.agent.turn",
+                metadata={"ccad_turn_id": str(turn_id)},
+            )
+        return propagate_attributes(**attributes)
 
     def test_export(self):
         """Emit a real trace and fetch that exact ID; flushing alone is not proof."""

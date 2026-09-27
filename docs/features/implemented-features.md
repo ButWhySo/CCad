@@ -9,13 +9,15 @@ by exact trace ID, follows pagination, counts only observations belonging to
 that trace, and retries within a bounded interval; normal turn readback has a
 shorter cap than an explicit connection test. Provider export remains
 metadata-only and never treats exporter acceptance as proof of indexed receipt.
-The resolved environment is `langfuse 4.7.1` with `pydantic 2.13.4`. Offline
-contracts cover endpoint/header/readback/pagination/privacy, and actual hosted
+A real SDK/exporter-to-local-receiver contract decodes the emitted protobuf and
+checks the exact v4 path/header/auth, root and child identity, propagated
+correlation, bounded root digest/count, and absence of credential bytes. The
+resolved environment is `langfuse 4.7.1` with `pydantic 2.13.4`. Actual hosted
 Langfuse receipt remains unverified until project access is configured. Qt
-Release and full CTest pass 120/120; Pyright reports zero diagnostics and all
-Agent Python files compile. Evidence manifest
-`artifacts/evidence/sprint-1034-langfuse-v4-compatibility.json` (SHA-256
-`F3905B76E182FE1AC91B803B86E7B4315BDF4E49DFCD301B002360B1AB434752`).
+Release and full CTest pass 122/122; Pyright reports zero diagnostics.
+Workspace manifest
+`artifacts/evidence/sprint-1034-langfuse-v4-wire-contract.json` (SHA-256
+`317EF50D635676B35FFFF9D09E0106302395153A29BD9E3679A18EEF6750965A`).
 
 ## Sprint 1033 — Agent cold-start and provider credential isolation
 

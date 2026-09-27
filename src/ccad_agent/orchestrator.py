@@ -2692,11 +2692,17 @@ def handle_human_message(req):
     raw_context = params.get("context", "")
     requested_thread = str(params.get("thread_id") or
                            os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
+    turn_id = uuid.uuid4().hex
+    prompt_text = text if isinstance(text, str) else ""
     telemetry_runtime.start_agent_turn(requested_thread, {
         "thread_id_hash": hashlib.sha256(
             requested_thread.encode()).hexdigest()[:16],
+        "turn_id": turn_id,
         "workflow": active_workflow,
         "provider_ready": str(llm is not None).lower(),
+    }, input_data={
+        "prompt_sha256": hashlib.sha256(prompt_text.encode("utf-8")).hexdigest(),
+        "prompt_chars": len(prompt_text),
     })
     requested_session = str(params.get("session_id") or requested_thread)
     requested_task = (memory_task_scopes.current(requested_session)
@@ -3221,7 +3227,6 @@ def handle_human_message(req):
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
             return
 
-    turn_id = uuid.uuid4().hex
     user_message = HumanMessage(content=text)
     try:
         next_history = bound_session_history([*session_messages, user_message])

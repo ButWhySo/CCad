@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 from typing import Any, cast
@@ -44,7 +45,11 @@ def main() -> None:
     test_exporter.last_span_count = 0
     runtime._development_logging = False
 
-    assert runtime.start_agent_turn("thread-contract", {"workflow": "contract"})
+    assert runtime.start_agent_turn(
+        "thread-contract",
+        {"workflow": "contract", "turn_id": "turn-contract"},
+        input_data={"prompt_sha256": "a" * 64, "prompt_chars": 12},
+    )
     root_trace = runtime.current_trace()["trace_id"]
     with runtime.observation("context.assemble", "chain"):
         with runtime.observation("memory.retrieve", "retriever"):
@@ -83,6 +88,20 @@ def main() -> None:
     assert parent_span_id("memory.retrieve") == contexts["context.assemble"].span_id
     assert parent_span_id("context.package") == contexts["context.assemble"].span_id
     assert parent_span_id("agent-turn") == contexts["agent.turn"].span_id
+
+    root = by_name["agent.turn"]
+    root_attrs = root.attributes or {}
+    assert json.loads(root_attrs["langfuse.observation.input"]) == {
+        "prompt_sha256": "a" * 64, "prompt_chars": 12,
+    }, root_attrs
+    assert json.loads(root_attrs["langfuse.observation.output"]) == {
+        "terminal_state": "closed",
+    }, root_attrs
+    for span in spans:
+        attrs = span.attributes or {}
+        assert attrs.get("langfuse.session.id", attrs.get("session.id")) == "thread-contract", (span.name, attrs)
+        assert attrs["langfuse.trace.name"] == "ccad.agent.turn", (span.name, attrs)
+        assert attrs["langfuse.trace.metadata.ccad_turn_id"] == "turn-contract", (span.name, attrs)
 
     client.shutdown()
     provider.shutdown()

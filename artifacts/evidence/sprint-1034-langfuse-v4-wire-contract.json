@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1034-langfuse-v4-wire-contract",
+    "feature":  "Langfuse v4 root observation and local OTLP wire verification",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-27T12:56:35.6967177Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.97 log=artifacts/evidence/sprint-1034-langfuse-v4-wire-contract/preflight.log",
+                      "finished_utc":  "2026-09-27T12:56:36.7898411Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=26.94 log=artifacts/evidence/sprint-1034-langfuse-v4-wire-contract/build.log",
+                      "finished_utc":  "2026-09-27T12:57:03.7467588Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=209.98 log=artifacts/evidence/sprint-1034-langfuse-v4-wire-contract/ctest.log",
+                      "finished_utc":  "2026-09-27T13:00:33.7252255Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-langfuse-v4-wire-contract/build.log",
+                                         "sha256":  "00BA2A420488040975BE4253BB98615752D8A76004F7C8FAC3D1E1167B99AECD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-langfuse-v4-wire-contract/ctest.log",
+                                         "sha256":  "76CB156B3BDA1739DBAAE8832C8177331D3487ED0FA2120E7DEDC12E5852497C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-langfuse-v4-wire-contract/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T13:00:33.8472194Z"
+}

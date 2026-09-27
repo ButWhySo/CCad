@@ -9,9 +9,10 @@ Check a box only after implementation and its required evidence exist.
 - [x] Move exact-trace readback from deprecated trace-detail API to v4 `api.observations.get_many`, with trace filtering and cursor pagination.
 - [x] Bound routine development-turn readback separately from the longer explicit connection-test readback; report indexed observation count and never equate collector acceptance with backend receipt.
 - [x] Add v4 compatibility tests for endpoint/region/header/readback/pagination/privacy, pass Python analysis, Release build, and full CTest (120/120); manifest `artifacts/evidence/sprint-1034-langfuse-v4-compatibility.json` (SHA-256 `F3905B76E182FE1AC91B803B86E7B4315BDF4E49DFCD301B002360B1AB434752`).
-- [ ] Audit applicable evaluator, dataset/experiment, API, and export consumers; record repository findings and keep project-side state blocked without Langfuse project access.
+- [x] Verify the configured Langfuse SDK/exporter over actual local OTLP HTTP/protobuf, including v4 path/header/auth, safe root IO, parent-child identity, propagated correlation, and credential absence; official Release build and full CTest pass 122/122 in `sprint-1034-langfuse-v4-wire-contract`.
+- [x] Audit repository evaluator, dataset/experiment, API, and export consumers and record findings; project-owned state remains explicitly blocked without Langfuse access.
 - [ ] Send an opt-in non-production canary and verify the actual Langfuse Cloud hierarchy, metadata, session, usage, and filtering after access is configured.
-- [ ] Return the seven-row Langfuse v4 readiness report with project-dependent checks explicitly blocked until validated.
+- [x] Return and persist the seven-row Langfuse v4 readiness report with project-dependent checks explicitly blocked until validated.
 
 ### Sprint 1033 — Agent startup and provider IPC reliability
 
@@ -948,6 +949,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Fix dark-theme rendering of the MCP Servers table, including readable header, empty-state, and row backgrounds.
 - [ ] Replace text-only proposal review with typed staged PCB/schematic before/after renders and real change lists.
 - [ ] Derive preview changes from authoritative before/staged diffs, keyed by stable PCB/schematic object IDs and typed operations.
+- [ ] Assert the before pane renders the authoritative base revision and the after pane the staged revision, with every changed object visible and legible; fail review instead of accepting missing, stale, or off-camera geometry.
 - [ ] Render both states from the same viewport, zoom, active domain, visible layers, and object-focused camera so changes cannot disappear due to mismatched scale.
 - [ ] Keep unchanged geometry in normal theme colors; highlight only added/modified objects with the existing active-selection treatment in both panes.
 - [ ] Show removed objects as explicitly labelled old-geometry ghosts in the after pane; never imply removed geometry still exists.
@@ -1521,12 +1523,13 @@ Code-only migration is required before the Cloud cutoff; project-specific state 
 - [x] Add `x-langfuse-ingestion-version: 4` to direct OTLP/HTTP export; test endpoint, regional host, and Basic Auth without exposing credentials.
 - [x] Replace deprecated trace-detail reads with v4 Observations API v2; test time-bounded trace filtering, cursor pagination, hierarchy, and response parsing.
 - [ ] Verify one complete immutable root observation per Agent turn, safe root input/output, correct nesting, and correlation attributes propagated before child observations.
+- [x] Prove the v4 HTTP exporter delivers protobuf to a local receiver with the exact path, ingestion header, Basic Auth, parent/child IDs, session/name/turn metadata, safe root digest/count, and no credential bytes in payload.
 - [x] Preserve metadata-only redaction and ensure prompts, design, tool arguments, paths, and secrets stay out of exported spans by default.
 - [ ] Verify the exact canary hierarchy after flush/readback with bounded eventual-consistency retries; no success claim from HTTP acceptance alone.
 - [x] Audit the repository for deprecated trace/span/generation ingestion, read APIs, trace-I/O assumptions, API namespaces, and direct HTTP calls; no other legacy Langfuse API consumers were found.
 - [x] Audit repository evaluator and dataset/experiment API usage; none are present. Project-side evaluator rules remain blocked until account access.
 - [ ] Audit project exports/integrations and consumers; keep their compatibility and cutover confirmation blocked until the target project is inspected.
-- [ ] Run code-only compatibility contracts and sanitized local ingestion tests; mocked tests do not prove project migration.
+- [x] Run code-only compatibility contracts and sanitized local ingestion against a real local OTLP receiver; this proves wire-format delivery, not project migration.
 - [ ] With project access, send a uniquely tagged non-production canary and inspect hierarchy, attributes, sessions, usage/cost, filtering, and privacy in Langfuse.
 - [x] Return and persist exactly seven readiness rows with project-only gaps explicitly blocked; see `docs/devops/sprints/sprint-1034-langfuse-v4-readiness.md`.
 

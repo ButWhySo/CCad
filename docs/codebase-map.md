@@ -1932,9 +1932,12 @@ Sprint 1034 handover: `src/ccad_agent/telemetry.py` pins compatibility through
 exact trace observations through `client.api.observations.get_many()` with
 cursor pagination. The export boundary stays metadata-only. Development turn
 readback is bounded to two seconds; explicit connection tests allow twenty
-seconds for indexing. Contract tests inspect endpoint/header behavior and
-reject observations belonging to another trace. These offline checks establish
-repository compatibility only; they do not establish Cloud project migration,
+seconds for indexing. `scripts/test_langfuse_v4_local_ingestion.py` decodes a
+real local OTLP protobuf request and asserts endpoint, v4 header, Basic Auth,
+single root/child ancestry, safe root input/output, and propagated session and
+turn metadata without credentials in payload. The updated Qt Release/full
+CTest gate passes 122/122; Pyright reports zero diagnostics. These local checks
+establish repository behavior only, not Cloud project migration,
 evaluator/export status, or live receipt.
 
 Sprint 952 handover: `ReviewWindow::projectContextJson()` emits a bounded typed
