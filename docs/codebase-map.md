@@ -2221,6 +2221,14 @@ HTTP(S) URLs. All image/resource requests are denied, including local files.
 lists, code, raw HTML, unsafe URLs, blocked images, and literal user content.
 The saved-transcript UI proof is `sprint1031-agent-markdown-r2`; the code-block
 content is selectable text, not executed or interpreted code.
+
+Sprint 1032 revalidated the same renderer in a freshly launched Release GUI
+after raw Markdown was reported. The final provider reply protocol includes
+`content_format=markdown`, and resumed assistant messages select Markdown by
+role. The isolated UI-map run rendered a persisted formatted response and kept
+the user prompt plain; all six screenshots and captured logs were inspected.
+If an older GUI process remains open while binaries are rebuilt, it must be
+restarted to load the updated renderer. Evidence: `artifacts/evidence/sprint-1032-agent-markdown-runtime.json`.
 ### Sprint 986 bounded project spatial and diagnostic retrieval
 
 `ProjectIndex._sync()` now fingerprints the authoritative typed project (including the live diagnostics copied beside `typed_state`) before extracting entity documents. Unchanged project state reuses the in-memory index even when transient GUI selection or active-layer values change; edits still refresh signatures and indexes against the full authoritative snapshot. A reproducible command, `python scripts/benchmark_project_index.py --objects 10000`, reports cold-build, cached-query, and single-entity-update timings without asserting machine-specific thresholds. Current local results are recorded in the sprint TODO; single-entity edits still pay for a full snapshot extraction and transaction-delta maintenance remains open.

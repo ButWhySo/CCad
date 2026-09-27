@@ -2,6 +2,14 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1032 — Agent Markdown current-runtime recheck
+
+- [x] Rebuild/run the current Qt Release app through the official mapped history scenario; verify persisted assistant Markdown is formatted, user text stays literal, and no provider request is needed.
+- [x] Inspect all six distinct screenshots and captured stdout/stderr; full CTest passes 120/120. Evidence: `artifacts/evidence/sprint-1032-agent-markdown-runtime.json` (SHA-256 `4B4A5E7BAEC37E8339A62762ADC140DC1F5AE3FBD3CA2640F3AF1581CA7D2899`).
+- [x] Trace the live response contract: Python labels completed model replies `content_format=markdown`; Qt forwards that flag to the safe Markdown renderer. Current Release GUI did not reproduce the raw-Markdown report; restart an already-open older GUI process to load the verified renderer.
+
+Scope: verification and diagnosis only; no Markdown parser/provider semantics changed.
+
 ### Sprint 1030 — Conversation history and checkpoint migration
 
 References checked: [LangGraph checkpoint reference](https://langchain-ai.github.io/langgraph/reference/checkpoints/) documents checkpoints as graph-state snapshots grouped by stable `thread_id`; `get_state` is the authoritative read path. CCad imports only the resolved messages for the matching thread into its separate canonical transcript, leaving LangGraph checkpoint data unchanged.

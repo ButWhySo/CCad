@@ -1,0 +1,107 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1032-agent-markdown-runtime",
+    "feature":  "Verify current Release GUI renders live and persisted assistant Markdown; isolate stale running-process reports",
+    "validation_mode":  "gui",
+    "interaction_plan":  "docs/devops/sprints/validation-plans/sprint-1031-agent-markdown.json",
+    "target_sequence":  "sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-27T08:45:55.5759080Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.91 log=artifacts/evidence/sprint-1032-agent-markdown-runtime/preflight.log",
+                      "finished_utc":  "2026-09-27T08:45:56.5864880Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=6.57 log=artifacts/evidence/sprint-1032-agent-markdown-runtime/build.log",
+                      "finished_utc":  "2026-09-27T08:46:03.1759019Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=234.24 log=artifacts/evidence/sprint-1032-agent-markdown-runtime/ctest.log",
+                      "finished_utc":  "2026-09-27T08:49:57.4192044Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=20.13 log=artifacts/evidence/sprint-1032-agent-markdown-runtime/ui_harness.log",
+                      "finished_utc":  "2026-09-27T08:50:17.5574180Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=6",
+                      "finished_utc":  "2026-09-27T08:50:17.7099517Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-27T08:50:17.7529520Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/ctest.log",
+                                         "sha256":  "1BBB2DCE67E1BB33A204BC538D9564D5346888C0FD57FB20BE296C1EF3037061"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime.stdout.log",
+                                         "sha256":  "9FC47FFF361832CF2464EB757EB98BBB590BC8EA0D7C2EDED421BACF1F3E32BE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-before.png",
+                                         "sha256":  "488C449ED1256A1167FD9BD7B813F3F5AEF2E48B694D99D1F6BFEE15EA38AE00"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-initial-action_agent_new_chat.png",
+                                         "sha256":  "1F44645A50BDC2AF6DB5D24763913B61592DF758DB1507933F434966DBCDA858"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-initial-action_agent_submit_chat.png",
+                                         "sha256":  "1AC0AB2863C95D8658CD7B62AFEEB790D6722E1956FA578017B50A68BF91B9C5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-initial-agent_chat_input-typed.png",
+                                         "sha256":  "2926E8E28A6A3D171D7464604F39B23F09918FD4EE5E1297502660C1504015AE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-initial-history-populated.png",
+                                         "sha256":  "031F705EC0C4BE044016E50004BDACEA9A351360D5589D3BBB057D32BE080815"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-initial-history-resumed.png",
+                                         "sha256":  "1B5683CDD39B47455B7902F3EAC5C381EE2B4B1CA4F0F7FDE77740AC17F7062F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/sprint1031-agent-markdown-r1-sprint-1032-agent-markdown-runtime-target-sequence.json",
+                                         "sha256":  "DC5862C087D647BE669FAC42AAE9E6FE26A84DB24C9F05AB345F1238DF48D2B7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1032-agent-markdown-runtime/ui_harness.log",
+                                         "sha256":  "0E7EF670F8E70695902D064B4FF01E41BD8129989055D725BCCC7B55E87BC373"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T08:50:17.8189512Z"
+}

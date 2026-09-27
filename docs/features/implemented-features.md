@@ -19,6 +19,18 @@ persisted thread without a provider request. Qt Release and full CTest pass
 and stdout/stderr are in `artifacts/evidence/sprint-1031-agent-markdown-r2.json`
 (SHA-256 `782F76E6033FB34DE0AACEA3C0F91DF10D53AF34E32561B06231D85239A52572`).
 
+### Sprint 1032 runtime recheck
+
+After a user report of visible Markdown delimiters, the current Release
+executable was revalidated in a fresh isolated GUI process. The persisted
+assistant reply displayed a formatted heading, table, list, link, and fenced
+code; the user prompt stayed plain. Ten mapped interactions, six inspected
+screenshots, stdout/stderr review, and full CTest (120/120) passed without a
+provider request. The report was not reproduced; a GUI process already open
+before updating the executable must be restarted. Evidence manifest:
+`artifacts/evidence/sprint-1032-agent-markdown-runtime.json` (SHA-256
+`4B4A5E7BAEC37E8339A62762ADC140DC1F5AE3FBD3CA2640F3AF1581CA7D2899`).
+
 ## Sprint 1030 — Durable conversation History and New Chat
 
 The Agent backend registers new threads in the SQLite conversation store and
