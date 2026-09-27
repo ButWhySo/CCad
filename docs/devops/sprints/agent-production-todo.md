@@ -12,6 +12,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Verify the configured Langfuse SDK/exporter over actual local OTLP HTTP/protobuf, including v4 path/header/auth, safe root IO, parent-child identity, propagated correlation, and credential absence; official Release build and full CTest pass 122/122 in `sprint-1034-langfuse-v4-wire-contract`.
 - [x] Audit repository evaluator, dataset/experiment, API, and export consumers and record findings; project-owned state remains explicitly blocked without Langfuse access.
 - [ ] Send an opt-in non-production canary and verify the actual Langfuse Cloud hierarchy, metadata, session, usage, and filtering after access is configured.
+- [ ] Keep the canary project-dependent: do not request or commit credentials; after project access exists, send a uniquely tagged non-production turn, flush, fetch by its fresh trace ID, inspect root/child observations and propagated session/filter fields, and record delivery separately from local exporter acceptance.
 - [x] Return and persist the seven-row Langfuse v4 readiness report with project-dependent checks explicitly blocked until validated.
 
 ### Sprint 1033 — Agent startup and provider IPC reliability
@@ -24,7 +25,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Update the Agent UI runtime source contract to verify the actual safe `AgentChatBrowser` Markdown implementation.
 - [x] Run the exact hosted Python script set, Pyright (0 diagnostics), Python compilation, and checkpoint accept/deny/cancel restart tests.
 - [x] Pass Qt/MinGW Release and full CTest (120/120); inspect preflight/build/CTest logs and manifest `artifacts/evidence/sprint-1033-agent-lazy-graph.json` (SHA-256 `2213A62EFD3A8B994A6D55234748D263CF0DFF42F13F92F1DDF6F818FB6B7FF5`).
-- [ ] Push this branch and verify all hosted CI jobs on the exact pushed SHA before merging to `main`.
+- [ ] Open a pull request for the pushed branch and verify all hosted CI jobs on its exact head SHA before merging to `main`; the workflow runs only on `main` pushes, pull requests targeting `main`, or manual dispatch, and no run currently exists for this branch head.
 - [ ] Repair unrelated stale assertions in the broader offline Agent gate: method-catalog parity, pending-approval metadata, provider catalog/Cerebras source contracts, tool-approval metadata/policy, tool-result ordering, and removed `ui_add_polygon` schema test.
 
 ### Sprint 1033 follow-up — Chat message-format compatibility
@@ -949,16 +950,20 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Fix dark-theme rendering of the MCP Servers table, including readable header, empty-state, and row backgrounds.
 - [ ] Replace text-only proposal review with typed staged PCB/schematic before/after renders and real change lists.
 - [ ] Derive preview changes from authoritative before/staged diffs, keyed by stable PCB/schematic object IDs and typed operations.
-- [ ] Assert the before pane renders the authoritative base revision and the after pane the staged revision, with every changed object visible and legible; fail review instead of accepting missing, stale, or off-camera geometry.
-- [ ] Render both states from the same viewport, zoom, active domain, visible layers, and object-focused camera so changes cannot disappear due to mismatched scale.
-- [ ] Keep unchanged geometry in normal theme colors; highlight only added/modified objects with the existing active-selection treatment in both panes.
+- [ ] Reproduce the supplied Visual Change Review failure with a deterministic board fixture: the change list reports an added graphic, but the proposed geometry is not visibly present in either pane; record the fixture's object ID, operation, layer, base revision, and staged revision.
+- [ ] Assert the before pane renders the authoritative base revision and the after pane the staged revision; for additions require absence before and visible geometry after, for modifications require old geometry before and new geometry after, and for removals require old geometry before plus a clearly labelled ghost after.
+- [ ] Fail closed when a changed object is missing from its expected revision, hidden by layer/domain filtering, stale, clipped, off-camera, or too small to inspect; never show a successful review with a change-list entry but no corresponding rendered change.
+- [ ] Derive one shared camera from the changed-object bounds plus useful surrounding context, then render both revisions with the same domain, center, zoom, viewport size, and visible-layer set; prove changed geometry stays in-frame and legible in each pane.
+- [ ] Keep unchanged geometry in normal theme colors; draw changed old/new geometry using the existing active-selection highlight treatment, with operation-specific added/modified/removed styling that remains distinguishable from unchanged objects.
+- [ ] Verify the selected-style overlay does not replace normal layer/net colors for unchanged objects and does not imply that removed geometry remains in the staged design.
 - [ ] Show removed objects as explicitly labelled old-geometry ghosts in the after pane; never imply removed geometry still exists.
 - [ ] Highlight old and new forms of changed tracks, vias, pads, footprints, zones, graphics, symbols, pins, wires, junctions, and labels where supported.
 - [ ] Synchronize the change list with exact object focus and staged-data operation, layer/net, geometry, and reason.
 - [ ] Show added/removed DRC/ERC diagnostics as a before/after delta linked to affected objects.
-- [ ] Hide/fail previews when the staged diff has no renderable changed objects; never show canvases omitting the claimed change.
-- [ ] Test added/removed/modified styling, unchanged colors, camera sync, unsupported types, both PCB and schematic, and cancellation without mutation.
-- [ ] Visually validate each supported diff type; screenshots must show changed geometry in both panes and unchanged context in normal colors.
+- [ ] Hide/fail previews when the staged diff has no renderable changed objects; never show canvases omitting the claimed change or substitute unrelated/current-project geometry as the proposal.
+- [ ] Test added/removed/modified semantics, unchanged colors, shared camera, hidden layers, off-camera geometry, unsupported types, PCB and schematic domains, and cancellation without mutation.
+- [ ] After approval, verify the exact staged object is committed once, appears in the live PCB/schematic canvas with normal design styling, survives save/reload, and matches the reviewed change-set ID; report transaction failure instead of claiming success.
+- [ ] Visually validate each supported diff type with a fixture whose expected changed-object IDs are known; inspect before/after screenshots to prove the old/new geometry and unchanged context are actually visible.
 - [ ] Make proposal review a scrollable chat popout with viewport controls, object focus, and DRC/ERC delta.
 - [ ] Add editable annotations, reviewer comments, structured revision scope, revise/reject/cancel, and one approval boundary.
 - [ ] Render no preview for unsupported actions; report the exact unavailable/staging reason without fabricated geometry.
