@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1029 — Current hosted CI / CTest / CD status
+
+GitHub Actions run [`36286955736`](https://github.com/ButWhySo/CCad/actions/runs/36286955736) passes all five jobs on exact `main` SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; the Linux core, Linux GUI, and Windows core CTest steps are green. The recent red cluster on superseded SHAs failed because `agent_project_index` depended on an ignored local demo-board fixture; that dependency was removed by the self-contained fixture repair. The official nonvisual local verifier passes using the already successful Sprint 1028 Release/full-CTest logs, recorded in `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json` (SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`). `.github/workflows/ci.yml` is the only configured workflow. There is no CD workflow or release destination, so CD is unconfigured, not failing; deployment remains open until the desktop artifact, destination, trigger, signing, permissions, and rollback policy are specified.
+
 ## Sprint 1028 — CI/CTest health reconciliation
 
 The live Actions run `36285258780` passes all five configured jobs on current `main` SHA `21e0368c74df21cd99246af55258a46ac9af47b`; the Linux core, Linux GUI, and Windows core jobs each run CTest. The latest historical failed run `36234661589` used older SHA `fc1b960e340d4634fa412f91c6a8a7ae7e810a63` and is superseded; its fixture dependency was already removed. Local Qt/MinGW Release verification passes all 120 CTests, and CI failure-propagation/clean-checkout contracts pass. Manifest `artifacts/evidence/sprint-1028-ci-ct-cd-reconciliation.json` (SHA-256 `2CE020755EA214FB5E3B000B11B805CD75C763CD5314B52FB467D0AE7453C8B9`). This repository has no CD workflow or deployment target; CD is unconfigured, not failing.

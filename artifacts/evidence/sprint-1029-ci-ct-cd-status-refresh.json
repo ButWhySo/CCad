@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1029-ci-ct-cd-status-refresh",
+    "feature":  "Reconcile current hosted CI and CTest state; document confirmed absent CD target",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-27T02:25:01.5288609Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.28 log=artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh/preflight.log",
+                      "finished_utc":  "2026-09-27T02:25:02.9779264Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1028-ci-ct-cd-reconciliation; source timestamps precede test log",
+                      "finished_utc":  "2026-09-27T02:25:38.6066179Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1028-ci-ct-cd-reconciliation; 120/120 passed",
+                      "finished_utc":  "2026-09-27T02:25:38.6076198Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh/build.log",
+                                         "sha256":  "0526BB763C2B733DCB9D7D52504393D654F741A2D2741B04415E3C9056800B0C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh/ctest.log",
+                                         "sha256":  "BD16F78329D3B51B5E4BC021ABA55334185916636C84801308FCA716EBD8E83B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T02:25:38.6646265Z"
+}

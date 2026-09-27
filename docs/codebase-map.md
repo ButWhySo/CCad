@@ -2492,3 +2492,7 @@ generation; this slice does not close those items.
 ## CI and local verification status (2026-09-27)
 
 `.github/workflows/ci.yml` is the only configured workflow. Its five jobs cover Agent Python, Linux core/CTest, Linux GUI/CTest, Windows core/CTest, and the evidence manifest. The latest verified main run is recorded in `docs/devops/progress.md` and the active sprint TODO. CD is not configured because the project has not defined a desktop release artifact or publishing destination; do not describe the absent workflow as a failed check.
+
+## CI / CTest / CD live recheck (Sprint 1029)
+
+Actions run `36286955736` passes all five jobs on exact `main` SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; each of the three native build jobs reports its CTest step successful. Historical runs #539/#540 failed on an older commit because `agent_project_index` read an ignored local demo-board file absent from hosted clean checkouts; the later self-contained typed-fixture repair removed that dependency. The official nonvisual local verifier used the successful Sprint 1028 Release/full-CTest logs without source changes; manifest `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json`, SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`. `.github/workflows/ci.yml` remains the sole configured workflow. No release target or deployment destination is defined, so CD is unconfigured rather than failing.

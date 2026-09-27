@@ -2,6 +2,16 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1029 — CI / CTest / CD incident recheck
+
+- [x] Inspect current main run `36286955736` on exact SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; all five jobs pass, including the Linux core, Linux GUI, and Windows core CTest jobs.
+- [x] Inspect the latest historical red cluster (#539/#540): all three native CTest lanes failed the same `agent_project_index` test because it read an ignored local demo-board fixture absent from clean runners; later source repair removed that dependency.
+- [x] Run the official nonvisual Release/full-CTest verifier on unchanged source, reusing the previously passing Sprint 1028 build/test logs; manifest `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json` (SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`).
+- [x] Confirm `.github/workflows/ci.yml` is the sole workflow and CD has no configured release/deployment target; missing CD is not a failing pipeline.
+- [ ] Define the desktop release artifact, destination, trigger, signing, permissions, and rollback policy before adding CD.
+
+Finding: the reported red checks are stale failures on superseded commits. No CI/CTest source edit is justified while exact current `main` is green; do not invent a delivery destination.
+
 ### Sprint 1028 — CI, CTest, and CD status reconciliation
 
 - [x] Inspect live GitHub Actions status: latest run `36285258780` succeeds on current `main` SHA `21e0368c74df21cd99246af55258a46ac9af47b`; all five jobs pass, with CTest in the Linux core, Linux GUI, and Windows core jobs.
