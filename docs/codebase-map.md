@@ -1916,8 +1916,26 @@ remain attached to model invocations. The authoritative methods are
 and secret/key/token/credential-named inputs. The CLI vault target allowlist
 also includes `langfuse_public` and `langfuse_secret`; it must never expose
 their values. Current local SDK compatibility uses its legacy mask callback
-when `mask_otel_spans` is unavailable, so a tested SDK pin and remote trace
-retrieval are still required before marking full export proof complete.
+when `mask_otel_spans` is unavailable. The local metadata-only exporter remains
+the authoritative OTel redaction boundary, and remote trace retrieval is still
+required before marking full export proof complete.
+
+The Sprint 1034 Python SDK pin resolves to Langfuse 4.7.1/Pydantic 2.13.4.
+Direct OTLP uses the v4 realtime-ingestion header, and exact trace readback
+uses the v2 Observations API with a bounded UTC time range and cursor paging.
+`MetadataOnlyExporter` remains the final export privacy gate; live project
+receipt, evaluator configuration, exports, and rollback remain external checks.
+
+Sprint 1034 handover: `src/ccad_agent/telemetry.py` pins compatibility through
+`requirements.txt` (`langfuse>=4.7.1,<4.8.0`), sends direct OTLP traces to
+`/api/public/otel/v1/traces` with `x-langfuse-ingestion-version: 4`, and reads
+exact trace observations through `client.api.observations.get_many()` with
+cursor pagination. The export boundary stays metadata-only. Development turn
+readback is bounded to two seconds; explicit connection tests allow twenty
+seconds for indexing. Contract tests inspect endpoint/header behavior and
+reject observations belonging to another trace. These offline checks establish
+repository compatibility only; they do not establish Cloud project migration,
+evaluator/export status, or live receipt.
 
 Sprint 952 handover: `ReviewWindow::projectContextJson()` emits a bounded typed
 project snapshot after recursively removing binary `data` fields; `project.state`
@@ -2213,13 +2231,18 @@ the separate compact projection. Semantic history retrieval remains open.
 
 `src/ccad_gui/agent_chat_browser.hpp` owns chat message formatting. Actual final
 assistant responses carry `content_format=markdown`; resumed canonical
-assistant messages use their role to choose the same parser. User messages,
-warnings, statuses, tool output, and other non-assistant content are inserted
-as literal text. GitHub-flavored Markdown is parsed with `MarkdownNoHTML`;
+assistant messages use their role to choose the same parser. Python message
+events default to `plain` unless explicitly marked, while Qt treats a missing
+format as Markdown for compatibility with older assistant runtimes. User
+messages and other non-assistant content remain literal text. GitHub-flavored
+Markdown is parsed with `MarkdownNoHTML`;
 links open only after an explicit click and only when they are credential-free
 HTTP(S) URLs. All image/resource requests are denied, including local files.
 `testChatMarkdownRenderingAndSafety` covers headings, emphasis, tables, links,
 lists, code, raw HTML, unsafe URLs, blocked images, and literal user content.
+The same Qt contract covers missing, Markdown, and explicit plain format tags;
+`scripts/test_agent_ui_runtime_contract.py` verifies the sender's plain default.
+The same Qt contract covers missing, Markdown, and explicit plain format tags.
 The saved-transcript UI proof is `sprint1031-agent-markdown-r2`; the code-block
 content is selectable text, not executed or interpreted code.
 

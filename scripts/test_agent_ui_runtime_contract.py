@@ -33,6 +33,8 @@ assert 'appendChatMessage("agent", activity_text);' in panel
 assert 'chat_scroll_area_' not in panel
 assert 'chat_history_layout_' not in panel
 assert 'appendMessage(display_role, text, markdown && role != "user")' in panel
+assert 'AgentChatBrowser::assistantMessageUsesMarkdown(' in panel
+assert 'params.setdefault("content_format", "plain")' in orchestrator
 assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
 assert "QTextDocument::MarkdownNoHTML" in chat_browser
 assert "QTextDocument::MarkdownDialectGitHub" in chat_browser

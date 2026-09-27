@@ -1,5 +1,22 @@
 # Implemented Features
 
+## Sprint 1034 — Langfuse v4 runtime compatibility
+
+Direct OTLP/HTTP export now includes Langfuse's v4 ingestion-version header,
+retains Basic Auth, and builds endpoints from validated host-only base URLs,
+including regional hosts. Development readback queries the v4 Observations API
+by exact trace ID, follows pagination, counts only observations belonging to
+that trace, and retries within a bounded interval; normal turn readback has a
+shorter cap than an explicit connection test. Provider export remains
+metadata-only and never treats exporter acceptance as proof of indexed receipt.
+The resolved environment is `langfuse 4.7.1` with `pydantic 2.13.4`. Offline
+contracts cover endpoint/header/readback/pagination/privacy, and actual hosted
+Langfuse receipt remains unverified until project access is configured. Qt
+Release and full CTest pass 120/120; Pyright reports zero diagnostics and all
+Agent Python files compile. Evidence manifest
+`artifacts/evidence/sprint-1034-langfuse-v4-compatibility.json` (SHA-256
+`F3905B76E182FE1AC91B803B86E7B4315BDF4E49DFCD301B002360B1AB434752`).
+
 ## Sprint 1033 — Agent cold-start and provider credential isolation
 
 Provider and configuration protocol messages no longer compile the LangGraph
@@ -51,6 +68,19 @@ provider request. The report was not reproduced; a GUI process already open
 before updating the executable must be restarted. Evidence manifest:
 `artifacts/evidence/sprint-1032-agent-markdown-runtime.json` (SHA-256
 `4B4A5E7BAEC37E8339A62762ADC140DC1F5AE3FBD3CA2640F3AF1581CA7D2899`).
+
+### Message-format compatibility
+
+Current Python message events label ordinary status/notices as `plain`; final
+model replies remain explicitly `markdown`. Qt defaults an absent format tag
+to Markdown so replies from older runtimes do not expose raw delimiters, while
+an explicit `plain` tag keeps user-facing notices literal. Rendering still uses
+the same HTML-disabled parser, click-filtered links, and blocked image/resource
+policy. The Qt test covers missing, Markdown, and plain format decisions.
+The compatibility follow-up passes Release build and full CTest (120/120),
+plus a fresh mapped transcript run with six inspected screenshots and reviewed
+stdout/stderr. Evidence manifest `artifacts/evidence/sprint-1033-agent-markdown-fallback.json`
+(SHA-256 `760E9E02539C7E390A9030058C23409EB7D9BA5C19937541575E1BC0E55CFCF7`).
 
 ## Sprint 1030 — Durable conversation History and New Chat
 

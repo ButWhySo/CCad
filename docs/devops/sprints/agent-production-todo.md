@@ -2,6 +2,17 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1034 — Langfuse v4 code compatibility
+
+- [x] Inventory Langfuse references in Agent source/scripts/docs and resolve installed Python SDK/Pydantic versions (`langfuse 4.7.1`, `pydantic 2.13.4`); only `src/ccad_agent/requirements.txt` declares the SDK and no Python lockfile is present.
+- [x] Add Langfuse v4 realtime-ingestion header to direct OTLP/HTTP export while retaining Basic Auth and metadata-only span filtering.
+- [x] Move exact-trace readback from deprecated trace-detail API to v4 `api.observations.get_many`, with trace filtering and cursor pagination.
+- [x] Bound routine development-turn readback separately from the longer explicit connection-test readback; report indexed observation count and never equate collector acceptance with backend receipt.
+- [x] Add v4 compatibility tests for endpoint/region/header/readback/pagination/privacy, pass Python analysis, Release build, and full CTest (120/120); manifest `artifacts/evidence/sprint-1034-langfuse-v4-compatibility.json` (SHA-256 `F3905B76E182FE1AC91B803B86E7B4315BDF4E49DFCD301B002360B1AB434752`).
+- [ ] Audit applicable evaluator, dataset/experiment, API, and export consumers; record repository findings and keep project-side state blocked without Langfuse project access.
+- [ ] Send an opt-in non-production canary and verify the actual Langfuse Cloud hierarchy, metadata, session, usage, and filtering after access is configured.
+- [ ] Return the seven-row Langfuse v4 readiness report with project-dependent checks explicitly blocked until validated.
+
 ### Sprint 1033 — Agent startup and provider IPC reliability
 
 - [x] Defer real LangGraph `ToolNode` import and graph compilation until an agent run or checkpoint operation needs the graph.
@@ -14,6 +25,12 @@ Check a box only after implementation and its required evidence exist.
 - [x] Pass Qt/MinGW Release and full CTest (120/120); inspect preflight/build/CTest logs and manifest `artifacts/evidence/sprint-1033-agent-lazy-graph.json` (SHA-256 `2213A62EFD3A8B994A6D55234748D263CF0DFF42F13F92F1DDF6F818FB6B7FF5`).
 - [ ] Push this branch and verify all hosted CI jobs on the exact pushed SHA before merging to `main`.
 - [ ] Repair unrelated stale assertions in the broader offline Agent gate: method-catalog parity, pending-approval metadata, provider catalog/Cerebras source contracts, tool-approval metadata/policy, tool-result ordering, and removed `ui_add_polygon` schema test.
+
+### Sprint 1033 follow-up — Chat message-format compatibility
+
+- [x] Keep Python-to-Qt message formatting explicit: ordinary notices are plain, model replies are Markdown, and unlabelled legacy assistant replies still render Markdown.
+- [x] Cover absent/Markdown/plain format decisions and preserve raw-HTML, remote-image, unsafe-link, and literal-user-text protections.
+- [x] Rebuild Release, pass full CTest (120/120), and validate a fresh mapped Agent transcript; inspect six screenshots and stdout/stderr. Manifest `artifacts/evidence/sprint-1033-agent-markdown-fallback.json` (SHA-256 `760E9E02539C7E390A9030058C23409EB7D9BA5C19937541575E1BC0E55CFCF7`).
 
 Initial hosted failure: run `36308918584` (#572) failed in `agent-python`; core Linux, core Windows, GUI Linux, and evidence-manifest lanes passed. Local reproduction identified slow, irrelevant adapter initialization in provider-control IPC. Local implementation gates now pass; hosted verification on this branch remains required.
 
@@ -930,6 +947,16 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 
 - [ ] Fix dark-theme rendering of the MCP Servers table, including readable header, empty-state, and row backgrounds.
 - [ ] Replace text-only proposal review with typed staged PCB/schematic before/after renders and real change lists.
+- [ ] Derive preview changes from authoritative before/staged diffs, keyed by stable PCB/schematic object IDs and typed operations.
+- [ ] Render both states from the same viewport, zoom, active domain, visible layers, and object-focused camera so changes cannot disappear due to mismatched scale.
+- [ ] Keep unchanged geometry in normal theme colors; highlight only added/modified objects with the existing active-selection treatment in both panes.
+- [ ] Show removed objects as explicitly labelled old-geometry ghosts in the after pane; never imply removed geometry still exists.
+- [ ] Highlight old and new forms of changed tracks, vias, pads, footprints, zones, graphics, symbols, pins, wires, junctions, and labels where supported.
+- [ ] Synchronize the change list with exact object focus and staged-data operation, layer/net, geometry, and reason.
+- [ ] Show added/removed DRC/ERC diagnostics as a before/after delta linked to affected objects.
+- [ ] Hide/fail previews when the staged diff has no renderable changed objects; never show canvases omitting the claimed change.
+- [ ] Test added/removed/modified styling, unchanged colors, camera sync, unsupported types, both PCB and schematic, and cancellation without mutation.
+- [ ] Visually validate each supported diff type; screenshots must show changed geometry in both panes and unchanged context in normal colors.
 - [ ] Make proposal review a scrollable chat popout with viewport controls, object focus, and DRC/ERC delta.
 - [ ] Add editable annotations, reviewer comments, structured revision scope, revise/reject/cancel, and one approval boundary.
 - [ ] Render no preview for unsupported actions; report the exact unavailable/staging reason without fabricated geometry.
@@ -1484,6 +1511,24 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Keep screenshots opt-in.
 - [ ] Keep raw board/schematic contents opt-in.
 - [ ] Add one real opt-in end-to-end Langfuse trace validation and inspect it manually.
+
+### Langfuse v4 platform compatibility — Cloud cutover 2026-11-16
+
+Code-only migration is required before the Cloud cutoff; project-specific state must stay blocked until Langfuse project access is available. Follow the installed Langfuse skill's `references/v4-project-migration.md` and current official documentation.
+
+- [ ] Inventory every Langfuse SDK/API, direct OTLP exporter, callback, lockfile, test, doc, and CI use; record declared and resolved versions.
+- [x] Keep Python SDK on the tested v4.7.1 range and verify resolved Pydantic v2 (2.13.4) plus LangChain/LangGraph callback integration.
+- [x] Add `x-langfuse-ingestion-version: 4` to direct OTLP/HTTP export; test endpoint, regional host, and Basic Auth without exposing credentials.
+- [x] Replace deprecated trace-detail reads with v4 Observations API v2; test time-bounded trace filtering, cursor pagination, hierarchy, and response parsing.
+- [ ] Verify one complete immutable root observation per Agent turn, safe root input/output, correct nesting, and correlation attributes propagated before child observations.
+- [x] Preserve metadata-only redaction and ensure prompts, design, tool arguments, paths, and secrets stay out of exported spans by default.
+- [ ] Verify the exact canary hierarchy after flush/readback with bounded eventual-consistency retries; no success claim from HTTP acceptance alone.
+- [x] Audit the repository for deprecated trace/span/generation ingestion, read APIs, trace-I/O assumptions, API namespaces, and direct HTTP calls; no other legacy Langfuse API consumers were found.
+- [x] Audit repository evaluator and dataset/experiment API usage; none are present. Project-side evaluator rules remain blocked until account access.
+- [ ] Audit project exports/integrations and consumers; keep their compatibility and cutover confirmation blocked until the target project is inspected.
+- [ ] Run code-only compatibility contracts and sanitized local ingestion tests; mocked tests do not prove project migration.
+- [ ] With project access, send a uniquely tagged non-production canary and inspect hierarchy, attributes, sessions, usage/cost, filtering, and privacy in Langfuse.
+- [x] Return and persist exactly seven readiness rows with project-only gaps explicitly blocked; see `docs/devops/sprints/sprint-1034-langfuse-v4-readiness.md`.
 
 ## MCP settings
 

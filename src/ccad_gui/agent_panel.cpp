@@ -1420,7 +1420,8 @@ void AgentPanel::handlePythonOutput() {
         const QJsonObject params = obj["params"].toObject();
         const QString message = params.value("text").toString();
         appendChatMessage("agent", message,
-                          params.value("content_format").toString() == "markdown");
+                          AgentChatBrowser::assistantMessageUsesMarkdown(
+                              params.value("content_format").toString()));
         if (result_state_label_) {
           if (!tool_result_ack_visible_) {
             result_state_label_->setText("Result Chat response received");

@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1034-langfuse-v4-compatibility",
+    "feature":  "Langfuse v4 realtime OTLP and bounded Observations API readback",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-27T12:00:06.9408948Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.67 log=artifacts/evidence/sprint-1034-langfuse-v4-compatibility/preflight.log",
+                      "finished_utc":  "2026-09-27T12:00:08.7495592Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.66 log=artifacts/evidence/sprint-1034-langfuse-v4-compatibility/build.log",
+                      "finished_utc":  "2026-09-27T12:00:10.4294642Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=186.38 log=artifacts/evidence/sprint-1034-langfuse-v4-compatibility/ctest.log",
+                      "finished_utc":  "2026-09-27T12:03:16.8161399Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-langfuse-v4-compatibility/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-langfuse-v4-compatibility/ctest.log",
+                                         "sha256":  "6B14846D760C414204DA3A6583BD8673DCA7E17C15D051C131BFFCE633BA439E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-langfuse-v4-compatibility/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T12:03:16.8902024Z"
+}

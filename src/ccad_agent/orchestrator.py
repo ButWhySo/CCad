@@ -78,6 +78,10 @@ from model_catalog import (fetch_anthropic_models as _fetch_anthropic_models,
                            fetch_openrouter_models as _fetch_openrouter_models)
 
 def emit(payload: dict):
+    if payload.get("method") == "message":
+        params = payload.get("params")
+        if isinstance(params, dict):
+            params.setdefault("content_format", "plain")
     print(json.dumps(payload), flush=True)
 
 def catalog_failure(provider: str, error: Exception, source_url: str,
