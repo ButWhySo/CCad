@@ -172,7 +172,7 @@ def budgeted_history_window(messages: Iterable[Any], *, token_budget: int = 8192
 class ConversationStore:
     """SQLite source of truth for full message history and derived TurnRecords."""
 
-    SCHEMA_VERSION = 3
+    SCHEMA_VERSION = 4
 
     def __init__(self, path: str | Path | None = None):
         self.path = Path(path) if path is not None else conversation_path()
@@ -231,11 +231,24 @@ class ConversationStore:
             CREATE TABLE IF NOT EXISTS projections(
                 thread_id TEXT PRIMARY KEY REFERENCES threads(thread_id) ON DELETE CASCADE,
                 base_sequence INTEGER NOT NULL, messages_json TEXT NOT NULL,
-                updated_at TEXT NOT NULL);
+                updated_at TEXT NOT NULL,
+                source_message_ids_json TEXT NOT NULL DEFAULT '[]',
+                source_sequence_start INTEGER,
+                source_sequence_end INTEGER,
+                summary_message_id TEXT NOT NULL DEFAULT '');
         """)
         thread_columns = {str(row[1]) for row in db.execute("PRAGMA table_info(threads)")}
         if "history_visible" not in thread_columns:
             db.execute("ALTER TABLE threads ADD COLUMN history_visible INTEGER NOT NULL DEFAULT 0")
+        projection_columns = {str(row[1]) for row in db.execute(
+            "PRAGMA table_info(projections)")}
+        for name, declaration in (
+                ("source_message_ids_json", "TEXT NOT NULL DEFAULT '[]'"),
+                ("source_sequence_start", "INTEGER"),
+                ("source_sequence_end", "INTEGER"),
+                ("summary_message_id", "TEXT NOT NULL DEFAULT ''")):
+            if name not in projection_columns:
+                db.execute(f"ALTER TABLE projections ADD COLUMN {name} {declaration}")
         db.execute(f"PRAGMA user_version={self.SCHEMA_VERSION}")
 
     def append_messages(self, thread_id: str, messages: Iterable[Any], *, turn_id="",
@@ -412,11 +425,26 @@ class ConversationStore:
         finally:
             db.close()
 
-    def compact_projection(self, thread_id: str, messages: Iterable[Any], *, turn_id="") -> None:
+    def compact_projection(self, thread_id: str, messages: Iterable[Any], *,
+                           source_message_ids: Iterable[str],
+                           base_message_id: str,
+                           summary_message_id: str, turn_id="") -> None:
         payloads = [_message_payload(item) for item in messages]
         payloads = [item for item in payloads if item is not None]
         if not payloads:
             raise ValueError("projection_requires_messages")
+        source_ids = [str(item).strip() for item in source_message_ids]
+        base_message_id = str(base_message_id).strip()
+        summary_message_id = str(summary_message_id).strip()
+        if not source_ids or any(not item for item in source_ids) or \
+                len(set(source_ids)) != len(source_ids):
+            raise ValueError("projection_source_message_ids_invalid")
+        if not summary_message_id:
+            raise ValueError("projection_summary_message_id_required")
+        if summary_message_id in source_ids or summary_message_id == base_message_id:
+            raise ValueError("projection_summary_message_id_collision")
+        if not base_message_id:
+            raise ValueError("projection_base_message_id_required")
         now = _now()
         db = self._connect()
         try:
@@ -424,13 +452,48 @@ class ConversationStore:
                 thread = db.execute("SELECT 1 FROM threads WHERE thread_id=?", (str(thread_id),)).fetchone()
                 if thread is None:
                     raise ValueError("thread_not_found")
-                base = db.execute("SELECT COALESCE(MAX(sequence),0) FROM messages WHERE thread_id=?",
-                                  (str(thread_id),)).fetchone()[0]
-                db.execute("""INSERT INTO projections(thread_id,base_sequence,messages_json,updated_at)
-                    VALUES(?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
+                placeholders = ",".join("?" for _ in source_ids)
+                rows = db.execute(
+                    f"SELECT message_id,sequence FROM messages WHERE thread_id=? "
+                    f"AND message_id IN ({placeholders})",
+                    (str(thread_id), *source_ids)).fetchall()
+                sequences = {str(row["message_id"]): int(row["sequence"]) for row in rows}
+                if len(sequences) != len(source_ids):
+                    raise ValueError("projection_source_message_not_found")
+                ordered_sequences = [sequences[item] for item in source_ids]
+                if ordered_sequences != sorted(ordered_sequences):
+                    raise ValueError("projection_source_message_order_invalid")
+                base_row = db.execute(
+                    "SELECT sequence FROM messages WHERE thread_id=? AND message_id=?",
+                    (str(thread_id), base_message_id)).fetchone()
+                if base_row is None:
+                    raise ValueError("projection_base_message_not_found")
+                base = int(base_row["sequence"])
+                summary_collision = db.execute(
+                    "SELECT 1 FROM messages WHERE thread_id=? AND message_id=?",
+                    (str(thread_id), summary_message_id)).fetchone()
+                if summary_collision is not None:
+                    raise ValueError("projection_summary_message_id_collision")
+                latest = int(db.execute(
+                    "SELECT COALESCE(MAX(sequence),0) FROM messages WHERE thread_id=?",
+                    (str(thread_id),)).fetchone()[0])
+                if latest != base:
+                    raise ValueError("projection_transcript_changed")
+                if ordered_sequences[-1] >= base:
+                    raise ValueError("projection_source_range_exceeds_base")
+                db.execute("""INSERT INTO projections(thread_id,base_sequence,messages_json,updated_at,
+                    source_message_ids_json,source_sequence_start,source_sequence_end,summary_message_id)
+                    VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
                     base_sequence=excluded.base_sequence,messages_json=excluded.messages_json,
-                    updated_at=excluded.updated_at""", (str(thread_id), int(base),
-                    json.dumps(payloads, ensure_ascii=False, separators=(",", ":")), now))
+                    updated_at=excluded.updated_at,
+                    source_message_ids_json=excluded.source_message_ids_json,
+                    source_sequence_start=excluded.source_sequence_start,
+                    source_sequence_end=excluded.source_sequence_end,
+                    summary_message_id=excluded.summary_message_id""",
+                    (str(thread_id), int(base),
+                     json.dumps(payloads, ensure_ascii=False, separators=(",", ":")), now,
+                     json.dumps(source_ids, separators=(",", ":")),
+                     min(ordered_sequences), max(ordered_sequences), summary_message_id))
         except sqlite3.Error as error:
             raise ConversationStoreError("conversation_projection_write_failed") from error
         finally:
@@ -446,13 +509,43 @@ class ConversationStore:
                     VALUES(?,?,?)""", (str(thread_id), now, now))
                 base = db.execute("SELECT COALESCE(MAX(sequence),0) FROM messages WHERE thread_id=?",
                                   (str(thread_id),)).fetchone()[0]
-                db.execute("""INSERT INTO projections(thread_id,base_sequence,messages_json,updated_at)
-                    VALUES(?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
+                db.execute("""INSERT INTO projections(thread_id,base_sequence,messages_json,updated_at,
+                    source_message_ids_json,source_sequence_start,source_sequence_end,summary_message_id)
+                    VALUES(?,?,?,?,'[]',NULL,NULL,'') ON CONFLICT(thread_id) DO UPDATE SET
                     base_sequence=excluded.base_sequence,messages_json=excluded.messages_json,
-                    updated_at=excluded.updated_at""",
+                    updated_at=excluded.updated_at,source_message_ids_json='[]',
+                    source_sequence_start=NULL,source_sequence_end=NULL,summary_message_id=''""",
                     (str(thread_id), int(base), "[]", now))
         except sqlite3.Error as error:
             raise ConversationStoreError("conversation_projection_write_failed") from error
+        finally:
+            db.close()
+
+    def projection_metadata(self, thread_id: str) -> dict[str, Any]:
+        """Return compaction provenance only; never expose projected message text."""
+        db = self._connect()
+        try:
+            row = db.execute("""SELECT source_message_ids_json,source_sequence_start,
+                source_sequence_end,summary_message_id,updated_at FROM projections
+                WHERE thread_id=?""", (str(thread_id),)).fetchone()
+            if row is None:
+                return {"source_message_ids": [], "source_sequence_start": None,
+                        "source_sequence_end": None, "summary_message_id": "",
+                        "updated_at": ""}
+            try:
+                source_ids = json.loads(row["source_message_ids_json"])
+            except (json.JSONDecodeError, TypeError):
+                source_ids = []
+            if not isinstance(source_ids, list) or not all(
+                    isinstance(item, str) for item in source_ids):
+                source_ids = []
+            return {"source_message_ids": source_ids,
+                    "source_sequence_start": row["source_sequence_start"],
+                    "source_sequence_end": row["source_sequence_end"],
+                    "summary_message_id": str(row["summary_message_id"]),
+                    "updated_at": str(row["updated_at"])}
+        except sqlite3.Error as error:
+            raise ConversationStoreError("conversation_store_read_failed") from error
         finally:
             db.close()
 

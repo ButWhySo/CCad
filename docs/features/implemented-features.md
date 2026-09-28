@@ -1,5 +1,31 @@
 # Implemented Features
 
+## Sprint 1036 — Conversation STM metadata and compaction provenance
+
+The canonical active conversation is identified in safe context metadata as
+`conversation_stm` scoped to `active_thread`, with the number of recent messages
+reported separately from durable memory tiers. Agent Personalisation now shows
+a read-only “Conversation STM — active thread” status; the separate long-term
+memory checkbox controls durable thread-scoped notes and explicitly does not
+disable ordinary chat history. Working Memory remains the process-only task
+scratchpad.
+
+Each generated compacted projection now records its canonical source message
+IDs, first and last source sequence, and explicitly generated recap message ID.
+Schema-v3 SQLite stores migrate additively to v4, and compaction refuses source
+messages without stable IDs. The IDs are internal provenance only: they are
+not inserted into the provider's summary transcript or public compaction
+events. The stored snapshot high-water message ID prevents an older summary
+from overwriting or hiding messages appended during summarization; missing IDs
+in the preserved recent suffix and recap-ID collisions are refused. Tests verify
+source membership/order, stale snapshot rejection, clear behavior, and migration.
+The Qt/MinGW Release build and final full CTest pass 122/122; focused contracts
+and Pyright pass. The unlocked official UI-map rerun completed 10 mapped
+interactions; all five distinct screenshots visibly show the Conversation STM
+label, Working Memory toggle, memory manager, thread-memory tier, and restored
+chat, and were inspected. Evidence manifest:
+`artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`.
+
 ## Sprint 1035 — Langfuse v4 SDK update and callback wire contract
 
 Direct OTLP/HTTP export now includes Langfuse's v4 ingestion-version header,
@@ -20,6 +46,14 @@ contracts pass on v4.15.6; Pyright reports zero diagnostics for the changed
 runtime and test paths. The Qt/MinGW Release build and full CTest gate pass
 (122/122). Manifest `artifacts/evidence/sprint-1035-langfuse-v4-current-patch.json`
 (SHA-256 `D599D59D6EE0FE90D04911341030761FA445662A1B6808FDBF83E8164F7E6F1F`).
+
+Sprint 1036 telemetry follow-up enforces Langfuse v4 metadata typing at
+`TelemetryRuntime.observation()`: values are redacted first, scalar values are
+converted to strings and capped at 200 characters, and structured values are
+omitted. The real-SDK local receiver contract covers boolean/integer conversion,
+length bounding, and nested-value omission. Pyright reports zero diagnostics;
+Qt Release has no pending work and full CTest passes 122/122. A fresh desktop
+Agent-process reload and hosted trace receipt remain unverified.
 This is local compatibility evidence, not proof of receipt by a hosted project.
 
 ## Sprint 1033 — Agent cold-start and provider credential isolation

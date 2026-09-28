@@ -1920,6 +1920,13 @@ when `mask_otel_spans` is unavailable. The local metadata-only exporter remains
 the authoritative OTel redaction boundary, and remote trace retrieval is still
 required before marking full export proof complete.
 
+Sprint 1036 follow-up: `TelemetryRuntime.observation()` redacts observation
+metadata, then forwards only scalar values converted to strings and capped at
+200 characters, matching Langfuse v4 metadata attributes. Structured values
+are omitted. `scripts/test_langfuse_v4_local_ingestion.py` verifies this using
+the real SDK and a local OTLP receiver; this proves local serialization, not
+Cloud receipt or reload of an already-running Agent child.
+
 The Sprint 1035 Python SDK pin resolves to Langfuse 4.15.6/Pydantic 2.13.4.
 Direct OTLP uses the v4 realtime-ingestion header, and exact trace readback
 uses the v2 Observations API with a bounded UTC time range and cursor paging.
@@ -2556,3 +2563,33 @@ generation; this slice does not close those items.
 ## CI / CTest / CD live recheck (Sprint 1029)
 
 Actions run `36286955736` passes all five jobs on exact `main` SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; each of the three native build jobs reports its CTest step successful. Historical runs #539/#540 failed on an older commit because `agent_project_index` read an ignored local demo-board file absent from hosted clean checkouts; the later self-contained typed-fixture repair removed that dependency. The official nonvisual local verifier used the successful Sprint 1028 Release/full-CTest logs without source changes; manifest `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json`, SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`. `.github/workflows/ci.yml` remains the sole configured workflow. No release target or deployment destination is defined, so CD is unconfigured rather than failing.
+
+## Sprint 1036 conversation provenance
+
+`src/ccad_agent/conversation_store.py` schema version 4 adds compaction
+projection provenance: ordered canonical `source_message_ids`, first/last
+source sequence numbers, and the generated `summary_message_id`. Each projection
+also stores the latest canonical `base_message_id` from the summarized snapshot;
+if the transcript advances before save, compaction fails rather than concealing
+newer messages. Its additive
+initializer migrates older projection tables in place. Use
+`ConversationStore.projection_metadata(thread_id)` to inspect identifiers and
+sequence bounds without reading projected summary text. The compaction path in
+`history_compaction.py` keeps those IDs beside internal records rather than in
+serialized provider transcript JSON; `orchestrator.py` strips them from public
+events and persists them with the projection. `context_package.py` identifies
+the active provider-message history in safe metadata as `conversation_stm`,
+scope `active_thread`, and reports only the message count. In the GUI,
+`AgentSettingsDialog` shows this as read-only Conversation STM status;
+`control:ltmCb` remains the durable thread-memory preference, and its tooltip
+states that disabling it does not remove ordinary transcript history.
+`control:stmCb` remains Working Memory / task scratch.
+
+The initial screenshot batch showed the Windows lock screen and was rejected.
+An unlocked rerun of the app-owned `sprint1027-working-memory` sequence completed
+10 mapped interactions; all five distinct captures visibly confirm the
+Conversation STM label, Working Memory toggle, manager/tier selection, and
+restored chat. Evidence manifest:
+`artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`. The independent
+proposal-preview requirement remains open: both panes must render staged
+geometry from its exact revision/change-set, not substitute a text summary.

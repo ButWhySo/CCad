@@ -87,6 +87,12 @@ def main() -> None:
             {"result_kind": "observed"}, run_id=callback_run_id)
         with runtime.observation("tool.call", "tool") as observation:
             observation.update(output={"status": "observed"})
+        with runtime.observation(
+            "metadata.contract",
+            metadata={"workflow": True, "result": 12, "tool": "x" * 240,
+                      "nested": {"ignored": True}},
+        ):
+            pass
         runtime.finish_agent_turn()
         assert runtime._provider.force_flush(timeout_millis=6000)
 
@@ -105,7 +111,8 @@ def main() -> None:
                  for scope in resource.scope_spans for span in scope.spans]
         by_name = {span.name: span for span in spans}
         assert set(by_name) == {
-            "agent.turn", "ccad_callback_contract", "tool.call"}, sorted(by_name)
+            "agent.turn", "ccad_callback_contract", "tool.call",
+            "metadata.contract"}, sorted(by_name)
         assert sum(span.name == "agent.turn" for span in spans) == 1
         root = by_name["agent.turn"]
         root_attrs = attributes(root)
@@ -120,6 +127,11 @@ def main() -> None:
             assert attrs.get("langfuse.session.id", attrs.get("session.id")) == "thread-local-contract"
             assert attrs["langfuse.trace.name"] == "ccad.agent.turn"
             assert attrs["langfuse.trace.metadata.ccad_turn_id"] == "turn-local-contract"
+        metadata_attrs = attributes(by_name["metadata.contract"])
+        assert metadata_attrs["langfuse.observation.metadata.workflow"] == "true", metadata_attrs
+        assert metadata_attrs["langfuse.observation.metadata.result"] == "12", metadata_attrs
+        assert len(metadata_attrs["langfuse.observation.metadata.tool"]) == 200, metadata_attrs
+        assert "langfuse.observation.metadata.nested" not in metadata_attrs, metadata_attrs
         print("Langfuse v4 local OTLP ingestion contract passed")
     finally:
         runtime.shutdown()

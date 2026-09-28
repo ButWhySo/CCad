@@ -1,0 +1,22 @@
+{
+  "feature": "Verify the Conversation STM label and active-thread explanation in Agent Personalisation using the app-owned memory interaction flow.",
+  "target_sequence": "sprint1027-working-memory",
+  "project": "tests/fixtures/agent-memory-empty-project.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "tab:agent",
+    "action:settingsBtn",
+    "control:categoryList",
+    "control:stmCb",
+    "control:conversationStmInfo",
+    "control:ltmCb",
+    "action:agent_memory_manage",
+    "control:memoryTier",
+    "action:closeMemoryManager",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [],
+  "meaningful_screenshots": 5
+}

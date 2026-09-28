@@ -1050,6 +1050,26 @@ int main(int argc, char** argv) {
           entries << QString("{\"working_memory_label_visible\":%1}")
                          .arg(truthful_label ? "true" : "false");
           ok = truthful_label && ok;
+          auto* conversation_stm_info = window->findChild<QLabel*>("control:conversationStmInfo");
+          const bool conversation_stm_label_visible = conversation_stm_info &&
+              conversation_stm_info->text().contains("Conversation STM") &&
+              conversation_stm_info->text().contains("active thread") &&
+              conversation_stm_info->text().contains("bounded recent transcript");
+          entries << QString("{\"conversation_stm_label_visible\":%1}")
+                         .arg(conversation_stm_label_visible ? "true" : "false");
+          ok = conversation_stm_label_visible && ok;
+          auto* thread_ltm_checkbox = window->findChild<QCheckBox*>("control:ltmCb");
+          const bool thread_ltm_label_truthful = thread_ltm_checkbox &&
+              thread_ltm_checkbox->text().startsWith("Long-term memory") &&
+              thread_ltm_checkbox->toolTip().contains("durable memory records") &&
+              thread_ltm_checkbox->toolTip().contains("transcript remains available independently");
+          entries << QString("{\"thread_ltm_label_truthful\":%1}")
+                         .arg(thread_ltm_label_truthful ? "true" : "false");
+          ok = thread_ltm_label_truthful && ok;
+          ok = interact("ui.get_node", "{\"id\":\"control:conversationStmInfo\"}",
+                        "control:conversationStmInfo", "conversation-stm-status-inspected") && ok;
+          ok = interact("ui.get_node", "{\"id\":\"control:ltmCb\"}",
+                        "control:ltmCb", "thread-ltm-toggle-inspected") && ok;
           if (working_memory_checkbox && !working_memory_checkbox->isChecked()) {
             ok = interact("ui.click", "{\"id\":\"control:stmCb\"}",
                           "control:stmCb", "working-memory-toggle-applied") && ok;

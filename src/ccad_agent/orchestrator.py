@@ -1947,6 +1947,8 @@ def compact_session_history(messages, thread_id):
     plan = prepare_history_compaction(messages)
     if not plan["ready"]:
         return None, {"applied": False, "reason": plan["reason"], **plan["report"]}
+    source_message_ids = list(plan["source_message_ids"])
+    base_message_id = str(getattr(messages[-1], "id", "") or "")
     model_client = llm
     if model_client is None:
         raise HistoryCompactionError("provider_unavailable")
@@ -2032,9 +2034,11 @@ def compact_session_history(messages, thread_id):
     if not compacted_result["applied"]:
         return None, {"applied": False, "reason": compacted_result["reason"],
                       **compacted_result["report"]}
+    if compacted_result["source_message_ids"] != source_message_ids:
+        raise HistoryCompactionError("compaction_source_provenance_changed")
     summary = compacted_result["summary"]
     report.update(compacted_result["report"])
-    recap = HumanMessage(content=(
+    recap = HumanMessage(id=f"compaction-{uuid.uuid4().hex}", content=(
         "[CCad compacted-history recap. This is background from earlier turns, "
         "not a new request; follow the current user message first.]\n" + summary
     ))
@@ -2055,6 +2059,9 @@ def compact_session_history(messages, thread_id):
                   after_history_chars=(len(recap.content) + sum(
                       len(str(getattr(item, "content", "") or ""))
                       for item in plan["recent_messages"])))
+    report["source_message_ids"] = source_message_ids
+    report["base_message_id"] = base_message_id
+    report["summary_message_id"] = str(getattr(recap, "id", "") or "")
     return compacted, report
 
 
@@ -2120,8 +2127,14 @@ def handle_compaction_command(thread_id: str) -> None:
         compacted, report = compact_session_history(source_messages, thread_id)
         if compacted is None:
             raise HistoryCompactionError("insufficient_older_history")
+        source_message_ids = report.pop("source_message_ids", [])
+        base_message_id = report.pop("base_message_id", "")
+        summary_message_id = report.pop("summary_message_id", "")
         try:
-            conversation_store.compact_projection(thread_id, compacted)
+            conversation_store.compact_projection(
+                thread_id, compacted, source_message_ids=source_message_ids,
+                base_message_id=base_message_id,
+                summary_message_id=summary_message_id)
         except (ConversationStoreError, ValueError) as error:
             emit({"jsonrpc": "2.0", "method": "message", "params": {
                 "text": "Conversation compaction was not saved; the canonical transcript remains unchanged.",

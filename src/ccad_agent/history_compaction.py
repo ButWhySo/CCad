@@ -94,6 +94,7 @@ def prepare_history_compaction(messages: list[Any], *,
         recent_start -= 1
     older = items[:recent_start]
     recent = items[recent_start:]
+    base_message_id = str(getattr(items[-1], "id", "") or "") if items else ""
     try:
         limit = int(source_limit)
     except (TypeError, ValueError):
@@ -114,39 +115,54 @@ def prepare_history_compaction(messages: list[Any], *,
         if record is None:
             omitted_roles += 1
             continue
-        records.append(record)
+        records.append((str(getattr(message, "id", "") or ""), record))
 
     # Prefer the newest older turns if the source exceeds its fixed budget.
     # Keep chronological order in the resulting transcript.
-    transcript = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
+    transcript = json.dumps([record for _, record in records], ensure_ascii=False,
+                            separators=(",", ":"))
     while len(records) > 1 and len(transcript) > limit:
         records.pop(0)
-        transcript = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
+        transcript = json.dumps([record for _, record in records], ensure_ascii=False,
+                                separators=(",", ":"))
     if records and len(transcript) > limit:
         excess = len(transcript) - limit
-        final_text = records[-1]["text"]
-        records[-1]["text"] = final_text[:max(0, len(final_text) - excess - 8)]
-        transcript = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
+        final_text = records[-1][1]["text"]
+        records[-1][1]["text"] = final_text[:max(0, len(final_text) - excess - 8)]
+        transcript = json.dumps([record for _, record in records], ensure_ascii=False,
+                                separators=(",", ":"))
         while records and len(transcript) > limit:
             records.pop()
-            transcript = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
+            transcript = json.dumps([record for _, record in records], ensure_ascii=False,
+                                    separators=(",", ":"))
 
-    included_source_chars = sum(len(record["text"]) for record in records)
-    ready = bool(records and included_source_chars >= MIN_COMPACTABLE_CHARS
-                  and len(items) > keep)
+    included_source_chars = sum(len(record["text"]) for _, record in records)
+    missing_source_ids = (sum(not message_id for message_id, _ in records) +
+                          sum(not str(getattr(message, "id", "") or "")
+                              for message in recent))
+    source_ids_complete = bool(records) and missing_source_ids == 0 and bool(base_message_id)
+    ready = bool(records and source_ids_complete and
+                 included_source_chars >= MIN_COMPACTABLE_CHARS and len(items) > keep)
     max_summary_chars = min(MAX_SUMMARY_CHARS,
                             max(0, int(included_source_chars * 0.55)))
     return {
         "ready": ready,
-        "reason": "ready" if ready else "insufficient_older_history",
+        "reason": ("ready" if ready else
+                   "source_message_id_missing" if records and not source_ids_complete
+                   else "insufficient_older_history"),
         "system_prompt": SUMMARY_SYSTEM_PROMPT,
         "transcript": transcript if ready else "",
+        "source_message_ids": [message_id for message_id, _ in records
+                                if message_id] if ready else [],
+        "base_message_id": base_message_id if ready else "",
         "recent_messages": recent,
         "max_summary_chars": max_summary_chars,
         "report": {
             "older_message_count": len(older),
             "retained_message_count": len(recent),
             "safe_source_message_count": len(records),
+            "missing_source_message_id_count": missing_source_ids + int(
+                bool(items) and not base_message_id),
             "unsafe_message_count": unsafe_messages,
             "omitted_role_message_count": omitted_roles,
             "non_text_block_count": omitted_blocks,
@@ -191,6 +207,7 @@ def compact_history(messages: list[Any], summarize, *, plan=None) -> dict[str, A
     if not prepared["ready"]:
         return {"applied": False, "reason": prepared["reason"],
                 "recent_messages": prepared["recent_messages"],
+                "source_message_ids": [],
                 "report": prepared["report"]}
     response = summarize(prepared)
     summary = validate_history_summary(
@@ -207,7 +224,9 @@ def compact_history(messages: list[Any], summarize, *, plan=None) -> dict[str, A
             and isinstance(value, int) and not isinstance(value, bool)
         }
     return {"applied": True, "summary": summary,
-            "recent_messages": prepared["recent_messages"], "report": report}
+            "recent_messages": prepared["recent_messages"],
+            "source_message_ids": list(prepared["source_message_ids"]),
+            "report": report}
 
 
 def replace_checkpoint_history(executor: Any, thread_id: str,

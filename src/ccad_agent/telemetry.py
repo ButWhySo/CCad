@@ -23,6 +23,24 @@ LANGFUSE_INGESTION_VERSION_HEADER = "x-langfuse-ingestion-version"
 LANGFUSE_READBACK_TIMEOUT_SECONDS = 20.0
 LANGFUSE_TURN_READBACK_TIMEOUT_SECONDS = 2.0
 LANGFUSE_READBACK_PAGE_SIZE = 100
+LANGFUSE_METADATA_VALUE_LIMIT = 200
+
+
+def _string_metadata(metadata):
+    """Return Langfuse-v4-safe, redacted metadata with bounded string values."""
+    if not isinstance(metadata, dict):
+        return {}
+    safe = cast(dict[str, Any], redact(metadata))
+    result = {}
+    for key, value in safe.items():
+        if isinstance(value, bool):
+            value = str(value).lower()
+        elif isinstance(value, (str, int, float)):
+            value = str(value)
+        else:
+            continue
+        result[str(key)] = value[:LANGFUSE_METADATA_VALUE_LIMIT]
+    return result
 
 
 def _read_trace_observations(client, trace_id, timeout_seconds=LANGFUSE_READBACK_TIMEOUT_SECONDS):
@@ -298,7 +316,7 @@ class TelemetryRuntime:
             yield None
             return
         with client.start_as_current_observation(name=name, as_type=as_type,
-                metadata=redact(metadata or {}), model=model,
+                metadata=_string_metadata(metadata or {}), model=model,
                 input=redact(input_data) if input_data is not None else None) as observation:
             if observation is None:
                 raise RuntimeError("observation_not_created")

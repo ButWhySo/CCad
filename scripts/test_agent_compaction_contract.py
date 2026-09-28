@@ -14,6 +14,13 @@ end = source.index("# --- Custom Workflows ---", start)
 compaction = source[start:end]
 
 assert "compact_history(messages, summarize, plan=plan)" in compaction
+assert 'source_message_ids = list(plan["source_message_ids"])' in compaction
+assert 'report["source_message_ids"] = source_message_ids' in compaction
+assert 'id=f"compaction-{uuid.uuid4().hex}"' in compaction
+assert 'base_message_id = str(getattr(messages[-1], "id", "") or "")' in compaction
+assert 'base_message_id=base_message_id' in source
+assert "source_message_ids=source_message_ids" in source
+assert 'summary_message_id=summary_message_id' in source
 assert "model_client.invoke(" in compaction
 assert "router_llm" not in compaction and "librarian_llm" not in compaction
 assert '"context.compact", "generation"' in compaction
