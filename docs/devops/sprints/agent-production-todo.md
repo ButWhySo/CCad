@@ -2,6 +2,19 @@
 
 Check a box only after implementation and its required evidence exist.
 
+### Sprint 1035 — Langfuse v4 SDK freshness and visible proposal diff contract
+
+- [x] Upgrade the pinned Langfuse Python SDK from the historical 4.7.x floor to the current stable v4 patch line (`>=4.15.6,<4.16.0`); preserve the v4 OTLP endpoint, ingestion header, privacy exporter, and v4 Observations API behavior.
+- [x] Extend the local OTLP receiver contract to exercise the real LangChain callback beneath the Agent-turn root, including v4 session/name/metadata propagation and safe exporter routing.
+- [x] Run trace hierarchy, local ingestion, exporter reconfiguration/readback, privacy, and Pyright checks under resolved SDK 4.15.6; evidence is in `docs/devops/sprints/sprint-1035-langfuse-v4-readiness.md`.
+- [x] Refresh the seven-row Langfuse v4 readiness report; project, evaluator, export, and Cloud-canary results remain explicitly blocked without configured project access.
+- [x] Record current official guidance: Python SDK 4.7.0+ and direct OTLP with the v4 ingestion header are realtime-compatible; avoid legacy ingestion/API paths before the 2026-11-16 Cloud cutoff.
+- [x] Do not claim Cloud delivery, project migration, export compatibility, or evaluator readiness from local tests alone.
+- [ ] Keep proposal-diff acceptance grounded in the authoritative staged object and revision: added geometry absent before/present after, edits show old/new geometry, removals show old geometry and an explicitly labelled ghost.
+- [ ] Use one changed-object-focused synchronized camera in before/after; fail review when changed geometry is hidden, stale, off-camera, clipped, or illegible, even if the text change list exists.
+- [ ] Keep unchanged geometry in normal layer/theme colors and show only actual changed geometry in the existing active-selection highlight style; test this against the supplied “change absent in both panes” reproduction.
+- [ ] After approval, confirm the reviewed stable object/change-set ID is present in the live PCB/schematic view and survives save/reload; do not accept a change-list-only preview as visual proof.
+
 ### Sprint 1034 — Langfuse v4 code compatibility
 
 - [x] Inventory Langfuse references in Agent source/scripts/docs and resolve installed Python SDK/Pydantic versions (`langfuse 4.7.1`, `pydantic 2.13.4`); only `src/ccad_agent/requirements.txt` declares the SDK and no Python lockfile is present.
@@ -1524,10 +1537,10 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 Code-only migration is required before the Cloud cutoff; project-specific state must stay blocked until Langfuse project access is available. Follow the installed Langfuse skill's `references/v4-project-migration.md` and current official documentation.
 
 - [ ] Inventory every Langfuse SDK/API, direct OTLP exporter, callback, lockfile, test, doc, and CI use; record declared and resolved versions.
-- [x] Keep Python SDK on the tested v4.7.1 range and verify resolved Pydantic v2 (2.13.4) plus LangChain/LangGraph callback integration.
+- [x] Keep Python SDK on the current tested v4.15.6 patch line and verify resolved Pydantic v2 plus LangChain/LangGraph callback integration.
 - [x] Add `x-langfuse-ingestion-version: 4` to direct OTLP/HTTP export; test endpoint, regional host, and Basic Auth without exposing credentials.
 - [x] Replace deprecated trace-detail reads with v4 Observations API v2; test time-bounded trace filtering, cursor pagination, hierarchy, and response parsing.
-- [ ] Verify one complete immutable root observation per Agent turn, safe root input/output, correct nesting, and correlation attributes propagated before child observations.
+- [x] Verify one complete immutable root observation per Agent turn, safe root input/output, correct nesting, and correlation attributes propagated before a real LangChain callback child observation.
 - [x] Prove the v4 HTTP exporter delivers protobuf to a local receiver with the exact path, ingestion header, Basic Auth, parent/child IDs, session/name/turn metadata, safe root digest/count, and no credential bytes in payload.
 - [x] Preserve metadata-only redaction and ensure prompts, design, tool arguments, paths, and secrets stay out of exported spans by default.
 - [ ] Verify the exact canary hierarchy after flush/readback with bounded eventual-consistency retries; no success claim from HTTP acceptance alone.
@@ -3577,33 +3590,35 @@ Product definitions:
 
 ### Existing STM migration
 
-- [ ] Rename current task-scoped process-only STM implementation to Working Memory / Task Scratchpad.
-- [ ] Preserve existing `/task` functionality.
-- [ ] Preserve existing task-scope bounds.
-- [ ] Migrate config/state safely.
-- [ ] Do not silently present task scratchpad as complete conversation STM.
+- [x] Rename current task-scoped process-only STM implementation to Working Memory / Task Scratchpad; canonical runtime/config use `working_memory`, with `stm` retained as a compatibility alias (Sprint 1027).
+- [x] Preserve existing `/task` functionality and its explicit task lifecycle.
+- [x] Preserve task-scope bounds; session replacement/expiry clears only the matching process-only task scratch (Sprint 1027 contracts).
+- [x] Migrate saved `memory.stm` preferences safely to `memory.working_memory` (Sprint 1027 migration contract).
+- [x] Do not present task scratch as complete conversation STM; Settings, memory management, context metadata, and CLI describe it as Working Memory (Sprint 1027).
 
 ### Canonical conversation store
 
-- [ ] Add durable thread store.
-- [ ] Persist complete chronological user-visible conversation events.
-- [ ] Keep thread IDs stable across resume.
-- [ ] Keep turn IDs stable.
-- [ ] Keep tool/approval/transaction references where required to reconstruct chat.
-- [ ] Do not store private chain-of-thought.
-- [ ] Redact secrets before persistence.
-- [ ] Current active thread becomes STM.
-- [ ] All persisted threads collectively form LTM archive/index.
-- [ ] Do not physically duplicate the same transcript into separate STM and LTM copies.
+- [x] Add durable SQLite thread/message storage (Sprint 1030; `ConversationStore`).
+- [x] Persist chronological user, assistant, and tool messages with stable message/tool-call IDs; restore full transcript by thread ID after restart (Sprint 1030 contracts).
+- [x] Keep thread IDs stable across resume and checkpoint migration (Sprint 1030 restart contract).
+- [x] Keep turn IDs stable on persisted source messages and retrieve them for resumed turns (`turn_id_for_message`; conversation-store contracts).
+- [ ] Persist approval/proposal/transaction references on the specific transcript events/TurnRecords where required to reconstruct review/application history; tool-call and result IDs are already preserved.
+- [x] Do not store private chain-of-thought: persistence accepts only Human/AI/Tool message roles and excludes system/developer/internal message types; provider-private metadata is not serialized.
+- [x] Redact recognized secret-shaped values before persistence and before public transcript reads (Sprint 1023 and conversation-store contracts).
+- [ ] Model the active canonical thread explicitly as conversation STM while keeping the Working Memory scratch tier distinct; current transcript and scratch implementations are separate, but this product-level STM label is not yet wired.
+- [x] Make persisted thread TurnRecords/recaps the derived searchable LTM archive without copying raw transcripts into another memory store (Sprint 988/1030 architecture; records link to source message IDs).
+- [x] Avoid physically duplicating transcript bodies into separate STM/LTM stores; one canonical SQLite message transcript feeds bounded projections and derived source-linked indexes.
 
 ### Compaction separation
 
-- [ ] Keep full canonical transcript intact after `/cc`.
-- [ ] Compact only the model-facing context/checkpoint projection.
-- [ ] Keep recent messages verbatim as required by compaction policy.
-- [ ] Keep summaries linked to the source message range they summarize.
-- [ ] Reopening History must show the complete transcript, not only compacted summary.
-- [ ] Provider context may remain compact while human-visible transcript remains complete.
+- [x] Keep full canonical transcript intact after `/cc` (Sprint 970 conversation-store contract).
+- [x] Compact only the model-facing context/checkpoint projection; `/clear` also clears that projection, not the transcript.
+- [x] Keep the configured recent message suffix verbatim; contracts verify recent IDs/content survive compaction.
+- [ ] Persist an explicit source message/sequence range for every generated summary; projection boundary is stored, but summary-to-source range is not yet exposed as an auditable record.
+- [x] Reopening History reads the full canonical transcript rather than the compacted model projection (Sprint 1030 runtime contract).
+- [x] Allow provider context to remain compact while human-visible transcript remains complete (Sprint 970/1030 contracts).
+
+Verified evidence: Sprint 1027 Working Memory manifest `artifacts/evidence/sprint-1027-working-memory-semantics-r3.json`; Sprint 1030 conversation history manifest `artifacts/evidence/sprint-1030-conversation-history-r11.json`; reconciliation manifest `artifacts/evidence/sprint-1034-memory-contract-reconcile.json` (SHA-256 `63DA937ABC79755DAF65B34884F8F649767271C473080888E88B0ED094D70ECC`). Targeted contracts are `scripts/test_memory_task_scopes.py`, `scripts/test_conversation_store.py`, `scripts/test_conversation_runtime.py`, and `scripts/test_agent_compaction_checkpoint.py`. Remaining gaps are approval/transaction event linkage, explicit conversation-STM naming, and auditable summary source ranges; do not infer these from the existing transcript/projection implementation.
 
 ---
 

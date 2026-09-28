@@ -1920,24 +1920,27 @@ when `mask_otel_spans` is unavailable. The local metadata-only exporter remains
 the authoritative OTel redaction boundary, and remote trace retrieval is still
 required before marking full export proof complete.
 
-The Sprint 1034 Python SDK pin resolves to Langfuse 4.7.1/Pydantic 2.13.4.
+The Sprint 1035 Python SDK pin resolves to Langfuse 4.15.6/Pydantic 2.13.4.
 Direct OTLP uses the v4 realtime-ingestion header, and exact trace readback
 uses the v2 Observations API with a bounded UTC time range and cursor paging.
-`MetadataOnlyExporter` remains the final export privacy gate; live project
-receipt, evaluator configuration, exports, and rollback remain external checks.
+`MetadataOnlyExporter` remains the final export privacy gate. The local wire
+contract now exercises the actual LangChain callback as a child of the Agent
+turn and proves it shares the configured exporter, trace, and session metadata.
+Live project receipt, evaluator configuration, exports, and rollback remain
+external checks; see `docs/devops/sprints/sprint-1035-langfuse-v4-readiness.md`.
 
-Sprint 1034 handover: `src/ccad_agent/telemetry.py` pins compatibility through
-`requirements.txt` (`langfuse>=4.7.1,<4.8.0`), sends direct OTLP traces to
+Sprint 1035 handover: `src/ccad_agent/telemetry.py` pins compatibility through
+`requirements.txt` (`langfuse>=4.15.6,<4.16.0`), sends direct OTLP traces to
 `/api/public/otel/v1/traces` with `x-langfuse-ingestion-version: 4`, and reads
 exact trace observations through `client.api.observations.get_many()` with
 cursor pagination. The export boundary stays metadata-only. Development turn
 readback is bounded to two seconds; explicit connection tests allow twenty
 seconds for indexing. `scripts/test_langfuse_v4_local_ingestion.py` decodes a
 real local OTLP protobuf request and asserts endpoint, v4 header, Basic Auth,
-single root/child ancestry, safe root input/output, and propagated session and
-turn metadata without credentials in payload. The updated Qt Release/full
-CTest gate passes 122/122; Pyright reports zero diagnostics. These local checks
-establish repository behavior only, not Cloud project migration,
+root plus real LangChain callback and tool child ancestry, safe root
+input/output, and propagated session and turn metadata without credentials in
+payload. Local 4.15.6 runtime, hierarchy, and privacy contracts pass; these
+checks establish repository behavior only, not Cloud project migration,
 evaluator/export status, or live receipt.
 
 Sprint 952 handover: `ReviewWindow::projectContextJson()` emits a bounded typed
@@ -2231,6 +2234,13 @@ LangGraph messages when the canonical transcript is empty, plus JSON-RPC
 conversation list/read operations and mapped History/New Chat/resume controls.
 History displays the full redacted transcript while provider history stays on
 the separate compact projection. Semantic history retrieval remains open.
+Sprint 1034 TODO reconciliation reran the task-scope, transcript, restart, and
+LangGraph checkpoint contracts against this implementation. Remaining gaps are
+explicit proposal/approval/transaction references attached to transcript
+events, a product-level label for the active conversation as STM (distinct
+from task Working Memory), and an auditable source-message range for each
+generated compaction summary. The projection stores a sequence boundary, but
+that alone is not exposed as a source-range record.
 
 `src/ccad_gui/agent_chat_browser.hpp` owns chat message formatting. Actual final
 assistant responses carry `content_format=markdown`; resumed canonical

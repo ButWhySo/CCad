@@ -1,6 +1,6 @@
 # Implemented Features
 
-## Sprint 1034 — Langfuse v4 runtime compatibility
+## Sprint 1035 — Langfuse v4 SDK update and callback wire contract
 
 Direct OTLP/HTTP export now includes Langfuse's v4 ingestion-version header,
 retains Basic Auth, and builds endpoints from validated host-only base URLs,
@@ -10,14 +10,17 @@ that trace, and retries within a bounded interval; normal turn readback has a
 shorter cap than an explicit connection test. Provider export remains
 metadata-only and never treats exporter acceptance as proof of indexed receipt.
 A real SDK/exporter-to-local-receiver contract decodes the emitted protobuf and
-checks the exact v4 path/header/auth, root and child identity, propagated
-correlation, bounded root digest/count, and absence of credential bytes. The
-resolved environment is `langfuse 4.7.1` with `pydantic 2.13.4`. Actual hosted
-Langfuse receipt remains unverified until project access is configured. Qt
-Release and full CTest pass 122/122; Pyright reports zero diagnostics.
-Workspace manifest
-`artifacts/evidence/sprint-1034-langfuse-v4-wire-contract.json` (SHA-256
-`317EF50D635676B35FFFF9D09E0106302395153A29BD9E3679A18EEF6750965A`).
+checks the exact v4 path/header/auth, root observation, real LangChain callback
+child, tool child, propagated correlation, bounded root digest/count, and
+absence of credential bytes. The SDK requirement now targets stable v4.15.6;
+the local runtime resolves `langfuse 4.15.6` with `pydantic 2.13.4`. Actual
+hosted Langfuse receipt remains unverified until project access is configured.
+Focused local-ingestion, hierarchy, runtime/reconfiguration, and privacy
+contracts pass on v4.15.6; Pyright reports zero diagnostics for the changed
+runtime and test paths. The Qt/MinGW Release build and full CTest gate pass
+(122/122). Manifest `artifacts/evidence/sprint-1035-langfuse-v4-current-patch.json`
+(SHA-256 `D599D59D6EE0FE90D04911341030761FA445662A1B6808FDBF83E8164F7E6F1F`).
+This is local compatibility evidence, not proof of receipt by a hosted project.
 
 ## Sprint 1033 — Agent cold-start and provider credential isolation
 
@@ -463,6 +466,8 @@ This document tracks user-visible and agent-visible features that exist in the r
 The Python Agent now stores sanitized canonical messages in a per-thread SQLite database at `%APPDATA%/CCad/agent_conversations.sqlite3` (override with `CCAD_AGENT_CONVERSATION_DB`). User, assistant, and tool messages retain stable message/tool-call IDs; recognized credential-like values are redacted before persistence. Provider input history is a bounded projection that keeps recent complete turns under `CCAD_AGENT_HISTORY_TOKENS` and `CCAD_AGENT_HISTORY_LIMIT`. `/cc` updates only that projection, while `/clear` empties active model context; neither deletes the canonical transcript. Completed and terminally unavailable turns produce a structured, source-message-linked TurnRecord and a recap of up to six recent turns. Historical TurnRecords are retrieved per thread by deterministic lexical token overlap and included in the versioned provider context with source IDs; this is not semantic/vector search.
 
 The current boundary is deliberate: Sprint 1030 imports old LangGraph checkpoint-only messages when canonical history is empty and adds mapped History/New Chat/resume controls. Retrieval still does not cross thread boundaries or use embeddings. Earlier verification is through `scripts/test_conversation_store.py`, `scripts/test_conversation_runtime.py`, context-package contracts, and the isolated seven-action GUI-map scenario `sprint976-conversation-20260924`; Sprint 1030 adds checkpoint migration, process restart, and restored-transcript coverage without making a provider request.
+
+The task-scope, transcript, restart, and LangGraph checkpoint contracts were rerun during the Sprint 1034 TODO reconciliation. Proposal/approval/transaction event linkage, explicit conversation-STM naming, and inspectable compaction-summary source ranges remain incomplete; the existing projection boundary is not represented as an auditable source-range record.
 
 ## Sprint 967 request context and memory lifecycle
 

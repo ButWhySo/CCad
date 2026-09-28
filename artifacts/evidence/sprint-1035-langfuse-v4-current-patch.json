@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1035-langfuse-v4-current-patch",
+    "feature":  "Langfuse SDK v4.15.6 and callback-through-OTLP compatibility; visual proposal visibility acceptance capture",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-28T15:05:28.3114160Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.28 log=artifacts/evidence/sprint-1035-langfuse-v4-current-patch/preflight.log",
+                      "finished_utc":  "2026-09-28T15:05:29.7238753Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=2.6 log=artifacts/evidence/sprint-1035-langfuse-v4-current-patch/build.log",
+                      "finished_utc":  "2026-09-28T15:05:32.3422087Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=189.72 log=artifacts/evidence/sprint-1035-langfuse-v4-current-patch/ctest.log",
+                      "finished_utc":  "2026-09-28T15:08:42.0688085Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1035-langfuse-v4-current-patch/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1035-langfuse-v4-current-patch/ctest.log",
+                                         "sha256":  "9912FD7D4207BC058EB32B4AC2F5A1A2F5382912F73F90EC1656E7222D4EE09E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1035-langfuse-v4-current-patch/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-28T15:08:42.1583473Z"
+}

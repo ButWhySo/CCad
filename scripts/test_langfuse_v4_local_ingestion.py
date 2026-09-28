@@ -1,9 +1,11 @@
-"""Exercise v4 OTLP/HTTP export against an isolated local receiver."""
+"""Exercise Langfuse v4 OTLP and LangChain callback against a local receiver."""
+# pyright: reportMissingImports=false
 from __future__ import annotations
 
 import base64
 import pathlib
 import sys
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 from typing import Any
@@ -31,7 +33,7 @@ class Receiver(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"")
 
-    def log_message(self, _format: str, *_args: Any) -> None:
+    def log_message(self, format: str, *_args: Any) -> None:
         return
 
 
@@ -73,6 +75,16 @@ def main() -> None:
             {"turn_id": "turn-local-contract"},
             input_data={"prompt_sha256": "b" * 64, "prompt_chars": 9},
         )
+        callback = runtime.callbacks()[0]
+        callback_run_id = uuid.uuid4()
+        callback.on_chain_start(
+            {"name": "ccad_callback_contract"},
+            {"request_kind": "contract"},
+            run_id=callback_run_id,
+            metadata={"ccad_contract": "local"},
+        )
+        callback.on_chain_end(
+            {"result_kind": "observed"}, run_id=callback_run_id)
         with runtime.observation("tool.call", "tool") as observation:
             observation.update(output={"status": "observed"})
         runtime.finish_agent_turn()
@@ -92,7 +104,8 @@ def main() -> None:
         spans = [span for resource in request.resource_spans
                  for scope in resource.scope_spans for span in scope.spans]
         by_name = {span.name: span for span in spans}
-        assert set(by_name) == {"agent.turn", "tool.call"}, sorted(by_name)
+        assert set(by_name) == {
+            "agent.turn", "ccad_callback_contract", "tool.call"}, sorted(by_name)
         assert sum(span.name == "agent.turn" for span in spans) == 1
         root = by_name["agent.turn"]
         root_attrs = attributes(root)
@@ -101,6 +114,7 @@ def main() -> None:
         trace_ids = {span.trace_id for span in spans}
         assert len(trace_ids) == 1
         assert by_name["tool.call"].parent_span_id == root.span_id
+        assert by_name["ccad_callback_contract"].parent_span_id == root.span_id
         for span in spans:
             attrs = attributes(span)
             assert attrs.get("langfuse.session.id", attrs.get("session.id")) == "thread-local-contract"
