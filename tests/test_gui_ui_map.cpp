@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include <fstream>
+#include <sstream>
 
 #include "ccad_cli/app.hpp"
 #include "ccad_core/geometry.hpp"
@@ -25,6 +26,13 @@ bool writeProject(const QString& path, const ccad::Project& project) {
   std::ofstream out(path.toStdString(), std::ios::binary);
   out << ccad::dumpProjectJson(project);
   return static_cast<bool>(out);
+}
+
+ccad::Project readProject(const QString& path) {
+  std::ifstream input(path.toStdString(), std::ios::binary);
+  std::ostringstream contents;
+  contents << input.rdbuf();
+  return ccad::loadProjectJson(contents.str());
 }
 
 ccad::Project emptyProject() {
@@ -316,10 +324,28 @@ int main(int argc, char** argv) {
       !add_graphic.contains("\"graphic_count\":1")) {
     return 9;
   }
+  auto* undo_action = window.findChild<QAction*>("action:undo");
+  auto* redo_action = window.findChild<QAction*>("action:redo");
+  if (undo_action == nullptr || redo_action == nullptr || !undo_action->isEnabled() ||
+      redo_action->isEnabled()) {
+    return 23;
+  }
+  undo_action->trigger();
+  if (!undo_action->isEnabled() || !redo_action->isEnabled() ||
+      readProject(board_path).boards.front().graphics.size() != 0) {
+    return 24;
+  }
+  redo_action->trigger();
+  if (!undo_action->isEnabled() || redo_action->isEnabled() ||
+      readProject(board_path).boards.front().graphics.size() != 1) {
+    return 25;
+  }
   const QString add_text = window.runAgentUiQueryJson(
       "ui.place_text", "{\"x_mm\":2,\"y_mm\":8,\"text\":\"AGENT\"}");
   if (!add_text.contains("\"performed\":true") ||
-      !add_text.contains("\"text_count\":1")) {
+      !add_text.contains("\"text_count\":1") || redo_action->isEnabled() ||
+      readProject(board_path).boards.front().graphics.size() != 1 ||
+      readProject(board_path).boards.front().texts.size() != 1) {
     return 15;
   }
   const QString outside_graphic = window.runAgentUiQueryJson(

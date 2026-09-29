@@ -1,5 +1,18 @@
 # Implemented Features
 
+## Sprint 1037 — single-use Agent approval and desktop Undo/Redo
+
+The native tool broker now issues expiring approval grants tied to one
+registered mutation method, its exact JSON arguments, the model tool-call ID,
+and the current serialized project plus active layer/net/selection revision.
+Approval consumes the grant before executor dispatch; changed plans, stale
+revisions, unknown/replayed tokens, duplicate pending call IDs, missing IDs, and
+missing revisions fail closed. Dry-run state comes from parsed typed input,
+not raw JSON substring matching; malformed provider calls and legacy text tools
+cannot reach the broker. Agent UI Undo/Redo persists restored snapshots
+atomically. This GUI history is not the kernel transaction/audit undo path; that
+capability remains open in the production TODO.
+
 ## Sprint 1036 — Conversation STM metadata and compaction provenance
 
 The canonical active conversation is identified in safe context metadata as

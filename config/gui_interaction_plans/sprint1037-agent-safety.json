@@ -1,0 +1,17 @@
+{
+  "feature": "Verify that live board edits persist and GUI Undo/Redo restore exact project snapshots through mapped menu actions and keyboard shortcuts.",
+  "target_sequence": "sprint1037-undo-redo",
+  "project": "tests/fixtures/agent-undo-redo-board.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "action:undo",
+    "action:redo",
+    "action:grid",
+    "tab:schematic",
+    "tab:pcb",
+    "action:zoom_in",
+    "action:zoom_out"
+  ],
+  "required_text_entries": [],
+  "meaningful_screenshots": 4
+}

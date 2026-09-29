@@ -1,5 +1,15 @@
 # CCad Agent production TODO
 
+### Sprint 1037 — one-use approvals, truthful tool IDs, and project undo/redo
+
+- [ ] Bind each broker grant to exact method, arguments, provider call ID, and live design revision; consume once, expire, and revoke on cancel/reject.
+- [x] Use parsed typed `dry_run` only; reject malformed provider calls and legacy text tools without synthetic IDs or execution; focused broker/Python contracts pass.
+- [x] Persist project Undo/Redo restoration atomically and verify board state after keyboard shortcuts and native actions on a disposable project.
+- [x] Pass approval replay/staleness/cancellation and dry-run contracts, provider-ID runtime contract, GUI Undo/Redo test, and Pyright (0 diagnostics in changed orchestrator module). Expiry behavior is implemented but still lacks a deterministic expiry contract.
+- [x] Pass Qt/MinGW Release build and full CTest (123/123) in the inspected `sprint-1037-agent-safety-r4` verifier run.
+- [x] Pass the mapped GUI sequence; inspect four distinct before/staged/undo/redo screenshots and stdout/stderr in `sprint-1037-agent-safety-r4`.
+- [ ] Update handover/features/progress and check only verified items; run redacted secret scan; commit and push scoped source, tests, docs, and manifest.
+
 ### Sprint 1036 follow-up — Langfuse v4 metadata attribute contract
 
 - [x] Reproduce the reported Langfuse v4 metadata type warning with the real SDK and local OTLP receiver; normalize redacted scalar observation metadata to strings capped at 200 characters and omit structured values. Local ingestion contract passes.
@@ -943,6 +953,8 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Keep read-only, calculation, screenshot, and dry-run calls immediate.
 - [ ] Gate every persistent, destructive, external, CLI, Python-write, export, or process action before execution.
 - [ ] Bind approval to immutable typed action plan and project/context revision; expire stale approvals.
+  - [ ] Bind broker grant to exact registered method, exact serialized argument JSON, model call ID, and current project/context revision; consume once and expire. Replay, substitution, staleness, and cancellation contracts pass; deterministic expiry coverage remains open.
+  - [x] Verify Qt supplies the live design-context revision at proposal and approval time; reject malformed calls without synthetic IDs.
 - [ ] Support approve, reject, revise, cancel, undo, and post-action verification through transaction/audit path.
 - [ ] Block command injection, unrestricted filesystem access, secret exposure, and unbounded subprocess/network execution.
 - [x] Remove fabricated runner success when no executor exists; report `task_executor_unavailable` with zero tool/project action.

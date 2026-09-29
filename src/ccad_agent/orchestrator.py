@@ -211,6 +211,31 @@ def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
     return f"{tool_name}-{uuid.uuid4().hex}"
 
+def model_tool_call_event(tool_call: Any) -> dict[str, Any] | None:
+    """Build broker IPC only from a provider call with complete identity."""
+    if not isinstance(tool_call, dict):
+        return None
+    call_id = tool_call.get("id")
+    tool_name = tool_call.get("name")
+    args = tool_call.get("args")
+    if (not isinstance(call_id, str) or not call_id.strip() or
+            not isinstance(tool_name, str) or not tool_name.strip() or
+            not isinstance(args, dict)):
+        return None
+    return {"jsonrpc": "2.0", "method": "tool_call", "params": {
+        "tool": tool_name, "args": args, "call_id": call_id,
+    }}
+
+def tool_result_call_id(request: Any) -> str | None:
+    """Return a real result correlation ID; never invent one."""
+    if not isinstance(request, dict):
+        return None
+    call_id = request.get("id")
+    params = request.get("params")
+    if (not isinstance(call_id, str) or not call_id.strip()) and isinstance(params, dict):
+        call_id = params.get("call_id")
+    return call_id if isinstance(call_id, str) and call_id.strip() else None
+
 def emit_tool_approval_state():
     """Publish approval before a mutating tool blocks on the client result."""
     if not current_run_trace_id:
@@ -3386,30 +3411,24 @@ def handle_human_message(req):
 
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
         for tcall in last_msg.tool_calls:
-            tool_name = tcall.get("name", "")
-            args = tcall.get("args", {})
+            tool_event = model_tool_call_event(tcall)
+            if tool_event is None:
+                emit({"jsonrpc": "2.0", "method": "message", "params": {
+                    "text": "Provider returned a malformed tool call; no tool was executed.",
+                    "kind": "tool_call_rejected", "content_format": "plain",
+                }})
+                continue
+            tool_name = tool_event["params"]["tool"]
             if "pre tool call" in [h.lower() for h in active_hooks]:
                 hooks.trigger_hook("pre tool call", emit, tool_name)
-            emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
-                "tool": tool_name, "args": args,
-                "call_id": tcall.get("id", "") or "agent-tool-call",
-            }})
+            emit(tool_event)
             if "post tool call" in [h.lower() for h in active_hooks]:
                 hooks.trigger_hook("post tool call", emit, tool_name)
     elif "<TOOL>" in last_msg.content:
-        tool_call_str = last_msg.content.replace("<TOOL>", "").strip()
-        tool_name = tool_call_str.split(" ")[0]
-        if "pre tool call" in [h.lower() for h in active_hooks]:
-            hooks.trigger_hook("pre tool call", emit, tool_name)
-        args_str = tool_call_str[len(tool_name):].strip()
-        args = {}
-        try:
-            args = json.loads(args_str)
-        except Exception as e:
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Error parsing tool args: {e}"}})
-        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {"tool": tool_name, "args": args}})
-        if "post tool call" in [h.lower() for h in active_hooks]:
-            hooks.trigger_hook("post tool call", emit, tool_name)
+        emit({"jsonrpc": "2.0", "method": "message", "params": {
+            "text": "Legacy text-encoded tool call rejected; no tool was executed.",
+            "kind": "tool_call_rejected", "content_format": "plain",
+        }})
     else:
         emit({"jsonrpc": "2.0", "method": "message", "params": {
             "text": last_msg.content, "content_format": "markdown"}})
@@ -3461,8 +3480,12 @@ if __name__ == "__main__":
                 tool_result_params = req.get("params", {})
                 if not isinstance(tool_result_params, dict):
                     tool_result_params = {}
-                raw_call_id = req.get("id") or tool_result_params.get("call_id", "agent-tool-call")
-                call_id = raw_call_id if isinstance(raw_call_id, str) else str(raw_call_id)
+                call_id = tool_result_call_id(req)
+                if call_id is None:
+                    emit({"jsonrpc": "2.0", "method": "tool_result_ignored", "params": {
+                        "reason": "call_id_missing",
+                    }})
+                    continue
                 thread_id = str(tool_result_params.get("thread_id") or
                                 os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
                 with pending_calls_lock:

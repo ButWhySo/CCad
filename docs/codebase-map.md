@@ -2585,6 +2585,17 @@ scope `active_thread`, and reports only the message count. In the GUI,
 states that disabling it does not remove ordinary transcript history.
 `control:stmCb` remains Working Memory / task scratch.
 
+Sprint 1037 approval binding stores one broker grant for the exact tool name,
+argument JSON, call ID, and current project/context revision; grants expire
+after five minutes, are consumed before executor dispatch, and reject replay,
+plan substitution, duplicate pending calls, or revision drift. `AgentPanel`
+gets the current revision from `ReviewWindow` using serialized project state,
+active layer/net, and selected-object IDs, not the UI-map epoch. The same slice
+adds atomic snapshot restore for GUI Undo/Redo, but this is not the missing
+kernel transaction/audit undo dispatcher; keep that TODO open. Provider tool
+calls now require a real ID and well-formed arguments; raw `<TOOL>` text and
+missing result IDs fail without broker dispatch or synthetic correlation IDs.
+
 The initial screenshot batch showed the Windows lock screen and was rejected.
 An unlocked rerun of the app-owned `sprint1027-working-memory` sequence completed
 10 mapped interactions; all five distinct captures visibly confirm the
