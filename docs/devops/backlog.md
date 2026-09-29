@@ -1,6 +1,6 @@
 # CCad Consolidated Backlog
 
-- [x] Sprint 1039: persist privacy-safe transaction/revision provenance on exact conversation tool-call/result events. Focused Python contracts and Pyright pass; Qt/MinGW Release verifier and full CTest pass 120/120. Evidence: `artifacts/evidence/sprint-1039-transcript-event-provenance.json`. Proposal IDs, positive approval decisions, and ambiguous multi-operation summaries remain open.
+- [x] Sprint 1039 follow-up: thread exact proposal/approval UUIDs and explicit decisions from authoritative Qt approval IPC into private tool-result artifacts and exact TurnRecord events; fail closed on duplicate IDs and omit ambiguous turn summaries. Qt MinGW Release and full CTest pass 120/120; checkpoint restart accept/reject/cancel contracts, conversation store contracts, Pyright, and evidence review pass. Manifest `artifacts/evidence/sprint-1039-approval-provenance-r3.json` (SHA-256 `08E8ED4983FE9ED637EBD61B79A0A1FD63407DE03CDAAB03FE860F80DA259455`).
 
 - [x] Sprint 1029 CI/CTest/CD recheck: exact current `main` SHA `b6e228d5b99f40293e79b6945d386bd7da950e50` passes all five hosted jobs (Actions run `36286955736`), including all three CTest lanes. The old red cluster was the already-fixed ignored local demo-board fixture dependency. Official nonvisual verification reused passing local Release/full-CTest evidence; manifest `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json` (SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`). CD remains unconfigured because no release target or policy exists.
 

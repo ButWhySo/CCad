@@ -3,11 +3,13 @@
 ### Sprint 1039 — Transcript transaction provenance (Tier 1)
 
 - [x] Attach authoritative transaction/revision metadata to exact transcript tool-call/result events; derived event metadata excludes arguments and result text.
-- [ ] Prove multi-operation correlation and that turn-level transaction/revision summaries omit ambiguous values.
-- [ ] Persist proposal IDs and explicit approval decisions/IDs through the authoritative approval path; do not infer approval from tool success.
-- [x] Prove committed result, rejection, cancellation, metadata privacy, and single-operation summary with offline contracts.
-- [x] Run Qt MinGW Release, full CTest (120/120), focused Python conversation/checkpoint contracts, and changed-module Pyright (0 diagnostics); inspect verifier output and evidence.
-- [x] Update codebase map, feature inventory, progress, backlog, and this TODO; run redacted repository/staged-diff scans; commit and push verified files.
+- [x] Prove multi-operation correlation and omit ambiguous turn-level transaction/proposal/approval summaries; reject duplicate call-ID result matching and ignore forged approval fields in model-visible output.
+- [x] Persist opaque proposal IDs, approval IDs, and explicit approved/rejected/cancelled decisions through Qt IPC, LangGraph content/artifact results, checkpoint resume, canonical transcript, and exact correlated TurnRecord events; approval is never inferred from tool success.
+- [x] Prove committed result, rejection, cancellation, checkpoint restart, metadata privacy, result-content preservation, and single/multi-operation summaries with offline contracts.
+- [x] Run corrected Qt MinGW Release, full CTest (120/120), focused Python conversation store/runtime/checkpoint contracts including restart accept/reject/cancel, and changed-module Pyright (0 diagnostics); inspect verifier output and evidence.
+- [x] Update codebase map, feature inventory, progress, backlog, and this TODO; corrected evidence manifest is `artifacts/evidence/sprint-1039-approval-provenance-r3.json` (SHA-256 `08E8ED4983FE9ED637EBD61B79A0A1FD63407DE03CDAAB03FE860F80DA259455`).
+- [x] Run redacted repository and staged-diff secret scans; both reported no findings.
+- [ ] Commit this verified slice and push the feature branch; hosted CI/merge remain after publication.
 
 Evidence: `artifacts/evidence/sprint-1039-transcript-event-provenance.json`, SHA-256 `003A2EC0917B14DC49C7C4ACC59DC64310C994D49E19D5BF3576B7B07AF374C6`. Qt/MinGW Release gate passed with no work required; CTest passed 120/120. GUI validation is not applicable because no GUI behavior changed.
 
@@ -41,7 +43,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Show Conversation STM as a separate read-only active-thread status; keep the `ltm` checkbox bound to durable thread-scoped memory and state that ordinary transcript history is independent.
 - [x] Add contracts before behavior changes for bounded source selection, migration, exact source ranges, missing-ID/stale-snapshot refusal, report privacy, context metadata, and GUI label; focused contracts and Pyright pass, Qt/MinGW Release build and full CTest pass (122/122).
 - [x] Complete visible GUI verification for the settings label and active-thread description; 10 mapped interactions and all five screenshots passed inspection (`artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`).
-- [ ] Complete proposal-ID and approval-decision linkage through authoritative Qt approval IPC; Sprint 1039 records transaction/revision metadata from transcript tool results only.
+- [x] Complete proposal-ID and approval-decision linkage through authoritative Qt approval IPC; Sprint 1039 persists IDs and decisions as private, allowlisted tool-result artifacts and links only by exact tool-call identity.
 
 ### Graphic proposal diff acceptance — user-visible failure reproduction
 

@@ -367,6 +367,7 @@ class AgentPanel final : public QWidget {
   QString pending_tool_args_;
   QString pending_tool_call_id_;
   QString pending_approval_token_;
+  QString pending_proposal_id_;
   QString approval_last_decision_ = "none";
 
   QProcess* python_process_ = nullptr;

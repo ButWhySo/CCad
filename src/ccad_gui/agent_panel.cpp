@@ -1,5 +1,6 @@
 #include "ccad_gui/agent_panel.hpp"
 
+#include "ccad_gui/agent_approval_metadata.hpp"
 #include "ccad_core/agent_policy.hpp"
 
 #include <QByteArray>
@@ -1382,6 +1383,7 @@ void AgentPanel::handlePythonOutput() {
               pending_tool_args_ = args;
               pending_tool_call_id_ = call_id.isEmpty() ? QStringLiteral("agent-tool-call") : call_id;
               pending_approval_token_ = QUuid::createUuid().toString(QUuid::WithoutBraces);
+              pending_proposal_id_ = QUuid::createUuid().toString(QUuid::WithoutBraces);
               showProposal(
                   "Agent proposes " + tool,
                   {"Tool: " + tool, "Arguments: " + args,
@@ -3099,6 +3101,9 @@ void AgentPanel::approveNextApproval() {
     return;
   }
   const QString request = pending_approval_request_;
+  const QJsonObject approval_audit = ccad::gui::makeAgentApprovalMetadata(
+      pending_proposal_id_, QUuid::createUuid().toString(QUuid::WithoutBraces),
+      QStringLiteral("approved"));
   if (!pending_tool_name_.isEmpty() && orchestrator_) {
     ccad::OrchestratorConfig cfg;
     cfg.approved_tool_name = pending_tool_name_.toStdString();
@@ -3107,6 +3112,7 @@ void AgentPanel::approveNextApproval() {
         pending_tool_name_.toStdString(), pending_tool_args_.toStdString(), cfg);
     QJsonObject result{{"jsonrpc", "2.0"}, {"method", "tool_result"},
                        {"id", pending_tool_call_id_}};
+    if (!approval_audit.isEmpty()) result.insert("audit", approval_audit);
     QJsonParseError error;
     const QJsonDocument document = QJsonDocument::fromJson(
         QString::fromStdString(approved).toUtf8(), &error);
@@ -3132,6 +3138,7 @@ void AgentPanel::approveNextApproval() {
     pending_tool_args_.clear();
     pending_tool_call_id_.clear();
     pending_approval_token_.clear();
+    pending_proposal_id_.clear();
     if (executed) {
       approval_last_decision_ = "accept";
       approval_status_label_->setText("Proposal applied: " + request);
@@ -3150,17 +3157,19 @@ void AgentPanel::approveNextApproval() {
                                        ? QStringLiteral("pending_tool_unavailable")
                                        : QStringLiteral("tool_broker_unavailable");
     if (!pending_tool_call_id_.isEmpty() && python_process_) {
-      const QJsonObject result{
+      QJsonObject result{
           {"jsonrpc", "2.0"},
           {"method", "tool_result"},
           {"id", pending_tool_call_id_},
           {"error", QJsonObject{{"code", -32010}, {"message", failure_reason}}}};
+      if (!approval_audit.isEmpty()) result.insert("audit", approval_audit);
       python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
     }
     pending_tool_name_.clear();
     pending_tool_args_.clear();
     pending_tool_call_id_.clear();
     pending_approval_token_.clear();
+    pending_proposal_id_.clear();
     approval_last_decision_ = "execution_failed";
     approval_status_label_->setText("Proposal was not applied: " + failure_reason);
     status_label_->setText("Proposal was not applied");
@@ -3183,17 +3192,22 @@ void AgentPanel::declineNextApproval() {
   }
   const QString request = pending_approval_request_;
   if (!pending_tool_call_id_.isEmpty() && python_process_) {
-    const QJsonObject result{
+    QJsonObject result{
         {"jsonrpc", "2.0"},
         {"method", "tool_result"},
         {"id", pending_tool_call_id_},
         {"error", QJsonObject{{"code", -32001}, {"message", "approval_denied"}}}};
+    const auto audit = ccad::gui::makeAgentApprovalMetadata(
+        pending_proposal_id_, QUuid::createUuid().toString(QUuid::WithoutBraces),
+        QStringLiteral("rejected"));
+    if (!audit.isEmpty()) result.insert("audit", audit);
     python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
   }
   pending_tool_name_.clear();
   pending_tool_args_.clear();
   pending_tool_call_id_.clear();
   pending_approval_token_.clear();
+  pending_proposal_id_.clear();
   pending_approval_request_.clear();
   approval_last_decision_ = "decline";
   approval_status_label_->setText("Approval declined: " + request);
@@ -3214,17 +3228,22 @@ void AgentPanel::cancelApproval() {
   }
   const QString request = pending_approval_request_;
   if (!pending_tool_call_id_.isEmpty() && python_process_) {
-    const QJsonObject result{
+    QJsonObject result{
         {"jsonrpc", "2.0"},
         {"method", "tool_result"},
         {"id", pending_tool_call_id_},
         {"error", QJsonObject{{"code", -32800}, {"message", "approval_canceled"}}}};
+    const auto audit = ccad::gui::makeAgentApprovalMetadata(
+        pending_proposal_id_, QUuid::createUuid().toString(QUuid::WithoutBraces),
+        QStringLiteral("cancelled"));
+    if (!audit.isEmpty()) result.insert("audit", audit);
     python_process_->write(QJsonDocument(result).toJson(QJsonDocument::Compact) + "\n");
   }
   pending_tool_name_.clear();
   pending_tool_args_.clear();
   pending_tool_call_id_.clear();
   pending_approval_token_.clear();
+  pending_proposal_id_.clear();
   pending_approval_request_.clear();
   approval_last_decision_ = "cancel";
   approval_status_label_->setText("Approval canceled: " + request);

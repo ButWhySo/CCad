@@ -2246,9 +2246,14 @@ LangGraph checkpoint contracts against this implementation. Remaining gaps are
 explicit proposal/approval/transaction references attached to transcript
 events. Sprint 1039 adds safe tool-call/result correlation with transaction and
 revision metadata from authoritative broker results; tool arguments and result
-payloads are not duplicated into derived event metadata. Proposal IDs and
-positive approval decisions/IDs still require explicit IPC linkage. Multi-call
-ambiguity needs additional contract coverage. Other remaining conversation
+payloads are not duplicated into derived event metadata. Sprint 1039 follow-up
+adds allowlisted proposal/approval UUIDs and explicit approved/rejected/cancelled
+decisions to a private LangChain tool-result artifact over both regular and
+checkpoint-resume paths. Canonical transcript persistence retains only those
+four safe audit fields. TurnRecord linkage uses exact result tool-call IDs,
+rejects duplicate call-ID ambiguity, and leaves singular transaction/proposal/
+approval fields empty for multi-operation turns. Model-visible result content
+remains unchanged. Other remaining conversation
 gaps include a product-level label for the active conversation as STM (distinct
 from task Working Memory), and an auditable source-message range for each
 generated compaction summary. The projection stores a sequence boundary, but

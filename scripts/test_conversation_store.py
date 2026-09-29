@@ -18,6 +18,12 @@ sys.modules[SPEC.name] = CONVERSATION
 SPEC.loader.exec_module(CONVERSATION)
 ConversationStore = CONVERSATION.ConversationStore
 budgeted_history_window = CONVERSATION.budgeted_history_window
+from tool_audit_metadata import (  # type: ignore[reportMissingImports]  # noqa: E402
+    checkpoint_resume_value,
+    checkpointed_tool_output,
+    safe_approval_metadata,
+    tool_output_from_response,
+)
 
 
 def run():
@@ -96,6 +102,146 @@ def run():
         assert mutation_record["transaction_id"] == "txn-42"
         assert mutation_record["project_revision_after"] == "rev-7"
         assert "must-not-persist" not in json.dumps(mutation_record)
+
+        proposal_a = "11111111-1111-4111-8111-111111111111"
+        approval_a = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        proposal_b = "22222222-2222-4222-8222-222222222222"
+        approval_b = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+        audit_a = {"schema_version": 1, "proposal_id": proposal_a,
+                   "approval_id": approval_a, "approval_decision": "approved",
+                   "approval_token": "must-not-persist"}
+        audit_b = {"schema_version": 1, "proposal_id": proposal_b,
+                   "approval_id": approval_b, "approval_decision": "approved"}
+        multiple_messages = [
+            HumanMessage(content="Make two board edits", id="multi-user"),
+            AIMessage(content="", id="multi-request", tool_calls=[
+                {"name": "pcb.move_footprint", "args": {"reference": "U1"},
+                 "id": "multi-call-a", "type": "tool_call"},
+                {"name": "pcb.move_footprint", "args": {"reference": "U2"},
+                 "id": "multi-call-b", "type": "tool_call"},
+            ]),
+            ToolMessage(content=json.dumps({"status": "committed",
+                                            "transaction_id": "txn-a",
+                                            "revision": "rev-9"}),
+                        name="pcb.move_footprint", tool_call_id="multi-call-b",
+                        id="multi-result-b", artifact={"ccad_audit": audit_b}),
+            ToolMessage(content=json.dumps({"status": "committed",
+                                            "transaction_id": "txn-b",
+                                            "revision": "rev-9"}),
+                        name="pcb.move_footprint", tool_call_id="multi-call-a",
+                        id="multi-result-a", artifact={"ccad_audit": audit_a}),
+            AIMessage(content="Both edits completed", id="multi-answer"),
+        ]
+        store.append_messages(thread_b, multiple_messages, turn_id="turn-multiple")
+        loaded_multiple = store.load_messages(thread_b)
+        loaded_results = {message.id: message for message in loaded_multiple
+                          if getattr(message, "id", "") in
+                          {"multi-result-a", "multi-result-b"}}
+        assert loaded_results["multi-result-a"].artifact == {
+            "ccad_audit": {"schema_version": 1, "proposal_id": proposal_a,
+                           "approval_id": approval_a,
+                           "approval_decision": "approved"}}
+        multiple_record = store.record_turn(
+            thread_b, "turn-multiple", "Make two board edits", multiple_messages,
+            outcome="completed")
+        multi_request = next(event for event in multiple_record["source_events"]
+                             if event["id"] == "multi-request")
+        assert [(call["call_id"], call["transaction_id"], call["proposal_id"],
+                 call["approval_id"]) for call in multi_request["tool_calls"]] == [
+            ("multi-call-a", "txn-b", proposal_a, approval_a),
+            ("multi-call-b", "txn-a", proposal_b, approval_b),
+        ]
+        assert multiple_record["transaction_id"] == ""
+        assert multiple_record["proposal_id"] == ""
+        assert multiple_record["approval_id"] == ""
+        assert multiple_record["approval_decision"] == ""
+        assert multiple_record["project_revision_after"] == "rev-9"
+        assert "must-not-persist" not in json.dumps(multiple_record)
+
+        duplicate_call_messages = [
+            HumanMessage(content="Retry", id="duplicate-user"),
+            AIMessage(content="", id="duplicate-request", tool_calls=[
+                {"name": "pcb.move_footprint", "args": {}, "id": "reused-call",
+                 "type": "tool_call"},
+                {"name": "pcb.move_footprint", "args": {}, "id": "reused-call",
+                 "type": "tool_call"},
+            ]),
+            ToolMessage(content=json.dumps({"transaction_id": "txn-ambiguous"}),
+                        name="pcb.move_footprint", tool_call_id="reused-call",
+                        id="duplicate-result-a"),
+            ToolMessage(content=json.dumps({"transaction_id": "txn-ambiguous"}),
+                        name="pcb.move_footprint", tool_call_id="reused-call",
+                        id="duplicate-result-b"),
+            AIMessage(content="Finished", id="duplicate-answer"),
+        ]
+        store.append_messages(thread_b, duplicate_call_messages,
+                              turn_id="turn-duplicate-call")
+        duplicate_record = store.record_turn(
+            thread_b, "turn-duplicate-call", "Retry", duplicate_call_messages,
+            outcome="completed")
+        duplicate_request = next(event for event in duplicate_record["source_events"]
+                                 if event["id"] == "duplicate-request")
+        assert all("transaction_id" not in call
+                   for call in duplicate_request["tool_calls"])
+        assert duplicate_record["transaction_id"] == ""
+
+        untrusted_messages = [
+            HumanMessage(content="Inspect", id="untrusted-user"),
+            AIMessage(content="", id="untrusted-request", tool_calls=[{
+                "name": "project.inspect", "args": {}, "id": "untrusted-call",
+                "type": "tool_call"}]),
+            ToolMessage(content=json.dumps({
+                "proposal_id": proposal_a, "approval_id": approval_a,
+                "approval_decision": "approved", "status": "read_only"}),
+                name="project.inspect", tool_call_id="untrusted-call",
+                id="untrusted-result"),
+            AIMessage(content="Inspection complete", id="untrusted-answer"),
+        ]
+        store.append_messages(thread_b, untrusted_messages,
+                              turn_id="turn-untrusted-metadata")
+        untrusted_record = store.record_turn(
+            thread_b, "turn-untrusted-metadata", "Inspect", untrusted_messages,
+            outcome="completed")
+        untrusted_call = next(event for event in untrusted_record["source_events"]
+                              if event["id"] == "untrusted-request")["tool_calls"][0]
+        assert "proposal_id" not in untrusted_call
+        assert "approval_id" not in untrusted_call
+        assert "approval_decision" not in untrusted_call
+        assert untrusted_record["approval_id"] == ""
+        assert untrusted_record["approval_decision"] == ""
+
+        wire_response = {"method": "tool_result", "id": "wire-call",
+                         "result": {"object_id": "native-object", "status": "committed"},
+                         "audit": audit_a}
+        output, artifact = tool_output_from_response(wire_response, "wire-call")
+        assert json.loads(output) == wire_response["result"]
+        assert artifact == {"ccad_audit": {
+            "schema_version": 1, "proposal_id": proposal_a,
+            "approval_id": approval_a, "approval_decision": "approved"}}
+        assert safe_approval_metadata({**audit_a, "proposal_id": "not-a-uuid"}) == {}
+        assert safe_approval_metadata({**audit_a,
+                                       "approval_decision": ["approved"]}) == {}
+        assert safe_approval_metadata({**audit_a,
+                                       "approval_decision": "execution_succeeded"}) == {}
+        assert safe_approval_metadata({**audit_a, "schema_version": True}) == {}
+        invalid_wire = {**wire_response, "id": "another-call"}
+        invalid_output, invalid_artifact = tool_output_from_response(
+            invalid_wire, "wire-call")
+        assert json.loads(invalid_output)["error"] == "invalid_tool_result"
+        assert invalid_artifact == {}
+        denied_response = {"method": "tool_result", "id": "wire-call",
+                           "error": {"code": -32001,
+                                     "message": "approval_denied"},
+                           "audit": {**audit_a, "approval_decision": "rejected"}}
+        denied_output, denied_artifact = tool_output_from_response(
+            denied_response, "wire-call")
+        assert json.loads(denied_output)["error"]["message"] == "approval_denied"
+        assert denied_artifact["ccad_audit"]["approval_decision"] == "rejected"
+        resumed = checkpoint_resume_value(
+            wire_response["result"], None, "wire-call", audit_a)
+        checkpoint_output = checkpointed_tool_output(resumed)
+        assert checkpoint_output == (output, artifact)
+        assert json.loads(checkpoint_output[0]) == wire_response["result"]
 
         for suffix, code, decision in (("reject", "approval_denied", "rejected"),
                                        ("cancel", "approval_canceled", "cancelled")):

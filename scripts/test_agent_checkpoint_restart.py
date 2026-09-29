@@ -26,6 +26,13 @@ TOOL_CATALOG = [{
     },
 }]
 
+APPROVAL_AUDIT = {
+    "schema_version": 1,
+    "proposal_id": "11111111-1111-4111-8111-111111111111",
+    "approval_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "approval_decision": "approved",
+}
+
 
 class FakeModel:
     def bind_tools(self, tools):
@@ -84,29 +91,51 @@ def main():
         assert pending["secret_value_visible"] is False
         print("PASS interrupt checkpoint written")
     elif phase == "second":
-        state = ccad.executor.invoke(Command(resume={"status": "track_added"}), config=thread)
+        snapshot = ccad.executor.get_state(thread)
+        call_id = snapshot.tasks[0].interrupts[0].value["call_id"]
+        resumed = ccad.checkpoint_resume_value(
+            {"status": "track_added"}, None, call_id, APPROVAL_AUDIT)
+        state = ccad.executor.invoke(Command(resume=resumed), config=thread)
         assert not ccad.executor.get_state(thread).next
         tool_messages = [message for message in state["messages"]
                          if message.__class__.__name__ == "ToolMessage"]
         assert tool_messages and json.loads(tool_messages[-1].content) == {"status": "track_added"}
+        assert tool_messages[-1].artifact == {"ccad_audit": APPROVAL_AUDIT}
+        assert tool_messages[-1].tool_call_id == "restart-tool"
         print("PASS restart resume completed")
     elif phase == "denial":
-        state = ccad.executor.invoke(Command(resume={"error": {"code": -32001,
-                                                                  "message": "approval_denied"}}), config=thread)
+        snapshot = ccad.executor.get_state(thread)
+        call_id = snapshot.tasks[0].interrupts[0].value["call_id"]
+        denied_audit = {**APPROVAL_AUDIT, "approval_decision": "rejected"}
+        resumed = ccad.checkpoint_resume_value(
+            None, {"code": -32001, "message": "approval_denied"},
+            call_id, denied_audit)
+        state = ccad.executor.invoke(Command(resume=resumed), config=thread)
         assert not ccad.executor.get_state(thread).next
         tool_messages = [message for message in state["messages"]
                          if message.__class__.__name__ == "ToolMessage"]
         assert tool_messages and json.loads(tool_messages[-1].content) == {
-            "error": {"code": -32001, "message": "approval_denied"}}
+            "error": {"code": -32001, "message": "approval_denied"},
+            "call_id": call_id}, tool_messages
+        assert tool_messages[-1].artifact == {"ccad_audit": denied_audit}
+        assert tool_messages[-1].tool_call_id == "restart-tool"
         print("PASS restart denial completed")
     elif phase == "cancel":
-        state = ccad.executor.invoke(Command(resume={"error": {
-            "code": -32800, "message": "canceled_by_user"}}), config=thread)
+        snapshot = ccad.executor.get_state(thread)
+        call_id = snapshot.tasks[0].interrupts[0].value["call_id"]
+        cancelled_audit = {**APPROVAL_AUDIT, "approval_decision": "cancelled"}
+        resumed = ccad.checkpoint_resume_value(
+            None, {"code": -32800, "message": "approval_canceled"},
+            call_id, cancelled_audit)
+        state = ccad.executor.invoke(Command(resume=resumed), config=thread)
         assert not ccad.executor.get_state(thread).next
         tool_messages = [message for message in state["messages"]
                          if message.__class__.__name__ == "ToolMessage"]
         assert tool_messages and json.loads(tool_messages[-1].content) == {
-            "error": {"code": -32800, "message": "canceled_by_user"}}
+            "error": {"code": -32800, "message": "approval_canceled"},
+            "call_id": call_id}
+        assert tool_messages[-1].artifact == {"ccad_audit": cancelled_audit}
+        assert tool_messages[-1].tool_call_id == "restart-tool"
         print("PASS restart cancellation completed")
     else:
         raise SystemExit(f"unknown CCAD_RESTART_PHASE: {phase}")

@@ -13,6 +13,7 @@ from typing import Any, Iterable
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from lexical_retrieval import rank_documents
+from tool_audit_metadata import safe_approval_metadata
 
 
 _WORDS = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
@@ -90,6 +91,11 @@ def _message_payload(message: Any, *, assign_id: bool = True) -> dict[str, Any] 
     elif role == "tool":
         payload["name"] = _safe(getattr(message, "name", ""), "name")
         payload["tool_call_id"] = str(getattr(message, "tool_call_id", "") or "")
+        artifact = getattr(message, "artifact", None)
+        audit = safe_approval_metadata(
+            artifact.get("ccad_audit") if isinstance(artifact, dict) else None)
+        if audit:
+            payload["artifact"] = {"ccad_audit": audit}
     return payload
 
 
@@ -102,7 +108,8 @@ def _restore(payload: dict[str, Any]):
         return AIMessage(**common, tool_calls=payload.get("tool_calls", []))
     if role == "tool":
         return ToolMessage(**common, name=payload.get("name", ""),
-                           tool_call_id=payload.get("tool_call_id", ""))
+                           tool_call_id=payload.get("tool_call_id", ""),
+                           artifact=payload.get("artifact"))
     raise ConversationStoreError("conversation_store_corrupt")
 
 
@@ -115,8 +122,7 @@ def _content_text(value: Any) -> str:
     return ""
 
 
-_EVENT_FIELDS = frozenset({"proposal_id", "approval_id", "approval_decision",
-                           "transaction_id", "project_revision", "revision", "status"})
+_EVENT_FIELDS = frozenset({"transaction_id", "project_revision", "revision", "status"})
 
 
 def _event_result_metadata(message: Any) -> dict[str, str]:
@@ -126,9 +132,9 @@ def _event_result_metadata(message: Any) -> dict[str, str]:
     try:
         value = json.loads(_content_text(getattr(message, "content", ""))[:65536])
     except (TypeError, json.JSONDecodeError, RecursionError):
-        return {}
+        value = {}
     if not isinstance(value, dict):
-        return {}
+        value = {}
     found = {}
     for key in sorted(_EVENT_FIELDS - {"revision"}):
         child = value.get(key)
@@ -145,6 +151,12 @@ def _event_result_metadata(message: Any) -> dict[str, str]:
             found["approval_decision"] = "rejected"
         elif code == "approval_canceled":
             found["approval_decision"] = "cancelled"
+    artifact = getattr(message, "artifact", None)
+    audit = safe_approval_metadata(
+        artifact.get("ccad_audit") if isinstance(artifact, dict) else None)
+    for key in ("proposal_id", "approval_id", "approval_decision"):
+        if key in audit:
+            found[key] = audit[key]
     return found
 
 
@@ -152,12 +164,17 @@ def _source_event_metadata(messages: Iterable[Any]) -> dict[str, dict[str, Any]]
     """Correlate tool call and result messages without copying their payloads."""
     items = list(messages)
     results: dict[str, dict[str, str]] = {}
+    result_counts: dict[str, int] = {}
     for message in items:
         if _role(message) != "tool":
             continue
         call_id = str(getattr(message, "tool_call_id", "") or "")
         if call_id:
+            result_counts[call_id] = result_counts.get(call_id, 0) + 1
             results[call_id] = _event_result_metadata(message)
+    for call_id, count in result_counts.items():
+        if count != 1:
+            results.pop(call_id, None)
     events: dict[str, dict[str, Any]] = {}
     for message in items:
         message_id = str(getattr(message, "id", "") or "")
@@ -684,6 +701,7 @@ class ConversationStore:
         if not source_ids:
             raise ValueError("turn_has_no_persisted_source_messages")
         transactions, proposals, revisions = set(), set(), set()
+        approval_events = set()
         for event in recent:
             calls = event.get("tool_calls", [])
             for key, values in (("transaction_id", transactions),
@@ -692,6 +710,15 @@ class ConversationStore:
                 values.update(call[key] for call in calls if call.get(key))
                 if event.get(key):
                     values.add(event[key])
+            for call in calls:
+                if call.get("approval_id") and call.get("approval_decision"):
+                    approval_events.add((call.get("proposal_id", ""),
+                                         call["approval_id"],
+                                         call["approval_decision"]))
+            if event.get("approval_id") and event.get("approval_decision"):
+                approval_events.add((event.get("proposal_id", ""),
+                                     event["approval_id"],
+                                     event["approval_decision"]))
         if not transaction_id and len(transactions) == 1:
             transaction_id = next(iter(transactions))
         if not proposal_id and len(proposals) == 1:
@@ -733,6 +760,15 @@ class ConversationStore:
             "drc_summary": _safe(drc_summary or {}), "source_message_ids": source_ids,
             "source_events": recent, "created_at": _now(),
         }
+        if len(approval_events) == 1:
+            approval_proposal_id, approval_id, approval_decision = next(iter(approval_events))
+            record["approval_id"] = approval_id
+            record["approval_decision"] = approval_decision
+            if not record["proposal_id"] and approval_proposal_id:
+                record["proposal_id"] = approval_proposal_id
+        else:
+            record["approval_id"] = ""
+            record["approval_decision"] = ""
         entities: dict[str, list[str]] = {}
         entity_key = re.compile(r"(reference|ref|net|layer|component|footprint|symbol|pin|pad)$", re.I)
         visited_values = 0

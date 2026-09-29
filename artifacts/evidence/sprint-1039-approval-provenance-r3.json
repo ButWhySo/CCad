@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1039-approval-provenance-r3",
+    "feature":  "Persist exact proposal and approval identifiers through tool outputs, and correlate transaction evidence unambiguously",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T04:23:36.6047441Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.75 log=artifacts/evidence/sprint-1039-approval-provenance-r3/preflight.log",
+                      "finished_utc":  "2026-09-29T04:23:37.4135330Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=308.85 log=artifacts/evidence/sprint-1039-approval-provenance-r3/build.log",
+                      "finished_utc":  "2026-09-29T04:28:46.2785133Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=151.24 log=artifacts/evidence/sprint-1039-approval-provenance-r3/ctest.log",
+                      "finished_utc":  "2026-09-29T04:31:17.5233394Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-approval-provenance-r3/build.log",
+                                         "sha256":  "731493CFEF53A9E1E1FA5FE4E6DE308B594285FB42F399757892CF49F072FF8B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-approval-provenance-r3/ctest.log",
+                                         "sha256":  "5C844A8FE478A5627BB25FA312619E9D6456A98AF7AD0C4CA048EC009B808896"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-approval-provenance-r3/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T04:31:17.6331448Z"
+}

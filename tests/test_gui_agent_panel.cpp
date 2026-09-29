@@ -20,6 +20,7 @@
 
 #include "ccad_gui/agent_settings_dialog.hpp"
 #include "ccad_gui/agent_marketplace_dialog.hpp"
+#include "ccad_gui/agent_approval_metadata.hpp"
 #include "ccad_gui/agent_panel.hpp"
 
 class TestGuiAgentPanel : public QObject {
@@ -29,6 +30,33 @@ class TestGuiAgentPanel : public QObject {
   QTemporaryDir test_appdata_;
 
 private slots:
+  void testAgentApprovalMetadataRequiresDistinctValidIdsAndDecision() {
+    const auto approved = ccad::gui::makeAgentApprovalMetadata(
+        "11111111-1111-4111-8111-111111111111",
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "approved");
+    QCOMPARE(approved.value("schema_version").toInt(), 1);
+    QCOMPARE(approved.value("proposal_id").toString(),
+             QString("11111111-1111-4111-8111-111111111111"));
+    QCOMPARE(approved.value("approval_id").toString(),
+             QString("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"));
+    QCOMPARE(approved.value("approval_decision").toString(), QString("approved"));
+    QCOMPARE(approved.size(), 4);
+    QVERIFY(ccad::gui::makeAgentApprovalMetadata(
+                "11111111-1111-4111-8111-111111111111",
+                "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "rejected").size() == 4);
+    QVERIFY(ccad::gui::makeAgentApprovalMetadata(
+                "11111111-1111-4111-8111-111111111111",
+                "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "cancelled").size() == 4);
+    QVERIFY(ccad::gui::makeAgentApprovalMetadata("not-an-id",
+                "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "approved").isEmpty());
+    QVERIFY(ccad::gui::makeAgentApprovalMetadata(
+                "11111111-1111-4111-8111-111111111111", "not-an-id",
+                "approved").isEmpty());
+    QVERIFY(ccad::gui::makeAgentApprovalMetadata(
+                "11111111-1111-4111-8111-111111111111",
+                "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "execution_succeeded").isEmpty());
+  }
+
   void initTestCase() {
     QVERIFY2(test_appdata_.isValid(), "temporary APPDATA directory must exist");
     qputenv("APPDATA", test_appdata_.path().toUtf8());

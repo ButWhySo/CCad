@@ -71,6 +71,9 @@ from provider_usage import (account_response, collect_turn_usage,
 from provider_token_count import count_gemini_input_tokens
 from conversation_store import (ConversationStore, ConversationStoreError,
                                 budgeted_history_window)
+from tool_audit_metadata import (checkpoint_resume_value,
+                                 checkpointed_tool_output,
+                                 tool_output_from_response)
 from model_catalog import (fetch_anthropic_models as _fetch_anthropic_models,
                            fetch_cerebras_models as _fetch_cerebras_models,
                            fetch_gemini_models as _fetch_gemini_models,
@@ -170,8 +173,8 @@ def route_protocol_line(protocol_line: str) -> bool:
     result_queue.put(protocol_line)
     return True
 
-def wait_for_broker_result(call_id: str) -> str:
-    """Synchronously receive matching C++ broker result for current tool call."""
+def wait_for_broker_output(call_id: str) -> tuple[str, dict[str, Any]]:
+    """Receive exact C++ result as model content plus private audit artifact."""
     timeout = max(1.0, float(os.environ.get("CCAD_BROKER_TIMEOUT_SECONDS", "30")))
     deadline = time.monotonic() + timeout
     result_queue = queue.Queue()
@@ -184,15 +187,21 @@ def wait_for_broker_result(call_id: str) -> str:
             if inbound_queue is not None:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    return json.dumps({"error": "broker_timeout", "call_id": call_id})
+                    return tool_output_from_response({
+                        "method": "tool_result", "id": call_id,
+                        "error": {"message": "broker_timeout"}}, call_id)
                 try:
                     line = result_queue.get(timeout=remaining)
                 except queue.Empty:
-                    return json.dumps({"error": "broker_timeout", "call_id": call_id})
+                    return tool_output_from_response({
+                        "method": "tool_result", "id": call_id,
+                        "error": {"message": "broker_timeout"}}, call_id)
             else:
                 line = sys.stdin.readline()
             if not line:
-                return json.dumps({"error": "broker_closed", "call_id": call_id})
+                return tool_output_from_response({
+                    "method": "tool_result", "id": call_id,
+                    "error": {"message": "broker_closed"}}, call_id)
             try:
                 response = json.loads(line)
             except json.JSONDecodeError:
@@ -200,13 +209,16 @@ def wait_for_broker_result(call_id: str) -> str:
             if response.get("method") != "tool_result" or response.get("id", "") != call_id:
                 deferred_queue.put(line)
                 continue
-            if response.get("error") is not None:
-                return json.dumps({"error": response["error"], "call_id": call_id})
-            return json.dumps(response.get("result", {"error": "empty_broker_result"}))
+            return tool_output_from_response(response, call_id)
     finally:
         with pending_calls_lock:
             pending_calls.pop(call_id, None)
             pending_call_threads.pop(call_id, None)
+
+
+def wait_for_broker_result(call_id: str) -> str:
+    """Synchronously receive the model-visible content from the C++ broker."""
+    return wait_for_broker_output(call_id)[0]
 
 def new_tool_call_id(tool_name: str) -> str:
     """Create a per-invocation correlation ID; never reuse across retries."""
@@ -284,9 +296,13 @@ def dispatch_checkpointed_tool(tool_name: str, args: dict):
                           "args": args, "call_id": call_id,
                           "approval_required": True,
                           "approval_reason": "project_mutation"})
+    output = checkpointed_tool_output(decision)
+    if output is not None:
+        return output
     if isinstance(decision, dict) and "error" in decision:
-        return json.dumps(decision)
-    return json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)
+        return json.dumps(decision), {}
+    content = json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)
+    return content, {}
 
 def tool_approval_decision(tool_name: str, args: dict):
     """Return one deterministic approval decision for a client tool call."""
@@ -296,8 +312,9 @@ def tool_approval_decision(tool_name: str, args: dict):
             "reason": "dry_run" if dry_run else "project_mutation"}
 
 @trace_function("dispatch-native-tool", "tool")
-def dispatch_client_tool(tool_name: str, args: dict) -> str:
-    """Send one client tool call and await its authoritative broker result."""
+def dispatch_client_tool_output(tool_name: str, args: dict
+                                ) -> tuple[str, dict[str, Any]]:
+    """Send one client call; keep private audit data outside model-visible content."""
     call_id = (checkpoint_tool_call_id(tool_name, args)
                if checkpoint_saver is not None and broker_wait_enabled
                else new_tool_call_id(tool_name))
@@ -312,9 +329,14 @@ def dispatch_client_tool(tool_name: str, args: dict) -> str:
             emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool(tool_name, args)
-        return wait_for_broker_result(call_id)
+        return wait_for_broker_output(call_id)
     return json.dumps({"error": "broker_wait_unavailable", "tool": tool_name,
-                       "project_action": False})
+                       "project_action": False}), {}
+
+
+def dispatch_client_tool(tool_name: str, args: dict) -> str:
+    """Return ordinary result content for direct non-LangChain commands."""
+    return dispatch_client_tool_output(tool_name, args)[0]
 
 config_manager = AgentConfigManager()
 memory_store = MemoryStore()
@@ -935,12 +957,12 @@ def build_native_tools(catalog: List[dict]) -> List[StructuredTool]:
         read_only = entry["read_only"]
 
         def invoke_native_tool(_method=method, _read_only=read_only, **kwargs):
-            return dispatch_client_tool(_method, kwargs)
+            return dispatch_client_tool_output(_method, kwargs)
 
         tools.append(StructuredTool.from_function(
             invoke_native_tool, name=tool_provider_name(method),
             description=f"CCad native method `{method}`. {entry['description']}",
-            args_schema=args_schema))
+            args_schema=args_schema, response_format="content_and_artifact"))
     return tools
 
 
@@ -3473,7 +3495,8 @@ if __name__ == "__main__":
                         "result_present": result is not None,
                         "error_present": error is not None,
                     }})
-                    resume_value = {"error": error} if error is not None else result
+                    resume_value = checkpoint_resume_value(
+                        result, error, received_call_id, req.get("audit"))
                     resumed = resume_checkpointed_run(thread_id, resume_value)
                     resumed_snapshot = executor.get_state(
                         {"configurable": {"thread_id": thread_id}})
@@ -3511,7 +3534,7 @@ if __name__ == "__main__":
                     }})
                     pending_result_queue.put(json.dumps({
                         "jsonrpc": "2.0", "method": "tool_result", "id": call_id,
-                        "result": result, "error": error,
+                        "result": result, "error": error, "audit": req.get("audit"),
                     }))
             elif method == "agent.cancel_tool":
                 cancel_params = req.get("params", {})
