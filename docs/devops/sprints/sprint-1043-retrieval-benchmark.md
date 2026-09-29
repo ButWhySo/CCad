@@ -36,7 +36,10 @@ preflight, build, and CTest. Manifest:
 `artifacts/evidence/sprint-1043-retrieval-runner-final.json`, SHA-256
 `C2BB3B9652F8AA8DC4B2B9A0B98A0D9F4FDCB4DA67D3EFD19FF8230C61643CC7`.
 Calibration/held-out JSON reports and captured logs are workspace-only and are
-hash-bound by that manifest.
+hash-bound by that manifest. Commit `0812739d842f664eda088e756eb63bb583c5f240`
+is pushed to the feature branch. The configured GitHub workflow does not run on
+branch-only pushes, and no PR was opened; hosted CI for this SHA remains
+unverified.
 
 ## Method references
 

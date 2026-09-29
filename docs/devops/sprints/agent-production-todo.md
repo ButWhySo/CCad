@@ -9,7 +9,8 @@
 - [ ] Measure retrieval failure recovery and follow-up Agent tool calls in a real model-backed context turn; offline retrieval harness does not measure these.
 - [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright; official non-visual manifest `artifacts/evidence/sprint-1043-retrieval-runner-final.json` SHA-256 `C2BB3B9652F8AA8DC4B2B9A0B98A0D9F4FDCB4DA67D3EFD19FF8230C61643CC7`.
 - [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
-- [ ] Commit and push only verified files; inspect CI for exact pushed SHA.
+- [x] Commit and push verified slice as `0812739`; `git ls-remote` confirms exact branch head `0812739d842f664eda088e756eb63bb583c5f240`.
+- [ ] Inspect hosted CI for exact pushed SHA after a pull-request event; branch-only pushes do not trigger this repository's configured workflow.
 
 ### Sprint 1042 — provider error contract test scope
 
