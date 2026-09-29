@@ -3,7 +3,13 @@
 ### Sprint 1043 — retrieval benchmark corpus (active)
 
 - [x] Add versioned, task-separated calibration and held-out datasets with source/project revisions, expected identities, rationale, hard distractors, board-scale/repeated-class coverage, and explicit semantic-use policy; Pyright is clean and Qt/MinGW Release plus full CTest pass 125/125. Manifest `artifacts/evidence/sprint-1043-retrieval-corpus.json` (SHA-256 `2F2033BD8B66312E8AE032BC8793B5BA83542B0E3F353A25C41B440644A52B90`).
-- [ ] Implement production retrieval execution, quality/context-usefulness metrics, systems metrics, and versioned benchmark output; do not claim backend superiority from the corpus contract alone.
+- [x] Execute calibration and held-out cases through real `ProjectIndex`, `MemoryManager`, and `ConversationStore` retrieval; report ranked quality and bounded-context measurements without synthetic retrieval hits.
+- [x] Measure in-memory index build/update, query percentiles, process peak RSS, temporary-store disk use, and versioned execution reports; retain missing measurements as explicit `not measured` statuses.
+- [ ] Measure local embedding latency and true semantic-channel quality with an available configured model; current offline results must not be presented as semantic evaluation.
+- [ ] Measure retrieval failure recovery and follow-up Agent tool calls in a real model-backed context turn; offline retrieval harness does not measure these.
+- [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright; official non-visual manifest `artifacts/evidence/sprint-1043-retrieval-runner-final.json` SHA-256 `C2BB3B9652F8AA8DC4B2B9A0B98A0D9F4FDCB4DA67D3EFD19FF8230C61643CC7`.
+- [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
+- [ ] Commit and push only verified files; inspect CI for exact pushed SHA.
 
 ### Sprint 1042 — provider error contract test scope
 

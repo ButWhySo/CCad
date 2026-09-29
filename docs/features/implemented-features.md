@@ -5,12 +5,14 @@
 `scripts/fixtures/agent_retrieval_dataset_v1.json` defines separate calibration
 and held-out cases for exact CAD identity, lexical and paraphrase retrieval,
 hard negatives, graph and spatial relations, durable memory, and historical
-TurnRecords. Cases record expected IDs, hard distractors, relevance rationale,
-semantic-search policy, and stable source/project fixture revisions. Its
-contract test rejects split leakage, undeclared IDs, missing revisions, and
-missing task coverage. This is dataset evidence only: no retrieval-quality or
-backend-performance result is claimed until the production benchmark runner
-executes the corpus.
+TurnRecords. `scripts/benchmark_agent_retrieval.py` executes those cases through
+the production project, memory, and conversation retrievers and writes
+versioned per-case quality, context, channel, revision, and system measurements.
+The offline baseline has caught real lexical-ranking misses and a calibration
+hard-negative false positive. A case labelled semantic is not treated as a
+semantic success unless a semantic channel actually ran. Model-backed semantic
+quality/embedding latency, backend recovery, product startup, and follow-up
+Agent tool calls remain unmeasured; no backend superiority is claimed.
 
 ## Sprint 1041 — retrieval request/result boundary
 

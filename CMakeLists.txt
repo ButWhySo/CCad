@@ -272,6 +272,15 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_retrieval_contracts.py")
   add_test(NAME agent_retrieval_dataset
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_retrieval_dataset.py")
+  if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    add_test(NAME agent_retrieval_benchmark
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_retrieval_benchmark.py")
+  else()
+    add_test(NAME agent_retrieval_benchmark
+      COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_retrieval_benchmark.py")
+  endif()
   add_test(NAME agent_protocol_handler_boundaries
     COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_SOURCE_DIR}/scripts/test_agent_protocol_handler_boundaries.py")

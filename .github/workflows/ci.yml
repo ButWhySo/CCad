@@ -43,6 +43,7 @@ jobs:
           python scripts/test_agent_loop_contract.py
           python scripts/test_agent_context_contract.py
           python scripts/test_agent_context_size_contract.py
+          python scripts/test_agent_retrieval_benchmark.py
           python scripts/test_agent_compaction_contract.py
           python scripts/test_agent_tool_call_identity.py
           python scripts/test_provider_timeout_contract.py

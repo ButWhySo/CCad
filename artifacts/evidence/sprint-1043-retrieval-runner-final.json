@@ -1,0 +1,57 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1043-retrieval-runner-final",
+    "feature":  "Offline retrieval benchmark execution over production project, memory, and conversation retrievers",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T14:35:20.5949918Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.84 log=artifacts/evidence/sprint-1043-retrieval-runner-final/preflight.log",
+                      "finished_utc":  "2026-09-29T14:35:21.5493129Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1043-retrieval-runner; source timestamps precede test log",
+                      "finished_utc":  "2026-09-29T14:35:51.9140963Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1043-retrieval-runner; 126/126 passed",
+                      "finished_utc":  "2026-09-29T14:35:51.9140963Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-runner-final/build.log",
+                                         "sha256":  "6C30F956BE17EB4DFBDD6953C7D65A04CC5D5DF25326C5F5DB878F3E9767D8B6"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-runner-final/calibration.json",
+                                         "sha256":  "CA8B3F288C64E7D02D715F8399C5CAA5D88FBD48AEB9084BE89CE63585C2E2F5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-runner-final/ctest.log",
+                                         "sha256":  "8E976DF14FAAC99C814FB08C7B902456A1984C8CFB595239A4C95249F5915C92"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-runner-final/held-out.json",
+                                         "sha256":  "CA700A208241DF933637A251A731704BDB99A4F3DC76116AF071A9FAFB85825B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-runner-final/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T14:35:51.9445376Z"
+}

@@ -9,14 +9,14 @@
       "project_revision": "power-small-v1",
       "board_size_mm": [44, 30],
       "repeated_component_classes": {"capacitor": 3, "resistor": 2},
-      "entity_ids": ["component:U1", "component:U2", "component:U3", "component:J2", "component:C1", "component:C2", "component:C3", "component:R1", "component:R2", "pad:J2.1", "pad:J2.5", "net:+3V3", "net:GND", "net:SPI_CLK", "constraint:usb-length", "constraint:reset-pullup", "track:T1", "track:T2", "zone:ground-plane"]
+      "entity_ids": ["component:U1", "component:U2", "component:U3", "component:J2", "component:C1", "component:C2", "component:C3", "component:R1", "component:R2", "pad:J2.1", "pad:J2.5", "net:+3V3", "net:GND", "net:SPI_CLK", "constraint:usb-length", "constraint:reset-pullup", "design_rules:board-design-rules", "track:T1", "track:T2", "zone:ground-plane"]
     },
     "controller_large": {
       "source_revision": "ccad-retrieval-fixtures-v1",
       "project_revision": "controller-large-v1",
       "board_size_mm": [100, 80],
       "repeated_component_classes": {"capacitor": 12, "resistor": 9, "connector": 4},
-      "entity_ids": ["component:U1", "component:U2", "component:U4", "component:C7", "component:C8", "component:R6", "component:R7", "component:J2", "component:J3", "net:+3V3", "net:VDD", "net:GND", "net:I2C_SCL", "pad:J3.1", "track:T20", "track:T21", "zone:rf-keepout", "constraint:reset-pullup"]
+      "entity_ids": ["component:U1", "component:U2", "component:U4", "component:C7", "component:C8", "component:R6", "component:R7", "component:J2", "component:J3", "net:+3V3", "net:VDD", "net:GND", "net:I2C_SCL", "pad:J3.1", "track:T20", "track:T21", "zone:rf-keepout", "constraint:reset-pullup", "design_rules:board-design-rules"]
     },
     "memory_records": {"source_revision": "ccad-retrieval-memory-v1", "entity_ids": ["memory:preferred-track-width", "memory:old-track-width-correction", "memory:rejected-ground-bridge", "memory:accepted-ground-return"]},
     "turn_records": {"source_revision": "ccad-retrieval-turns-v1", "entity_ids": ["turn:usb-placement-decision", "turn:usb-esd-review"]}

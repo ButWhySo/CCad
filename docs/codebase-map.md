@@ -2639,9 +2639,16 @@ revision validation; those remain open in R10/R12/R13.
 ## Sprint 1043 active slice — retrieval evaluation corpus
 
 `scripts/fixtures/agent_retrieval_dataset_v1.json` owns the versioned labeled
-calibration/held-out corpus for R3. `scripts/test_agent_retrieval_dataset.py`
-checks task/split coverage, expected and distractor identities, fixture
-revisions, board-size/class diversity, and explicit semantic-search policy.
-This validates corpus integrity only; it does not execute retrieval engines
-or establish quality/latency results. Continue R3 with the production benchmark
-runner and metrics before comparing retrieval backends.
+calibration/held-out corpus for R3. `scripts/benchmark_agent_retrieval.py`
+executes the real `ProjectIndex`, `MemoryManagerRetriever`, and
+`ConversationStore.search_turn_records` paths against typed board fixtures and
+temporary stores. Reports retain source revisions, actual channels, stable
+entity aliases, Recall/Precision/MRR/nDCG, hard-negative outcomes, context
+bytes/character-based token estimates, index build/update and query timings,
+process peak RSS, and temporary-store disk sizes. Exact, lexical, graph,
+spatial, memory, and historical-turn results are measured offline; semantic
+cases identify when only lexical retrieval actually ran. Product startup,
+separately isolated embedding latency, failure recovery, and model follow-up
+tool calls remain unmeasured and block R3 closure/backend superiority claims.
+`scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
+retrieval paths; the CTest and CI `agent-python` gates run it.
