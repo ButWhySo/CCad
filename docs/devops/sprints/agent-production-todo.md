@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1038 - opt-in semantic memory duplicate prevention
+
+- [x] Reject semantic near-duplicates on memory add/update within the same enabled tier and namespace, using the existing opt-in local embedding backend after validation and secret rejection.
+- [x] Keep lexical/exact duplicate behavior when semantic retrieval is disabled; fail writes with a safe error when semantic checking is explicitly enabled but becomes unavailable or is not ready.
+- [x] Cover semantic add/update, namespace isolation, pre-embedding secret rejection, disabled mode, unavailable backend, and cache behavior in offline contracts.
+- [ ] Calibrate the 0.90 cosine threshold against supported real local embedding models; no model was installed/configured for this slice, so deterministic embedding contracts are not quality evidence.
+- [x] Run changed-module Pyright and focused memory/semantic contracts.
+- [x] Complete official Qt/MinGW Release + full CTest nonvisual gate (123/123); inspect preflight/build/CTest logs and manifest `artifacts/evidence/sprint-1038-semantic-memory-dedupe-final.json` (SHA-256 `3CEF973997179A98BAA78ED0F733108CAD1C40D5AC752C19911201A7FD38B741`).
+- [x] Update codebase map, feature inventory, progress, and this TODO in the same slice.
+- [x] Run redacted tracked-repository and staged-diff secret scans (zero candidate lines); commit and push only verified source, tests, docs, and manifest on the feature branch (`dec349e`).
+
 ### Sprint 1037 — one-use approvals, truthful tool IDs, and project undo/redo
 
 - [ ] Bind each broker grant to exact method, arguments, provider call ID, and live design revision; consume once, expire, and revoke on cancel/reject.
@@ -1467,7 +1478,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
 - [ ] Implement semantic compaction policy for durable memory records; current retention cap is 64 records per tier namespace. Conversation `/cc` compaction is implemented separately in Sprint 970.
-- [ ] Implement semantic near-duplicate handling; exact duplicates and high lexical-overlap duplicates are handled, but semantic similarity remains unimplemented.
+- [x] Implement semantic near-duplicate checks on add/update using the enabled, ready local embedding backend, limited to the matching tier/namespace; invalid/secret input is rejected before embedding, unavailable enabled checks fail closed, and disabled semantic mode preserves lexical behavior. Deterministic contracts pass; real-model threshold calibration remains open (Sprint 1038).
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
 - [x] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart; enable, disable, loaded/persistent counts, and reset outcomes are contract-tested.
@@ -3762,7 +3773,7 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [ ] Validate authorized namespace/scope.
 - [ ] Prevent specialist Agents from directly writing global user preferences.
 - [ ] Detect exact duplicate.
-- [ ] Detect semantic near-duplicate.
+- [x] Use the MemoryManager's exact/lexical and opt-in semantic near-duplicate guard for writes; automatic extraction, provenance, and contradiction handling remain separate open work.
 - [ ] Detect contradiction.
 - [ ] Preserve contradictory evidence.
 - [ ] Require explicit supersession for correction.
@@ -3823,7 +3834,7 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [x] Hard-filter scope/authorization first.
 - [x] Filter inactive/deleted/expired memory.
 - [x] Retrieve bounded BM25 candidates and stop below the minimum lexical-match floor.
-- [ ] Retrieve semantic candidates.
+- [x] Retrieve semantic candidates for opt-in local memory retrieval (Sprint 991); real-model relevance benchmarking remains open.
 - [x] Fuse title/content/tag lexical rankings with weighted reciprocal-rank fusion (Sprint 990).
 - [ ] Add bounded user-controlled importance weighting; do not infer importance from memory text.
 - [x] Add bounded recency/usage weighting only after relevance filtering (Sprint 1002); expose content-free weights in package provenance.
@@ -4347,14 +4358,15 @@ Complete together:
 
 Complete together:
 
-- [x] BM25 lexical retrieval (Sprint 989) and fielded lexical RRF/MMR memory ranking (Sprint 990; semantic candidates remain open).
-- [ ] embedding abstraction.
-- [ ] semantic candidate retrieval.
-- [x] deterministic fielded lexical ranking fusion for memory records (Sprint 990; semantic fusion remains open).
+- [x] BM25 lexical retrieval (Sprint 989), fielded lexical RRF/MMR ranking (Sprint 990), and opt-in semantic memory candidates (Sprint 991).
+- [x] Reuse the bounded opt-in local embedding backend and readiness contract (Sprint 991).
+- [x] Semantic candidate retrieval (Sprint 991).
+- [x] Deterministic lexical field fusion plus semantic candidate ranking/diversification (Sprint 991).
 - [x] bounded memory diversity reranking (Sprint 990; history diversity remains open).
 - [x] Bounded same-project thread-summary retrieval (Sprint 989).
-- [ ] benchmarks/tests.
-- [ ] safe fallback.
+- [x] Offline retrieval, fallback, cache, and lifecycle contracts.
+- [ ] Real-model retrieval/duplicate-threshold benchmarks; no local embedding model was installed for this slice.
+- [x] Preserve exact/lexical retrieval when semantic mode is off, unavailable, or fails.
 
 ## Group M5 â€” Memory Explorer
 

@@ -22,7 +22,9 @@ class MemoryManager:
     MAX_WORKING_MEMORY_TASKS = 32
     MAX_EMBEDDING_CACHE = 2048
     MAX_SEMANTIC_CANDIDATES = 32
+    MAX_DUPLICATE_CANDIDATES = 128
     MIN_SEMANTIC_SIMILARITY = 0.25
+    MIN_SEMANTIC_DUPLICATE_SIMILARITY = 0.90
     NEAR_DUPLICATE_THRESHOLD = 0.88
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 
@@ -581,9 +583,14 @@ class MemoryManager:
             raise ValueError("memory importance must be an integer from 1 to 5")
         if tier == "working_memory" and not self._retain_working_memory_task:
             raise RuntimeError("Working Memory requires an active task; use /task start")
-        normalized = " ".join(str(content).casefold().split())
         scope = str(scope or {"working_memory": "task", "ltm": "conversation",
                               "episodic": "user"}[tier])
+        namespace = self.namespace_for(tier, scope)
+        importance = 3 if importance is None else importance
+        entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
+                                     tier=tier, kind=kind or "fact", namespace=namespace,
+                                     expires_at=expires_at, importance=importance)
+        normalized = " ".join(entry["content"].casefold().split())
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
@@ -593,23 +600,18 @@ class MemoryManager:
                 return self.update(existing["id"], content, kind=kind,
                                    importance=importance)
             return existing
-        duplicate = self._near_duplicate(content, tier, scope=scope)
+        duplicate = self._near_duplicate(entry["content"], tier, scope=scope)
         if duplicate:
-            entry, similarity = duplicate
+            duplicate_entry, similarity, method = duplicate
             raise ValueError(
-                f"near-duplicate memory exists ({entry['id']}, lexical overlap "
+                f"near-duplicate memory exists ({duplicate_entry['id']}, {method} "
                 f"{similarity:.0%}); update that record or add distinct information")
-        namespace = self.namespace_for(tier, scope)
-        importance = 3 if importance is None else importance
-        entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
-                                     tier=tier, kind=kind or "fact", namespace=namespace,
-                                     expires_at=expires_at, importance=importance)
         entry["project_id"] = self.project_id
         if tier != "working_memory":
-            entry = self.store.add(content, title=title, scope=scope, tags=tags,
-                                   kind=kind or "fact",
-                                   tier=tier, namespace=namespace,
-                                   expires_at=expires_at, importance=importance)
+            entry = self.store.add(entry["content"], title=entry["title"], scope=scope,
+                                   tags=entry["tags"], kind=entry["kind"], tier=tier,
+                                   namespace=namespace, expires_at=expires_at,
+                                   importance=importance)
             self.store.keep_latest(tier, namespace, 64)
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
@@ -624,25 +626,92 @@ class MemoryManager:
 
     def _near_duplicate(self, content: str, tier: str, *, exclude_id="", scope=None):
         words = set(self._word.findall(str(content).casefold()))
-        if len(words) < 5:
-            return None
         best = None
         namespace = self.namespace_for(tier, scope)
         duplicate_scope = "project" if tier == "ltm" and scope == "project" else None
+        candidates = []
         for entry in self.list(tier=tier, scope=duplicate_scope):
             if tier != "working_memory" and entry.get("namespace") != namespace:
                 continue
             if entry.get("id") == exclude_id:
                 continue
+            candidates.append(entry)
             existing = set(self._word.findall(
                 str(entry.get("content", "")).casefold()))
-            if len(existing) < 5:
+            if len(words) < 5 or len(existing) < 5:
                 continue
             similarity = len(words & existing) / len(words | existing)
             if similarity >= self.NEAR_DUPLICATE_THRESHOLD and (
                     best is None or similarity > best[1]):
                 best = (entry, similarity)
-        return best
+        if best is not None:
+            return (*best, "lexical overlap")
+        return self._semantic_near_duplicate(content, tier, namespace, candidates)
+
+    def _semantic_near_duplicate(self, content, tier, namespace, candidates):
+        """Compare same-namespace memory content only when local embeddings are ready."""
+        if not self.semantic_config.get("enabled") or not candidates:
+            return None
+        backend = self.semantic_embedding_backend
+        if backend is None:
+            raise ValueError("semantic_duplicate_check_unavailable")
+        if len(candidates) > self.MAX_DUPLICATE_CANDIDATES:
+            raise ValueError("semantic_duplicate_candidate_limit_exceeded")
+        try:
+            identity = str(backend.identity)
+            query_key = identity + ":q:" + hashlib.sha256(
+                content.encode("utf-8")).hexdigest()
+            query_vector = self._embedding_cache_get(self._query_embedding_cache, query_key)
+            if query_vector is None:
+                query_vector = OllamaEmbeddingBackend._normalize_vector(
+                    backend.embed_query(content))
+                self._cache_embedding(self._query_embedding_cache, query_key, query_vector)
+
+            vectors = {}
+            missing = []
+            namespace_hash = hashlib.sha256(namespace.encode("utf-8")).hexdigest()[:16]
+            for entry in candidates:
+                text = str(entry.get("content", ""))
+                fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()
+                key = ":".join((identity, "duplicate", tier, namespace_hash,
+                                str(entry.get("id", "")), fingerprint))
+                vector = self._embedding_cache_get(self._embedding_cache, key)
+                if vector is None:
+                    missing.append((entry, key, text))
+                else:
+                    vectors[str(entry.get("id", ""))] = vector
+            for offset in range(0, len(missing), OllamaEmbeddingBackend.MAX_TEXTS):
+                batch = missing[offset:offset + OllamaEmbeddingBackend.MAX_TEXTS]
+                embedded = backend.embed_documents([item[2] for item in batch])
+                if len(embedded) != len(batch):
+                    raise EmbeddingError("embedding_invalid_response")
+                for (entry, key, _), vector in zip(batch, embedded):
+                    normalized = OllamaEmbeddingBackend._normalize_vector(vector)
+                    self._cache_embedding(self._embedding_cache, key, normalized)
+                    vectors[str(entry.get("id", ""))] = normalized
+            if any(len(vector) != len(query_vector) for vector in vectors.values()):
+                raise EmbeddingError("embedding_dimension_mismatch")
+            best = max(((entry, self._cosine(query_vector,
+                                             vectors[str(entry.get("id", ""))]))
+                        for entry in candidates), key=lambda item: item[1], default=None)
+            if best and best[1] >= self.MIN_SEMANTIC_DUPLICATE_SIMILARITY:
+                return best[0], best[1], "semantic similarity"
+            self._semantic_status.update({"ready": True, "status": "ready", "error": "",
+                                          "cache_entries": self.embedding_cache_entries})
+            return None
+        except (EmbeddingError, AttributeError, TypeError, ValueError,
+                OverflowError, ArithmeticError) as error:
+            category = (error.category if isinstance(error, EmbeddingError)
+                        else "embedding_invalid_response")
+            self._semantic_status.update({"ready": False, "status": category,
+                                          "error": category})
+            self._embedding_backend = None
+            raise ValueError("semantic_duplicate_check_unavailable") from None
+        except Exception:
+            self._semantic_status.update({"ready": False, "status": "embedding_failed",
+                                          "error": "embedding_failed"})
+            self._embedding_backend = None
+            raise ValueError("semantic_duplicate_check_unavailable") from None
 
     def list(self, *, tier=None, scope=None):
         self._prune_expired()
@@ -720,14 +789,6 @@ class MemoryManager:
                           if item.get("id") == entry_id), None)
             if entry is None:
                 continue
-            target_scope = entry.get("scope") if scope is None else scope
-            duplicate = self._near_duplicate(content, tier, exclude_id=entry_id,
-                                             scope=target_scope)
-            if duplicate:
-                other, similarity = duplicate
-                raise ValueError(
-                    f"near-duplicate memory exists ({other['id']}, lexical overlap "
-                    f"{similarity:.0%}); revise to distinct information")
             target_scope = entry.get("scope", "project") if scope is None else scope
             namespace = self.namespace_for(tier, target_scope)
             fields = {"title": entry.get("title", "") if title is None else title,
@@ -737,8 +798,16 @@ class MemoryManager:
                       "importance": entry.get("importance", 3) if importance is None else importance,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
+            candidate = self.store.normalise(content, **fields)
+            duplicate = self._near_duplicate(candidate["content"], tier,
+                                             exclude_id=entry_id, scope=target_scope)
+            if duplicate:
+                other, similarity, method = duplicate
+                raise ValueError(
+                    f"near-duplicate memory exists ({other['id']}, {method} "
+                    f"{similarity:.0%}); revise to distinct information")
             if tier == "working_memory":
-                replacement = self.store.normalise(content, **fields)
+                replacement = candidate
                 replacement.update(id=entry_id, project_id=self.project_id,
                                    created_at=entry.get("created_at", ""))
                 replacement["updated_at"] = self._now().isoformat()

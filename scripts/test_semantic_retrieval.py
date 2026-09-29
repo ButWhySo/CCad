@@ -129,6 +129,101 @@ try:
         assert manager.embedding_cache_entries == 0
 
     with tempfile.TemporaryDirectory() as directory:
+        manager = MemoryManager(MemoryStore(Path(directory) / "semantic-dedupe.json"),
+                                thread_id="semantic-thread", project_id="project-a")
+        manager.set_embedding_backend(MemoryEmbeddingBackend())
+        manager.configure({"ltm": True, "semantic": {"enabled": True}})
+        source = manager.add(
+            "A switching regulator converts the input rail into stable output voltage",
+            tier="ltm", scope="conversation", title="Power conversion")
+        backend_calls = manager._embedding_backend.calls
+        try:
+            manager.add("api_key=not-a-real-secret", tier="ltm",
+                        scope="conversation")
+        except ValueError as error:
+            assert "secret" in str(error)
+        else:
+            raise AssertionError("secret-bearing memory was accepted")
+        assert manager._embedding_backend.calls == backend_calls
+        paraphrase = (
+            "This step down converter changes supply voltage into regulated output rail")
+        try:
+            manager.add(paraphrase, tier="ltm", scope="conversation",
+                        title="Voltage supply")
+        except ValueError as error:
+            assert source["id"] in str(error)
+            assert "semantic similarity" in str(error)
+        else:
+            raise AssertionError("semantically duplicate memory was persisted")
+        assert len(manager.list(tier="ltm", scope="conversation")) == 1
+
+        unrelated = manager.add(
+            "Ground return connects input filter capacitor to power stage reference",
+            tier="ltm", scope="conversation", title="Ground return")
+        manager.add("This step down converter changes supply voltage into regulated output rail",
+                    tier="ltm", scope="project", title="Project-specific note")
+        try:
+            manager.update(
+                unrelated["id"],
+                "This step down converter changes supply voltage into regulated output rail")
+        except ValueError as error:
+            assert source["id"] in str(error)
+            assert "semantic similarity" in str(error)
+        else:
+            raise AssertionError("semantic duplicate update was accepted")
+        assert manager.store.list(tier="ltm", namespace="semantic-thread",
+                                  scope="conversation")[0]["id"] == source["id"]
+        assert manager.list(tier="ltm", scope="conversation")[-1]["id"] == unrelated["id"]
+
+    with tempfile.TemporaryDirectory() as directory:
+        lexical_only = MemoryManager(
+            MemoryStore(Path(directory) / "semantic-disabled.json"),
+            thread_id="semantic-thread")
+        lexical_only.configure({"ltm": True})
+        source = lexical_only.add(
+            "A switching regulator converts the input rail into stable output voltage",
+            tier="ltm", scope="conversation")
+        accepted = lexical_only.add(
+            "This step down converter changes supply voltage into regulated output rail",
+            tier="ltm", scope="conversation")
+        assert accepted["id"] != source["id"]
+
+    with tempfile.TemporaryDirectory() as directory:
+        unavailable = MemoryManager(
+            MemoryStore(Path(directory) / "semantic-unavailable.json"),
+            thread_id="semantic-thread")
+        unavailable.set_embedding_backend(FailingEmbeddingBackend())
+        unavailable.configure({"ltm": True, "semantic": {"enabled": True}})
+        first = unavailable.add("A switching regulator converts input power into output voltage",
+                                tier="ltm")
+        try:
+            unavailable.add("Store this only after semantic duplicate validation",
+                            tier="ltm")
+        except ValueError as error:
+            assert str(error) == "semantic_duplicate_check_unavailable"
+        else:
+            raise AssertionError("semantic-enabled write bypassed failed duplicate validation")
+        assert [entry["id"] for entry in unavailable.list(tier="ltm")] == [first["id"]]
+        assert unavailable.semantic_state()["status"] == "embedding_failed"
+
+    with tempfile.TemporaryDirectory() as directory:
+        unavailable = MemoryManager(
+            MemoryStore(Path(directory) / "semantic-not-ready.json"),
+            thread_id="semantic-thread")
+        unavailable.configure({"ltm": True, "semantic": {
+            "enabled": True, "base_url": "http://127.0.0.1:1"}})
+        first = unavailable.add("A switching regulator converts input power to output voltage",
+                                tier="ltm")
+        try:
+            unavailable.add("A second record needs duplicate validation", tier="ltm")
+        except ValueError as error:
+            assert str(error) == "semantic_duplicate_check_unavailable"
+        else:
+            raise AssertionError("unready semantic backend allowed an unchecked write")
+        assert [entry["id"] for entry in unavailable.list(tier="ltm")] == [first["id"]]
+        assert unavailable.semantic_state()["ready"] is False
+
+    with tempfile.TemporaryDirectory() as directory:
         fallback = MemoryManager(MemoryStore(Path(directory) / "unexpected-error.json"))
         fallback.set_embedding_backend(FailingEmbeddingBackend())
         fallback.configure({"ltm": True, "semantic": {"enabled": True}})

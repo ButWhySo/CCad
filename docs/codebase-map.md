@@ -2081,7 +2081,16 @@ filters, not retrieval filters. Capture is explicit via Manage Memories or
 `/memory`; ordinary chat is not auto-saved. Secret-like new records are rejected
 and unsafe legacy records are hidden from runtime/UI. Expiry, exact normalized
 deduplication, lexical near-duplicate checks, and a 64-record per-namespace cap
-are enforced. Semantic compaction and semantic duplicate detection remain open.
+are enforced. Durable-memory semantic compaction remains open. Sprint 1038 adds
+opt-in semantic duplicate checks for add/update: after validation and secret
+rejection, same-tier/same-namespace candidates are compared using the existing
+ready local embedding backend, with cached vectors and a bounded 128-candidate
+set. The 0.90 cosine threshold is not calibrated against an installed real model;
+contracts use deterministic embeddings. When semantic checking is explicitly
+enabled but unavailable, writes fail with the safe
+`semantic_duplicate_check_unavailable` category; disabled mode retains exact and
+lexical checks. Contracts: `scripts/test_semantic_retrieval.py` and
+`scripts/test_memory_manager.py`.
 
 `memory_commands.py`, Settings RPC, and the Manage Memories dialog use the same
 manager for list/add/update/delete/reset. Disabling a tier unloads runtime
@@ -2156,8 +2165,9 @@ and mapped `ui.type_text` input follow the same path. Coverage is in
 `scripts/test_memory_task_scopes.py`, `scripts/test_memory_manager.py`,
 `scripts/test_memory_command_contract.py`, and `tests/test_gui_agent_panel.cpp`.
 Qt Release plus full CTest passed 99/99; mapped GUI screenshots/logs were
-inspected, including a >20-second run. Semantic duplicate detection and
-semantic compaction remain open.
+inspected, including a >20-second run. Sprint 1038 adds opt-in semantic
+duplicate detection; threshold calibration with a real embedding model and
+durable-memory semantic compaction remain open.
 
 ### Sprint 969 local context preview
 
