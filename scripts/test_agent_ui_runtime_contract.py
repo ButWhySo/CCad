@@ -6,13 +6,14 @@ from pathlib import Path
 root = Path(__file__).parents[1]
 panel = (root / "src" / "ccad_gui" / "agent_panel.cpp").read_text(encoding="utf-8")
 header = (root / "src" / "ccad_gui" / "agent_panel.hpp").read_text(encoding="utf-8")
+chat_browser = (root / "src" / "ccad_gui" / "agent_chat_browser.hpp").read_text(encoding="utf-8")
 settings = (root / "src" / "ccad_gui" / "agent_settings_dialog.cpp").read_text(encoding="utf-8")
 review = (root / "src" / "ccad_gui" / "review_window.cpp").read_text(encoding="utf-8")
 main = (root / "src" / "ccad_gui" / "main.cpp").read_text(encoding="utf-8")
 orchestrator = (root / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
 model_catalog = (root / "src" / "ccad_agent" / "model_catalog.py").read_text(encoding="utf-8")
 
-assert "QTextBrowser* chat_stream_" in header
+assert "AgentChatBrowser* chat_stream_" in header
 assert 'setObjectName("control:agent_chat_stream")' in panel
 assert 'if (!chat_stream_) return;' in panel
 assert 'chat_history_layout_->addWidget(container);' not in panel
@@ -31,8 +32,13 @@ assert 'chat_history_layout_->addWidget(bubble);' not in panel
 assert 'appendChatMessage("agent", activity_text);' in panel
 assert 'chat_scroll_area_' not in panel
 assert 'chat_history_layout_' not in panel
-assert "cursor.insertText(prefix +" in panel
+assert 'appendMessage(display_role, text, markdown && role != "user")' in panel
+assert 'AgentChatBrowser::assistantMessageUsesMarkdown(' in panel
+assert 'params.setdefault("content_format", "plain")' in orchestrator
 assert "setTextInteractionFlags(Qt::TextSelectableByMouse" in panel
+assert "QTextDocument::MarkdownNoHTML" in chat_browser
+assert "QTextDocument::MarkdownDialectGitHub" in chat_browser
+assert "type == QTextDocument::ImageResource" in chat_browser
 assert "repo_src + \"/ccad_agent/venv/Scripts/python.exe\"" in panel
 assert 'agent_env.insert("PYTHONNOUSERSITE", "1")' in panel
 assert "LogonUserW(" in settings

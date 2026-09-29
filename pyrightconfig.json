@@ -1,10 +1,17 @@
 {
   "include": [
-    "src/ccad_agent"
+    "src/ccad_agent",
+    "scripts/benchmark_semantic_memory_duplicates.py"
   ],
   "executionEnvironments": [
     {
       "root": "src/ccad_agent",
+      "extraPaths": [
+        "src/ccad_agent"
+      ]
+    },
+    {
+      "root": "scripts",
       "extraPaths": [
         "src/ccad_agent"
       ]

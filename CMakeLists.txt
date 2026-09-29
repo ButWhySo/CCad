@@ -268,17 +268,40 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_broker.py")
   add_test(NAME agent_project_index
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_project_index.py")
+  add_test(NAME agent_retrieval_contracts
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_retrieval_contracts.py")
   add_test(NAME agent_protocol_handler_boundaries
     COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_SOURCE_DIR}/scripts/test_agent_protocol_handler_boundaries.py")
   if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    add_test(NAME agent_tool_call_identity
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_tool_call_identity.py")
+  else()
+    add_test(NAME agent_tool_call_identity
+      COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_tool_call_identity.py")
+  endif()
+  if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
     add_test(NAME agent_turn_trace_hierarchy
       COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
               "${CMAKE_SOURCE_DIR}/scripts/test_agent_turn_trace_hierarchy.py")
+    add_test(NAME langfuse_v4_local_ingestion
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_langfuse_v4_local_ingestion.py")
+    add_test(NAME agent_trace_privacy
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_trace_privacy.py")
   else()
     add_test(NAME agent_turn_trace_hierarchy
       COMMAND "${Python3_EXECUTABLE}"
               "${CMAKE_SOURCE_DIR}/scripts/test_agent_turn_trace_hierarchy.py")
+    add_test(NAME langfuse_v4_local_ingestion
+      COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_SOURCE_DIR}/scripts/test_langfuse_v4_local_ingestion.py")
+    add_test(NAME agent_trace_privacy
+      COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_SOURCE_DIR}/scripts/test_trace_privacy.py")
   endif()
 
   if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")

@@ -35,6 +35,7 @@ Rule:
 Manages the agent workflow panel. It initializes the JSON-RPC C++ `AgentOrchestrator` instance and launches `src/ccad_agent/orchestrator.py` via `QProcess`, connecting the Qt UI (a modern Copilot-style interface with chat bubbles and cards) to the agent tool logic.
 
 - `src/ccad_agent/orchestrator.py`: Python process containing the LangGraph orchestration. Implements a `Supervisor` pattern delegating to a `RouterAgent` and a `LibrarianAgent`. Initializes multi-provider models (Anthropic, Gemini, OpenAI) and OpenTelemetry/Langfuse callbacks via environment variables. Uses `sys.stdin` and `sys.stdout` for communication via a strict JSON-RPC protocol. `scan_intake()` blocks known prompt-injection and inline-secret patterns before provider/tool execution, emitting only redacted category metadata; provenance-aware document scanning remains future work.
+- Sprint 1033 lifecycle: `executor` is unset at process startup; `ensure_orchestrator()` imports `langgraph.prebuilt.ToolNode` and compiles the real graph on first model execution or checkpoint access. Catalog updates rebuild the graph only if it already exists. This keeps configuration/provider IPC independent from model-tool graph initialization. `init_provider()` returns the established `missing_api_key` state before importing remote adapter packages when required credentials are absent. Provider-key IPC only reinitializes the active provider; transient provider validation restores existing model/binding objects and the prior environment rather than reconstructing the active adapter.
 - `src/ccad_gui/agent_panel.hpp/.cpp`: Implements the premium, right-side chat interface dock. Layout closely mirrors the Copilot Chat UI paradigm (light grey history, dark grey user bubbles flush right, inline agent markdown, and dark grey icon-based composer). Binds the bottom tool buttons to trigger Marketplace dialogs, insert `/` templates, and send JSON-RPC provider configuration events.
 
 ### `src/ccad_agent/agent_serve.cpp`: 
@@ -1915,8 +1916,39 @@ remain attached to model invocations. The authoritative methods are
 and secret/key/token/credential-named inputs. The CLI vault target allowlist
 also includes `langfuse_public` and `langfuse_secret`; it must never expose
 their values. Current local SDK compatibility uses its legacy mask callback
-when `mask_otel_spans` is unavailable, so a tested SDK pin and remote trace
-retrieval are still required before marking full export proof complete.
+when `mask_otel_spans` is unavailable. The local metadata-only exporter remains
+the authoritative OTel redaction boundary, and remote trace retrieval is still
+required before marking full export proof complete.
+
+Sprint 1036 follow-up: `TelemetryRuntime.observation()` redacts observation
+metadata, then forwards only scalar values converted to strings and capped at
+200 characters, matching Langfuse v4 metadata attributes. Structured values
+are omitted. `scripts/test_langfuse_v4_local_ingestion.py` verifies this using
+the real SDK and a local OTLP receiver; this proves local serialization, not
+Cloud receipt or reload of an already-running Agent child.
+
+The Sprint 1035 Python SDK pin resolves to Langfuse 4.15.6/Pydantic 2.13.4.
+Direct OTLP uses the v4 realtime-ingestion header, and exact trace readback
+uses the v2 Observations API with a bounded UTC time range and cursor paging.
+`MetadataOnlyExporter` remains the final export privacy gate. The local wire
+contract now exercises the actual LangChain callback as a child of the Agent
+turn and proves it shares the configured exporter, trace, and session metadata.
+Live project receipt, evaluator configuration, exports, and rollback remain
+external checks; see `docs/devops/sprints/sprint-1035-langfuse-v4-readiness.md`.
+
+Sprint 1035 handover: `src/ccad_agent/telemetry.py` pins compatibility through
+`requirements.txt` (`langfuse>=4.15.6,<4.16.0`), sends direct OTLP traces to
+`/api/public/otel/v1/traces` with `x-langfuse-ingestion-version: 4`, and reads
+exact trace observations through `client.api.observations.get_many()` with
+cursor pagination. The export boundary stays metadata-only. Development turn
+readback is bounded to two seconds; explicit connection tests allow twenty
+seconds for indexing. `scripts/test_langfuse_v4_local_ingestion.py` decodes a
+real local OTLP protobuf request and asserts endpoint, v4 header, Basic Auth,
+root plus real LangChain callback and tool child ancestry, safe root
+input/output, and propagated session and turn metadata without credentials in
+payload. Local 4.15.6 runtime, hierarchy, and privacy contracts pass; these
+checks establish repository behavior only, not Cloud project migration,
+evaluator/export status, or live receipt.
 
 Sprint 952 handover: `ReviewWindow::projectContextJson()` emits a bounded typed
 project snapshot after recursively removing binary `data` fields; `project.state`
@@ -2049,7 +2081,17 @@ filters, not retrieval filters. Capture is explicit via Manage Memories or
 `/memory`; ordinary chat is not auto-saved. Secret-like new records are rejected
 and unsafe legacy records are hidden from runtime/UI. Expiry, exact normalized
 deduplication, lexical near-duplicate checks, and a 64-record per-namespace cap
-are enforced. Semantic compaction and semantic duplicate detection remain open.
+are enforced. Durable-memory semantic compaction remains open. The repeatable
+real-Ollama benchmark `scripts/benchmark_semantic_memory_duplicates.py` uses
+dataset v2 with 71 labeled duplicate and 71 hard-negative pairs and documented
+model prompts: sentence similarity for EmbeddingGemma and `clustering:` for
+Nomic Embed Text. At cutoff 0.91, EmbeddingGemma caught 7/71 duplicates with
+4/71 false rejections, while Nomic caught 14/71 with 11/71 false rejections.
+No tested zero-false-positive threshold caught duplicates, so embeddings are
+retrieval-only and never block writes. Exact and lexical duplicate guards remain,
+and semantic service availability does not gate add/update. Contracts:
+`scripts/test_semantic_retrieval.py` and
+`scripts/test_memory_manager.py`.
 
 `memory_commands.py`, Settings RPC, and the Manage Memories dialog use the same
 manager for list/add/update/delete/reset. Disabling a tier unloads runtime
@@ -2124,8 +2166,9 @@ and mapped `ui.type_text` input follow the same path. Coverage is in
 `scripts/test_memory_task_scopes.py`, `scripts/test_memory_manager.py`,
 `scripts/test_memory_command_contract.py`, and `tests/test_gui_agent_panel.cpp`.
 Qt Release plus full CTest passed 99/99; mapped GUI screenshots/logs were
-inspected, including a >20-second run. Semantic duplicate detection and
-semantic compaction remain open.
+inspected, including a >20-second run. Sprint 1038 adds opt-in semantic
+duplicate detection; threshold calibration with a real embedding model and
+durable-memory semantic compaction remain open.
 
 ### Sprint 969 local context preview
 
@@ -2209,16 +2252,28 @@ LangGraph messages when the canonical transcript is empty, plus JSON-RPC
 conversation list/read operations and mapped History/New Chat/resume controls.
 History displays the full redacted transcript while provider history stays on
 the separate compact projection. Semantic history retrieval remains open.
+Sprint 1034 TODO reconciliation reran the task-scope, transcript, restart, and
+LangGraph checkpoint contracts against this implementation. Remaining gaps are
+explicit proposal/approval/transaction references attached to transcript
+events, a product-level label for the active conversation as STM (distinct
+from task Working Memory), and an auditable source-message range for each
+generated compaction summary. The projection stores a sequence boundary, but
+that alone is not exposed as a source-range record.
 
 `src/ccad_gui/agent_chat_browser.hpp` owns chat message formatting. Actual final
 assistant responses carry `content_format=markdown`; resumed canonical
-assistant messages use their role to choose the same parser. User messages,
-warnings, statuses, tool output, and other non-assistant content are inserted
-as literal text. GitHub-flavored Markdown is parsed with `MarkdownNoHTML`;
+assistant messages use their role to choose the same parser. Python message
+events default to `plain` unless explicitly marked, while Qt treats a missing
+format as Markdown for compatibility with older assistant runtimes. User
+messages and other non-assistant content remain literal text. GitHub-flavored
+Markdown is parsed with `MarkdownNoHTML`;
 links open only after an explicit click and only when they are credential-free
 HTTP(S) URLs. All image/resource requests are denied, including local files.
 `testChatMarkdownRenderingAndSafety` covers headings, emphasis, tables, links,
 lists, code, raw HTML, unsafe URLs, blocked images, and literal user content.
+The same Qt contract covers missing, Markdown, and explicit plain format tags;
+`scripts/test_agent_ui_runtime_contract.py` verifies the sender's plain default.
+The same Qt contract covers missing, Markdown, and explicit plain format tags.
 The saved-transcript UI proof is `sprint1031-agent-markdown-r2`; the code-block
 content is selectable text, not executed or interpreted code.
 
@@ -2519,3 +2574,64 @@ generation; this slice does not close those items.
 ## CI / CTest / CD live recheck (Sprint 1029)
 
 Actions run `36286955736` passes all five jobs on exact `main` SHA `b6e228d5b99f40293e79b6945d386bd7da950e50`; each of the three native build jobs reports its CTest step successful. Historical runs #539/#540 failed on an older commit because `agent_project_index` read an ignored local demo-board file absent from hosted clean checkouts; the later self-contained typed-fixture repair removed that dependency. The official nonvisual local verifier used the successful Sprint 1028 Release/full-CTest logs without source changes; manifest `artifacts/evidence/sprint-1029-ci-ct-cd-status-refresh.json`, SHA-256 `C2EFA9E277CF3819F0776F3D7E0CEAEFF69D443D1976AA84CAE43FE048EF33BD`. `.github/workflows/ci.yml` remains the sole configured workflow. No release target or deployment destination is defined, so CD is unconfigured rather than failing.
+
+## Sprint 1036 conversation provenance
+
+`src/ccad_agent/conversation_store.py` schema version 4 adds compaction
+projection provenance: ordered canonical `source_message_ids`, first/last
+source sequence numbers, and the generated `summary_message_id`. Each projection
+also stores the latest canonical `base_message_id` from the summarized snapshot;
+if the transcript advances before save, compaction fails rather than concealing
+newer messages. Its additive
+initializer migrates older projection tables in place. Use
+`ConversationStore.projection_metadata(thread_id)` to inspect identifiers and
+sequence bounds without reading projected summary text. The compaction path in
+`history_compaction.py` keeps those IDs beside internal records rather than in
+serialized provider transcript JSON; `orchestrator.py` strips them from public
+events and persists them with the projection. `context_package.py` identifies
+the active provider-message history in safe metadata as `conversation_stm`,
+scope `active_thread`, and reports only the message count. In the GUI,
+`AgentSettingsDialog` shows this as read-only Conversation STM status;
+`control:ltmCb` remains the durable thread-memory preference, and its tooltip
+states that disabling it does not remove ordinary transcript history.
+`control:stmCb` remains Working Memory / task scratch.
+
+Sprint 1037 approval binding stores one broker grant for the exact tool name,
+argument JSON, call ID, and current project/context revision; grants expire
+after five minutes, are consumed before executor dispatch, and reject replay,
+plan substitution, duplicate pending calls, or revision drift. `AgentPanel`
+gets the current revision from `ReviewWindow` using serialized project state,
+active layer/net, and selected-object IDs, not the UI-map epoch. The same slice
+adds atomic snapshot restore for GUI Undo/Redo, but this is not the missing
+kernel transaction/audit undo dispatcher; keep that TODO open. Provider tool
+calls now require a real ID and well-formed arguments; raw `<TOOL>` text and
+missing result IDs fail without broker dispatch or synthetic correlation IDs.
+
+The initial screenshot batch showed the Windows lock screen and was rejected.
+An unlocked rerun of the app-owned `sprint1027-working-memory` sequence completed
+10 mapped interactions; all five distinct captures visibly confirm the
+Conversation STM label, Working Memory toggle, manager/tier selection, and
+restored chat. Evidence manifest:
+`artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`. The independent
+proposal-preview requirement remains open: both panes must render staged
+geometry from its exact revision/change-set, not substitute a text summary.
+
+## Retrieval capability matrix (Sprint 1039 reconciliation)
+
+The complete channel-by-channel matrix—including authority, persistence, revision, backend, fallback, contract tests, benchmark status, and canonical TODO owner—is maintained in [retrieval-capability-matrix.md](devops/retrieval-capability-matrix.md). Current retrieval is functional but incomplete; C++ typed project state remains authoritative, and R0-R18 in the active sprint TODO owns remaining work.
+
+## Canonical retrieval contracts (Sprint 1041)
+
+`src/ccad_agent/retrieval_contracts.py` owns immutable request/result records,
+channel names, readiness status, and the retriever protocol. `retrieval_adapters.py`
+maps the current `ProjectIndex` and `MemoryManager` into canonical hits. The
+adapter enforces project/thread scope, bounds and normalizes filters, projects
+requested project fields, records source revision and provenance, and reports
+backend status without exporting raw BM25/cosine scores as comparable values.
+`ContextBroker.prepare()` and `refresh_memory()` consume these adapter results;
+project context is converted back through `to_context_payload()` so existing
+provider-facing JSON stays stable, while canonical readiness and channel states
+remain in safe non-content package metadata. The architecture and backend comparison live
+in [ADR-agent-retrieval-architecture.md](decisions/ADR-agent-retrieval-architecture.md).
+This boundary does not yet provide central planning/fusion or cross-index stale
+revision validation; those remain open in R10/R12/R13.

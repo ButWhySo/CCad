@@ -1349,7 +1349,7 @@ void AgentPanel::handlePythonOutput() {
         addActivityEvent("tool", "Tool requested", tool, "agent.tool");
         QJsonObject result;
         result["jsonrpc"] = "2.0";
-        result["id"] = call_id.isEmpty() ? QString("agent-tool-call") : call_id;
+        result["id"] = call_id;
         result["method"] = "tool_result";
         bool awaiting_approval = false;
 
@@ -1369,7 +1369,27 @@ void AgentPanel::handlePythonOutput() {
 
         if (orchestrator_) {
             ccad::OrchestratorConfig cfg;
-            std::string res_str = orchestrator_->execute_tool(tool.toStdString(), args.toStdString(), cfg);
+            const QString approval_token = QUuid::createUuid().toString(QUuid::WithoutBraces);
+            cfg.tool_call_id = call_id.toStdString();
+            cfg.project_revision = active_turn_design_revision_;
+            cfg.approval_request_token = approval_token.toStdString();
+            const auto registered_tool = orchestrator_->get_tool(tool.toStdString());
+            const bool mutating = registered_tool &&
+                registered_tool->default_risk != ccad::TaskRisk::ReadOnly;
+            const std::string live_revision = project_revision_provider_
+                ? project_revision_provider_() : context_revision_.toStdString();
+            QJsonParseError args_error;
+            const QJsonDocument args_document = QJsonDocument::fromJson(args.toUtf8(), &args_error);
+            const bool dry_run = args_error.error == QJsonParseError::NoError &&
+                args_document.isObject() && args_document.object().value("dry_run").toBool();
+            cfg.dry_run = dry_run;
+            const std::string res_str = call_id.isEmpty()
+                ? std::string("{\"error\":\"tool_call_id_missing\"}")
+                : (mutating && !dry_run && active_turn_design_revision_.empty())
+                    ? std::string("{\"error\":\"project_revision_unavailable\"}")
+                : (mutating && !dry_run && live_revision != active_turn_design_revision_)
+                    ? std::string("{\"error\":\"project_context_stale\"}")
+                : orchestrator_->execute_tool(tool.toStdString(), args.toStdString(), cfg);
             QJsonParseError res_err;
             QJsonDocument res_doc = QJsonDocument::fromJson(QString::fromStdString(res_str).toUtf8(), &res_err);
             if (res_err.error == QJsonParseError::NoError && res_doc.isObject()) {
@@ -1380,8 +1400,8 @@ void AgentPanel::handlePythonOutput() {
             if (QString::fromStdString(res_str).contains("\"error\":\"approval_required\"")) {
               pending_tool_name_ = tool;
               pending_tool_args_ = args;
-              pending_tool_call_id_ = call_id.isEmpty() ? QStringLiteral("agent-tool-call") : call_id;
-              pending_approval_token_ = QUuid::createUuid().toString(QUuid::WithoutBraces);
+              pending_tool_call_id_ = call_id;
+              pending_approval_token_ = approval_token;
               showProposal(
                   "Agent proposes " + tool,
                   {"Tool: " + tool, "Arguments: " + args,
@@ -1420,7 +1440,8 @@ void AgentPanel::handlePythonOutput() {
         const QJsonObject params = obj["params"].toObject();
         const QString message = params.value("text").toString();
         appendChatMessage("agent", message,
-                          params.value("content_format").toString() == "markdown");
+                          AgentChatBrowser::assistantMessageUsesMarkdown(
+                              params.value("content_format").toString()));
         if (result_state_label_) {
           if (!tool_result_ack_visible_) {
             result_state_label_->setText("Result Chat response received");
@@ -1952,6 +1973,9 @@ void AgentPanel::submitChat() {
         context_usage_label_->setText(QString("%1 / 128k context").arg((context.size() + 3) / 4));
       }
   }
+  active_turn_design_revision_ = project_revision_provider_
+      ? project_revision_provider_() : context_revision_.toStdString();
+  params["design_revision"] = QString::fromStdString(active_turn_design_revision_);
   payload["params"] = params;
   python_process_->write(QJsonDocument(payload).toJson(QJsonDocument::Compact) + "\n");
 }
@@ -2152,6 +2176,10 @@ void AgentPanel::setProposalPreviewTrigger(ProposalPreviewTrigger trigger) {
 
 void AgentPanel::setContextProvider(ContextProvider provider) {
     context_provider_ = std::move(provider);
+}
+
+void AgentPanel::setProjectRevisionProvider(ProjectRevisionProvider provider) {
+  project_revision_provider_ = std::move(provider);
 }
 
 void AgentPanel::setProviderSecret(const QString& provider_id, const QString& secret) {
@@ -3097,6 +3125,10 @@ void AgentPanel::approveNextApproval() {
     ccad::OrchestratorConfig cfg;
     cfg.approved_tool_name = pending_tool_name_.toStdString();
     cfg.approved_tool_token = pending_approval_token_.toStdString();
+    cfg.tool_call_id = pending_tool_call_id_.toStdString();
+    cfg.project_revision = project_revision_provider_
+        ? project_revision_provider_()
+        : context_revision_.toStdString();
     const std::string approved = orchestrator_->execute_tool(
         pending_tool_name_.toStdString(), pending_tool_args_.toStdString(), cfg);
     QJsonObject result{{"jsonrpc", "2.0"}, {"method", "tool_result"},
@@ -3176,6 +3208,7 @@ void AgentPanel::declineNextApproval() {
     return;
   }
   const QString request = pending_approval_request_;
+  revokePendingApprovalGrant();
   if (!pending_tool_call_id_.isEmpty() && python_process_) {
     const QJsonObject result{
         {"jsonrpc", "2.0"},
@@ -3207,6 +3240,7 @@ void AgentPanel::cancelApproval() {
     return;
   }
   const QString request = pending_approval_request_;
+  revokePendingApprovalGrant();
   if (!pending_tool_call_id_.isEmpty() && python_process_) {
     const QJsonObject result{
         {"jsonrpc", "2.0"},
@@ -3228,7 +3262,18 @@ void AgentPanel::cancelApproval() {
   if (approval_preview_) approval_preview_->hide();
 }
 
+void AgentPanel::revokePendingApprovalGrant() {
+  if (orchestrator_ && !pending_approval_token_.isEmpty()) {
+    orchestrator_->cancel_approval(pending_approval_token_.toStdString());
+  }
+}
+
 void AgentPanel::clearApprovals() {
+  if (!pending_approval_request_.trimmed().isEmpty()) {
+    cancelApproval();
+    approval_request_input_->clear();
+    return;
+  }
   pending_approval_request_.clear();
   pending_approval_token_.clear();
   approval_request_input_->clear();

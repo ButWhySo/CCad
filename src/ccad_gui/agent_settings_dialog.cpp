@@ -692,12 +692,18 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
 
   auto* mem_group = new QGroupBox("Memory Settings", parent_widget);
   auto* mem_layout = new QVBoxLayout(mem_group);
+  auto* conversation_stm_info = new QLabel(
+      "Conversation STM — active thread: bounded recent transcript is loaded separately from durable memory.",
+      mem_group);
+  conversation_stm_info->setObjectName("control:conversationStmInfo");
+  conversation_stm_info->setWordWrap(true);
+  mem_layout->addWidget(conversation_stm_info);
   stm_cb_ = new QCheckBox("Working memory — active task scratchpad", mem_group);
   stm_cb_->setObjectName("control:stmCb");
   stm_cb_->setToolTip("Temporary task-specific scratch. Cleared when the task ends; the full conversation is stored separately.");
-  ltm_cb_ = new QCheckBox("Conversation memory — this chat thread", mem_group);
+  ltm_cb_ = new QCheckBox("Long-term memory — this chat thread", mem_group);
   ltm_cb_->setObjectName("control:ltmCb");
-  ltm_cb_->setToolTip("Durable records scoped to the current conversation thread.");
+  ltm_cb_->setToolTip("Controls retrieval and maintenance of durable memory records scoped to this conversation. The ordinary chat transcript remains available independently.");
   episodic_cb_ = new QCheckBox("Episodic memory — across this local user’s chats", mem_group);
   episodic_cb_->setObjectName("control:episodicCb");
   episodic_cb_->setToolTip("Durable local-user memories shared across projects on this device.");

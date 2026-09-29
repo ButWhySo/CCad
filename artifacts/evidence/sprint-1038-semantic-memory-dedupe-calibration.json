@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1038-semantic-memory-dedupe-calibration",
+    "feature":  "real local model calibration and task-aware semantic memory duplicate checks",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T07:41:32.3136410Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.94 log=artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration/preflight.log",
+                      "finished_utc":  "2026-09-29T07:41:33.3730372Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.87 log=artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration/build.log",
+                      "finished_utc":  "2026-09-29T07:41:35.2599890Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=168.82 log=artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration/ctest.log",
+                      "finished_utc":  "2026-09-29T07:44:24.0826545Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration/ctest.log",
+                                         "sha256":  "E0A444B4C94C7A90C5B2C598057D048A9189ADCD23C526855C0459E721698CA0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T07:44:24.1483858Z"
+}

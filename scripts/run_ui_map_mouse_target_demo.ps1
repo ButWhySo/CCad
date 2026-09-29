@@ -287,7 +287,8 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
 if ($Name.StartsWith("sprint1030-conversation-history") -or
-    $Name.StartsWith("sprint1031-agent-markdown")) {
+    $Name.StartsWith("sprint1031-agent-markdown") -or
+    $Name.StartsWith("sprint1037-undo-redo")) {
   $agentPython = Join-Path $PSScriptRoot "..\src\ccad_agent\venv\Scripts\python.exe"
   $agentPython = [IO.Path]::GetFullPath($agentPython)
   if (-not (Test-Path -LiteralPath $agentPython)) {
@@ -305,7 +306,7 @@ if ($Name.StartsWith("sprint1030-conversation-history") -or
   if (@($runtimeModules | Where-Object { -not (Test-Path -LiteralPath $_) }).Count -gt 0) {
     throw "The selected Python interpreter is missing the isolated CCad Agent dependencies."
   }
-  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint1030-history-" + [Guid]::NewGuid().ToString("N"))
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-$Name-" + [Guid]::NewGuid().ToString("N"))
   $configDir = Join-Path $isolatedMemoryProfile "CCad"
   New-Item -ItemType Directory -Path $configDir -Force | Out-Null
   $env:APPDATA = $isolatedMemoryProfile
@@ -331,6 +332,12 @@ if ($Name.StartsWith("sprint1030-conversation-history") -or
       throw "Could not prepare persisted assistant Markdown for the mapped rendering test."
     }
   }
+}
+if ($Name.StartsWith("sprint1037-undo-redo")) {
+  $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1037-undo-redo-" + [Guid]::NewGuid().ToString("N") + ".ccad.json")
+  Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
+  $ProjectPath = $isolatedProjectPath
 }
 if ($Name.StartsWith("sprint1001-memory-kind") -or $Name.StartsWith("sprint1003-memory-importance")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-$Name-" + [Guid]::NewGuid().ToString("N"))
@@ -1137,7 +1144,8 @@ if ($Name.StartsWith("sprint974-memory")) {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $projectFile = [IO.Path]::GetFullPath($isolatedProjectPath)
     if (-not $projectFile.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
-        -not ([IO.Path]::GetFileName($projectFile) -like "ccad-sprint982-multilayer-*.ccad.json" -or
+        -not ([IO.Path]::GetFileName($projectFile) -like "ccad-sprint1037-undo-redo-*.ccad.json" -or
+              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint982-multilayer-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
               [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json" -or

@@ -1,5 +1,112 @@
 # Implemented Features
 
+## Sprint 1041 — retrieval request/result boundary
+
+The Agent now uses bounded canonical retrieval request, hit, result, channel,
+and status types between `ContextBroker` and the existing project/memory
+indexes. Adapters preserve provider-facing project context, expose source scope
+and project revision, enforce project/thread identity, and keep disabled or
+unavailable memory distinct from successful empty retrieval. Safe status, count,
+and revision metadata stays outside provider content. Project hit field
+projection is supported. No backend was replaced: SQLite FTS5, Typesense, and
+ANN adoption remain subject to the reproducible corpus benchmark in R3. See
+`docs/decisions/ADR-agent-retrieval-architecture.md` and the retrieval capability
+matrix for the exact boundary and known limits.
+
+## Sprint 1039 — retrieval capability reconciliation and memory-tier ranking
+
+The retrieval handover now distinguishes durable memory/history from process-local project indexes, and documents exact, lexical, graph, spatial, semantic, and ContextBroker behavior with their real persistence, revision limits, fallbacks, tests, and benchmark status. `MemoryManager` ranks candidates within each enabled tier and interleaves bounded tier-local rankings, so corpus size in one tier no longer changes another tier's BM25 statistics or crowds every other tier from context. Safe provenance reports tier-local rank/count and merge policy. This is not a general retrieval benchmark or backend-independent retriever contract; those remain open in the active TODO. Validation and delivery status are recorded in `docs/devops/progress.md`.
+
+## Sprint 1037 — single-use Agent approval and desktop Undo/Redo
+
+The native tool broker now issues expiring approval grants tied to one
+registered mutation method, its exact JSON arguments, the model tool-call ID,
+and the current serialized project plus active layer/net/selection revision.
+Approval consumes the grant before executor dispatch; changed plans, stale
+revisions, unknown/replayed tokens, duplicate pending call IDs, missing IDs, and
+missing revisions fail closed. Dry-run state comes from parsed typed input,
+not raw JSON substring matching; malformed provider calls and legacy text tools
+cannot reach the broker. Agent UI Undo/Redo persists restored snapshots
+atomically. This GUI history is not the kernel transaction/audit undo path; that
+capability remains open in the production TODO.
+
+## Sprint 1036 — Conversation STM metadata and compaction provenance
+
+The canonical active conversation is identified in safe context metadata as
+`conversation_stm` scoped to `active_thread`, with the number of recent messages
+reported separately from durable memory tiers. Agent Personalisation now shows
+a read-only “Conversation STM — active thread” status; the separate long-term
+memory checkbox controls durable thread-scoped notes and explicitly does not
+disable ordinary chat history. Working Memory remains the process-only task
+scratchpad.
+
+Each generated compacted projection now records its canonical source message
+IDs, first and last source sequence, and explicitly generated recap message ID.
+Schema-v3 SQLite stores migrate additively to v4, and compaction refuses source
+messages without stable IDs. The IDs are internal provenance only: they are
+not inserted into the provider's summary transcript or public compaction
+events. The stored snapshot high-water message ID prevents an older summary
+from overwriting or hiding messages appended during summarization; missing IDs
+in the preserved recent suffix and recap-ID collisions are refused. Tests verify
+source membership/order, stale snapshot rejection, clear behavior, and migration.
+The Qt/MinGW Release build and final full CTest pass 122/122; focused contracts
+and Pyright pass. The unlocked official UI-map rerun completed 10 mapped
+interactions; all five distinct screenshots visibly show the Conversation STM
+label, Working Memory toggle, memory manager, thread-memory tier, and restored
+chat, and were inspected. Evidence manifest:
+`artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`.
+
+## Sprint 1035 — Langfuse v4 SDK update and callback wire contract
+
+Direct OTLP/HTTP export now includes Langfuse's v4 ingestion-version header,
+retains Basic Auth, and builds endpoints from validated host-only base URLs,
+including regional hosts. Development readback queries the v4 Observations API
+by exact trace ID, follows pagination, counts only observations belonging to
+that trace, and retries within a bounded interval; normal turn readback has a
+shorter cap than an explicit connection test. Provider export remains
+metadata-only and never treats exporter acceptance as proof of indexed receipt.
+A real SDK/exporter-to-local-receiver contract decodes the emitted protobuf and
+checks the exact v4 path/header/auth, root observation, real LangChain callback
+child, tool child, propagated correlation, bounded root digest/count, and
+absence of credential bytes. The SDK requirement now targets stable v4.15.6;
+the local runtime resolves `langfuse 4.15.6` with `pydantic 2.13.4`. Actual
+hosted Langfuse receipt remains unverified until project access is configured.
+Focused local-ingestion, hierarchy, runtime/reconfiguration, and privacy
+contracts pass on v4.15.6; Pyright reports zero diagnostics for the changed
+runtime and test paths. The Qt/MinGW Release build and full CTest gate pass
+(122/122). Manifest `artifacts/evidence/sprint-1035-langfuse-v4-current-patch.json`
+(SHA-256 `D599D59D6EE0FE90D04911341030761FA445662A1B6808FDBF83E8164F7E6F1F`).
+
+Sprint 1036 telemetry follow-up enforces Langfuse v4 metadata typing at
+`TelemetryRuntime.observation()`: values are redacted first, scalar values are
+converted to strings and capped at 200 characters, and structured values are
+omitted. The real-SDK local receiver contract covers boolean/integer conversion,
+length bounding, and nested-value omission. Pyright reports zero diagnostics;
+Qt Release has no pending work and full CTest passes 122/122. A fresh desktop
+Agent-process reload and hosted trace receipt remain unverified.
+This is local compatibility evidence, not proof of receipt by a hosted project.
+
+## Sprint 1033 — Agent cold-start and provider credential isolation
+
+Provider and configuration protocol messages no longer compile the LangGraph
+tool executor during child-process startup. The production graph and its real
+`ToolNode` are created on first execution or checkpoint access, and catalog
+changes rebuild it only after it exists. Missing credentials produce the
+normal redacted `missing_api_key` result before the corresponding remote SDK is
+imported. Setting a key for an inactive provider no longer initializes the
+selected adapter or removes session credentials for other providers. A
+non-network provider test restores existing provider model/binding objects
+instead of recreating them. The UI runtime contract now targets the actual
+`AgentChatBrowser` implementation and checks its Markdown safety features.
+
+The exact hosted Python test command list passes locally; Pyright reports zero
+diagnostics, Python compilation passes, and checkpoint accept/deny/cancel
+restart paths pass. Qt/MinGW Release build and all 120 CTests pass. Evidence
+manifest `artifacts/evidence/sprint-1033-agent-lazy-graph.json` (SHA-256
+`2213A62EFD3A8B994A6D55234748D263CF0DFF42F13F92F1DDF6F818FB6B7FF5`). The
+initial hosted failure is recorded as run #572; confirmation on a pushed repair
+SHA remains pending.
+
 ## Sprint 1031 — Safe Markdown in Agent chat
 
 Assistant replies render as GitHub-flavored Markdown in the native Qt chat
@@ -30,6 +137,19 @@ provider request. The report was not reproduced; a GUI process already open
 before updating the executable must be restarted. Evidence manifest:
 `artifacts/evidence/sprint-1032-agent-markdown-runtime.json` (SHA-256
 `4B4A5E7BAEC37E8339A62762ADC140DC1F5AE3FBD3CA2640F3AF1581CA7D2899`).
+
+### Message-format compatibility
+
+Current Python message events label ordinary status/notices as `plain`; final
+model replies remain explicitly `markdown`. Qt defaults an absent format tag
+to Markdown so replies from older runtimes do not expose raw delimiters, while
+an explicit `plain` tag keeps user-facing notices literal. Rendering still uses
+the same HTML-disabled parser, click-filtered links, and blocked image/resource
+policy. The Qt test covers missing, Markdown, and plain format decisions.
+The compatibility follow-up passes Release build and full CTest (120/120),
+plus a fresh mapped transcript run with six inspected screenshots and reviewed
+stdout/stderr. Evidence manifest `artifacts/evidence/sprint-1033-agent-markdown-fallback.json`
+(SHA-256 `760E9E02539C7E390A9030058C23409EB7D9BA5C19937541575E1BC0E55CFCF7`).
 
 ## Sprint 1030 — Durable conversation History and New Chat
 
@@ -411,11 +531,13 @@ The Python Agent now stores sanitized canonical messages in a per-thread SQLite 
 
 The current boundary is deliberate: Sprint 1030 imports old LangGraph checkpoint-only messages when canonical history is empty and adds mapped History/New Chat/resume controls. Retrieval still does not cross thread boundaries or use embeddings. Earlier verification is through `scripts/test_conversation_store.py`, `scripts/test_conversation_runtime.py`, context-package contracts, and the isolated seven-action GUI-map scenario `sprint976-conversation-20260924`; Sprint 1030 adds checkpoint migration, process restart, and restored-transcript coverage without making a provider request.
 
+The task-scope, transcript, restart, and LangGraph checkpoint contracts were rerun during the Sprint 1034 TODO reconciliation. Proposal/approval/transaction event linkage, explicit conversation-STM naming, and inspectable compaction-summary source ranges remain incomplete; the existing projection boundary is not represented as an auditable source-range record.
+
 ## Sprint 967 request context and memory lifecycle
 
 The Python agent assembles bounded project/design context plus records retrieved only from enabled memory tiers. Conversation messages, system instructions, and tool schemas are distinct provider-request inputs; their character-based token counts are explicitly estimates, and unknown model limits or multimodal sizes are not invented. Above the configurable large-context threshold, chat receives a source/count breakdown and development logs receive only privacy-safe counts and opaque identifiers. If the envelope is too large, CCad replaces the complete project snapshot with a revision/count summary and drops lowest-ranked memories until valid JSON fits.
 
-Memory is managed through one tier-aware runtime manager shared by Settings and `/memory`: STM is task-scoped and process-only, LTM is durable per conversation thread, and episodic memory is durable per local user across projects on this device. Capture is explicit, disabled tiers unload from the current process without deleting stored records, secret-like writes are rejected, unsafe legacy entries are hidden, expiry is enforced, exact normalized duplicates are avoided, and durable storage is capped at 64 newest entries per namespace. The UI provides live tier state, memory management, and separately confirmed reset/delete operations. Scope labels are explicit management filters, not semantic retrieval filters. Sprint 970 adds real selected-model semantic compaction for chat history through `/cc` and `/compact`; durable memory-record semantic compaction, semantic duplicate matching, and automatic capture remain incomplete.
+Memory is managed through one tier-aware runtime manager shared by Settings and `/memory`: STM is task-scoped and process-only, LTM is durable per conversation thread, and episodic memory is durable per local user across projects on this device. Capture is explicit, disabled tiers unload from the current process without deleting stored records, secret-like writes are rejected, unsafe legacy entries are hidden, expiry is enforced, exact normalized duplicates are avoided, and durable storage is capped at 64 newest entries per namespace. The UI provides live tier state, memory management, and separately confirmed reset/delete operations. Scope labels are explicit management filters, not semantic retrieval filters. Sprint 970 adds real selected-model semantic compaction for chat history through `/cc` and `/compact`. Embeddings are retrieval-only: memory add/update are never blocked by model similarity or embedding-service availability because real-model calibration found false rejections at useful-recall thresholds. Exact and lexical duplicate checks remain. Durable memory-record semantic compaction and automatic capture remain incomplete.
 
 ## Sprint 970 semantic conversation-history compaction
 
@@ -437,9 +559,9 @@ Sprint 970 verification: semantic-history and real LangGraph checkpoint contract
 
 STM now uses a distinct runtime task UUID for each explicit `/task start` to `/task end` interval within a durable Agent session. `/task status` reports whether that scope is active, and each task command is handled locally without model invocation. Unstaged turns receive non-retained task identities, so an STM write is rejected instead of being orphaned. Starting a replacement, ending a task, or evicting an old session clears its process-only STM. Active session/task identities are capped at 32, and each task retains at most 64 records.
 
-Memory add/update return the existing record for normalized exact duplicates and reject high lexical Jaccard overlap (minimum five unique terms, threshold 0.88) with that record's ID. This is deliberately reported as lexical matching, not semantic equivalence. The slash palette opens from both typed and UI-map-set input, and exposes `/task start`, `/task status`, and `/task end`.
+Memory add/update return the existing record for normalized exact duplicates and reject high lexical Jaccard overlap (minimum five unique terms, threshold 0.88) with that record's ID. Embeddings support retrieval only and do not block writes. The real-Ollama duplicate-calibration runner is `scripts/benchmark_semantic_memory_duplicates.py`; on 71 duplicate and 71 hard-negative pairs, cutoff 0.91 caught 7/71 with 4/71 false rejections for EmbeddingGemma, and 14/71 with 11/71 false rejections for Nomic. Since tested thresholds found no useful-recall/zero-false-rejection point, semantic write rejection was removed. Model-specific paraphrase retrieval calibration remains open. The slash palette opens from both typed and UI-map-set input, and exposes `/task start`, `/task status`, and `/task end`.
 
-Verification: task-scope and duplicate contracts pass; Qt MinGW Release build and full CTest pass 99/99. The app-owned GUI-map flow completed eight mapped interactions in two runs; all 24 screenshots and both runs' stdout/stderr were inspected, including one >20-second stability run. Semantic compaction and semantic duplicate detection remain open.
+Verification: task-scope and duplicate contracts pass; Qt MinGW Release build and full CTest pass 99/99. The app-owned GUI-map flow completed eight mapped interactions in two runs; all 24 screenshots and both runs' stdout/stderr were inspected, including one >20-second stability run. Durable-memory semantic compaction and broader real-model duplicate-recall calibration remain open.
 
 ## Sprint 950 Agent execution truthfulness
 

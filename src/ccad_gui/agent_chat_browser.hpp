@@ -31,6 +31,10 @@ class AgentChatBrowser final : public QTextBrowser {
     safe_link_handler_ = std::move(handler);
   }
 
+  static bool assistantMessageUsesMarkdown(const QString& content_format) {
+    return content_format != QStringLiteral("plain");
+  }
+
   static bool isSafeExternalLink(const QUrl& url) {
     const QString scheme = url.scheme().toLower();
     return (scheme == QStringLiteral("https") || scheme == QStringLiteral("http")) &&

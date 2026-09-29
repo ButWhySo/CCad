@@ -44,6 +44,7 @@ jobs:
           python scripts/test_agent_context_contract.py
           python scripts/test_agent_context_size_contract.py
           python scripts/test_agent_compaction_contract.py
+          python scripts/test_agent_tool_call_identity.py
           python scripts/test_provider_timeout_contract.py
           python scripts/test_provider_approval_state_contract.py
           python scripts/test_agent_broker_cancellation_contract.py
@@ -64,6 +65,8 @@ jobs:
           python scripts/test_provider_retry_behavior.py
           python scripts/test_openrouter_provider_contract.py
           python scripts/test_openrouter_catalog_contract.py
+          python scripts/test_agent_observability_runtime.py
+          python scripts/test_agent_turn_trace_hierarchy.py
           python scripts/test_model_catalog_protocol.py
           python scripts/test_model_selector_boundary_contract.py
           python scripts/test_agent_ui_runtime_contract.py

@@ -78,6 +78,7 @@
 #include <QPixmap>
 #include <QKeySequence>
 #include <QScrollArea>
+#include <QSaveFile>
 #include <QScreen>
 #include <QSize>
 #include <QSizePolicy>
@@ -2307,6 +2308,9 @@ ReviewWindow::ReviewWindow() {
   agent_panel_->setContextProvider([this]() {
       return projectContextJson().toStdString();
   });
+  agent_panel_->setProjectRevisionProvider([this]() {
+    return agentDesignRevision();
+  });
   updateAgentPanelContext();
 
   auto* diagnostics_dock = new QDockWidget("Diagnostics", this);
@@ -2620,6 +2624,8 @@ ReviewWindow::ReviewWindow() {
   });
   undo_action_ = undo_action;
   redo_action_ = redo_action;
+  connect(undo_action_, &QAction::triggered, this, &ReviewWindow::undoProjectChange);
+  connect(redo_action_, &QAction::triggered, this, &ReviewWindow::redoProjectChange);
 
   QMenu* view_menu = menuBar()->addMenu("&View");
   view_menu->addAction("Zoom In", QKeySequence::ZoomIn, this, [this]() {
@@ -3313,17 +3319,43 @@ ReviewWindow::~ReviewWindow() {
   }
 }
 
-void ReviewWindow::restoreProjectSnapshot(const ccad::Project& snapshot) {
-  project_cache_ = snapshot;
+bool ReviewWindow::restoreProjectSnapshot(const ccad::Project& snapshot) {
+  if (current_path_.empty()) {
+    statusBar()->showMessage("Undo/redo unavailable: no project file is loaded");
+    return false;
+  }
   try {
-    if (!current_path_.empty()) {
-      writeFile(current_path_, ccad::dumpProjectJson(project_cache_));
+    const QByteArray serialized = QByteArray::fromStdString(ccad::dumpProjectJson(snapshot));
+    QSaveFile output(QString::fromStdString(current_path_.string()));
+    if (!output.open(QIODevice::WriteOnly) || output.write(serialized) != serialized.size() ||
+        !output.commit()) {
+      throw std::runtime_error(output.errorString().toStdString());
     }
-    renderReview(ccad::buildReview(project_cache_));
+    project_cache_ = snapshot;
+    renderReview(ccad::buildReview(snapshot));
     statusBar()->showMessage("Restored project snapshot");
+    return true;
   } catch (const std::exception& e) {
     warnUser("Restore failed", QString::fromStdString(e.what()));
+    return false;
   }
+}
+
+void ReviewWindow::undoProjectChange() {
+  if (undo_stack_.empty()) return;
+  ccad::Project current = project_cache_;
+  if (!restoreProjectSnapshot(undo_stack_.back())) return;
+  undo_stack_.pop_back();
+  redo_stack_.push_back(std::move(current));
+  updateUndoRedoActions();
+}
+
+void ReviewWindow::redoProjectChange() {
+  if (redo_stack_.empty()) return;
+  ccad::Project current = project_cache_;
+  if (!restoreProjectSnapshot(redo_stack_.back())) return;
+  redo_stack_.pop_back();
+  undo_stack_.push_back(std::move(current));
   updateUndoRedoActions();
 }
 
@@ -7018,6 +7050,7 @@ QString ReviewWindow::agentHarnessContextJson() const {
 QString ReviewWindow::projectContextJson() const {
   QJsonObject response = projectObjectCountsObject(project_cache_);
   response.insert("schema_version", 1);
+  response.insert("design_revision", QString::fromStdString(agentDesignRevision()));
   response.insert("ui_epoch", ui_map_epoch_);
   response.insert("project_path", qstr(current_path_.generic_string()));
   response.insert("active_pcb_layer_id", qstr(activePcbLayerOrDefault()));
@@ -7043,6 +7076,13 @@ QString ReviewWindow::projectContextJson() const {
   response.insert("project_diagnostics_omitted",
                   static_cast<qint64>(total_diagnostics - included_diagnostics));
   return jsonObjectLine(response);
+}
+
+std::string ReviewWindow::agentDesignRevision() const {
+  const std::string revision_input = ccad::dumpProjectJson(project_cache_) + "\n" +
+      activePcbLayerOrDefault() + "\n" + activePcbNetOrDefault() + "\n" +
+      uiSelectionJson().toStdString();
+  return ccad::project_context_revision(revision_input);
 }
 
 std::string nextSchematicWireId(const ccad::Schematic& schematic) {

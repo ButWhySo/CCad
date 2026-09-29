@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1039-memory-tier-ranking",
+    "feature":  "Retrieval backlog reconciliation and independent tier-ranked memory retrieval",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T09:51:59.8389667Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.79 log=artifacts/evidence/sprint-1039-memory-tier-ranking/preflight.log",
+                      "finished_utc":  "2026-09-29T09:52:00.7113566Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.34 log=artifacts/evidence/sprint-1039-memory-tier-ranking/build.log",
+                      "finished_utc":  "2026-09-29T09:52:01.0592067Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=161.82 log=artifacts/evidence/sprint-1039-memory-tier-ranking/ctest.log",
+                      "finished_utc":  "2026-09-29T09:54:42.8758795Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-memory-tier-ranking/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-memory-tier-ranking/ctest.log",
+                                         "sha256":  "13616BCA3C9132814416A1A75B3A469799277CAE57BFC7D5EA734588D0FE60B2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-memory-tier-ranking/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T09:54:42.9788775Z"
+}

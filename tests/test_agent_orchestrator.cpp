@@ -480,19 +480,140 @@ static void test_mutation_requires_approval() {
     ccad::AgentOrchestrator orch;
     register_mock_tools(orch);
     ccad::OrchestratorConfig cfg;
+    cfg.project_revision = "project-rev-1";
+    cfg.tool_call_id = "tool-call-1";
+    cfg.approval_request_token = "approval-token-1";
     const auto result = orch.execute_tool("pcb.add-via", "{}", cfg);
     assert(result.find("\"error\":\"approval_required\"") != std::string::npos);
     cfg.approved_tool_name = "pcb.add-via";
-    cfg.approved_tool_token = "test-token-1";
+    cfg.approved_tool_token = "approval-token-1";
+    cfg.approval_request_token.clear();
     const auto approved = orch.execute_tool("pcb.add-via", "{}", cfg);
     assert(approved.find("\"status\":\"via_added\"") != std::string::npos);
     const auto replay = orch.execute_tool("pcb.add-via", "{}", cfg);
     assert(replay.find("\"error\":\"approval_token_consumed\"") != std::string::npos);
-    const auto other = orch.execute_tool("pcb.add-track", "{}", cfg);
-    assert(other.find("\"error\":\"approval_required\"") != std::string::npos);
-    const auto preview = orch.execute_tool("pcb.add-via", "{\"dry_run\":true,\"x_mm\":10}", ccad::OrchestratorConfig{});
+    assert(orch.execute_tool("project.context", "{}", ccad::OrchestratorConfig{}) ==
+           "{\"project_id\":\"test\",\"has_board\":true}");
+
+    ccad::AgentOrchestrator single_use;
+    int executions = 0;
+    single_use.register_tool({
+        "pcb.counted-mutation", "Counted mutation", ccad::TaskRisk::LowMutation, "{}",
+        [&executions](const std::string&) {
+            ++executions;
+            return "{\"status\":\"applied\"}";
+        }});
+    ccad::OrchestratorConfig one_use;
+    one_use.tool_call_id = "call-once";
+    one_use.project_revision = "revision-1";
+    one_use.approval_request_token = "request-once";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", one_use).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+    assert(executions == 0);
+    one_use.approval_request_token.clear();
+    one_use.approved_tool_name = "pcb.counted-mutation";
+    one_use.approved_tool_token = "request-once";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", one_use).find(
+               "\"status\":\"applied\"") != std::string::npos);
+    assert(executions == 1);
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", one_use).find(
+               "\"error\":\"approval_token_consumed\"") != std::string::npos);
+    assert(executions == 1);
+
+    ccad::OrchestratorConfig canceled;
+    canceled.tool_call_id = "call-canceled";
+    canceled.project_revision = "revision-1";
+    canceled.approval_request_token = "request-canceled";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", canceled).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+    assert(single_use.cancel_approval("request-canceled"));
+    canceled.approval_request_token.clear();
+    canceled.approved_tool_name = "pcb.counted-mutation";
+    canceled.approved_tool_token = "request-canceled";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", canceled).find(
+               "\"error\":\"approval_token_consumed\"") != std::string::npos);
+    assert(executions == 1);
+
+    auto duplicate = one_use;
+    duplicate.approved_tool_name.clear();
+    duplicate.approved_tool_token.clear();
+    duplicate.approval_request_token = "request-duplicate";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", duplicate).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+    duplicate.approval_request_token = "request-second";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", duplicate).find(
+               "\"error\":\"tool_call_already_pending\"") != std::string::npos);
+    assert(executions == 1);
+
+    auto no_revision = duplicate;
+    no_revision.tool_call_id = "call-no-revision";
+    no_revision.project_revision.clear();
+    no_revision.approval_request_token = "request-no-revision";
+    assert(single_use.execute_tool("pcb.counted-mutation", "{}", no_revision).find(
+               "\"error\":\"project_revision_unavailable\"") != std::string::npos);
+
+    ccad::OrchestratorConfig mismatch = cfg;
+    mismatch.tool_call_id = "tool-call-2";
+    mismatch.approval_request_token = "approval-token-2";
+    mismatch.approved_tool_name.clear();
+    mismatch.approved_tool_token.clear();
+    assert(orch.execute_tool("pcb.add-via", "{\"x\":1}", mismatch).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+    mismatch.approval_request_token.clear();
+    mismatch.approved_tool_name = "pcb.add-via";
+    mismatch.approved_tool_token = "approval-token-2";
+    assert(orch.execute_tool("pcb.add-via", "{\"x\":2}", mismatch).find(
+               "\"error\":\"approval_plan_mismatch\"") != std::string::npos);
+    assert(orch.execute_tool("pcb.add-via", "{\"x\":1}", mismatch).find(
+               "\"error\":\"approval_token_consumed\"") != std::string::npos);
+
+    ccad::OrchestratorConfig stale = cfg;
+    stale.tool_call_id = "tool-call-3";
+    stale.approval_request_token = "approval-token-3";
+    stale.approved_tool_name.clear();
+    stale.approved_tool_token.clear();
+    assert(orch.execute_tool("pcb.add-via", "{}", stale).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+    stale.approval_request_token.clear();
+    stale.approved_tool_name = "pcb.add-via";
+    stale.approved_tool_token = "approval-token-3";
+    stale.project_revision = "project-rev-2";
+    assert(orch.execute_tool("pcb.add-via", "{}", stale).find(
+               "\"error\":\"approval_stale\"") != std::string::npos);
+
+    ccad::OrchestratorConfig missing = cfg;
+    missing.tool_call_id = "tool-call-4";
+    missing.approved_tool_name = "pcb.add-via";
+    missing.approved_tool_token = "unissued-token";
+    assert(orch.execute_tool("pcb.add-via", "{}", missing).find(
+               "\"error\":\"approval_token_unknown\"") != std::string::npos);
+    ccad::OrchestratorConfig preview_config;
+    preview_config.dry_run = true;
+    const auto preview = orch.execute_tool(
+        "pcb.add-via", "{\"dry_run\":true,\"x_mm\":10}", preview_config);
     assert(preview.find("\"status\":\"dry_run\"") != std::string::npos);
     assert(preview.find("approval_required") == std::string::npos);
+
+    int spoofed_dry_run_executions = 0;
+    ccad::AgentOrchestrator dry_run_boundary;
+    dry_run_boundary.register_tool({
+        "pcb.dry-run-boundary", "Dry-run boundary", ccad::TaskRisk::LowMutation, "{}",
+        [&spoofed_dry_run_executions](const std::string&) {
+            ++spoofed_dry_run_executions;
+            return "{\"status\":\"applied\"}";
+        }});
+    const auto spoofed_preview = dry_run_boundary.execute_tool(
+        "pcb.dry-run-boundary", "{\"note\":\"dry_run\",\"enabled\":true}",
+        ccad::OrchestratorConfig{});
+    assert(spoofed_preview.find("\"error\":\"approval_required\"") != std::string::npos);
+    assert(spoofed_preview.find("\"status\":\"dry_run\"") == std::string::npos);
+    assert(spoofed_dry_run_executions == 0);
+    ccad::OrchestratorConfig typed_dry_run;
+    typed_dry_run.dry_run = true;
+    const auto typed_preview = dry_run_boundary.execute_tool(
+        "pcb.dry-run-boundary", "{}", typed_dry_run);
+    assert(typed_preview.find("\"status\":\"dry_run\"") != std::string::npos);
+    assert(spoofed_dry_run_executions == 0);
 }
 
 // ─── Main ───────────────────────────────────────────────────────

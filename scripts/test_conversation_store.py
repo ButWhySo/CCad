@@ -1,6 +1,7 @@
 """Contracts for durable, thread-scoped conversation projection."""
 
 import importlib.util
+import sqlite3
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -135,7 +136,14 @@ def run():
         assert "full transcript is preserved" in clipped_window[1].content
         assert len(long_answer.content) == 10000
 
-        store.compact_projection(thread_a, [answer], turn_id="turn-compact")
+        store.compact_projection(thread_a, [answer],
+                                 source_message_ids=["user-1", "assistant-1"],
+                                 base_message_id="secret-1",
+                                 summary_message_id="recap-1")
+        projection = store.projection_metadata(thread_a)
+        assert projection["source_message_ids"] == ["user-1", "assistant-1"]
+        assert projection["source_sequence_start"] < projection["source_sequence_end"]
+        assert projection["summary_message_id"] == "recap-1"
         assert [message.id for message in store.load_model_messages(thread_a)] == ["assistant-2"]
         raw_ids = [message.id for message in store.load_messages(thread_a)]
         assert raw_ids[:4] == ["user-1", "assistant-1", "tool-1", "assistant-2"]
@@ -144,11 +152,54 @@ def run():
         assert store.turn_id_for_message(thread_a, "missing") == ""
         store.clear_model_projection(thread_a)
         assert store.load_model_messages(thread_a) == []
+        assert store.projection_metadata(thread_a)["source_message_ids"] == []
         assert [message.id for message in store.load_messages(thread_a)] == raw_ids
+        store.append_messages(thread_a, [AIMessage(content="After snapshot", id="after-snapshot")],
+                              turn_id="turn-2")
+        try:
+            store.compact_projection(thread_a, [answer],
+                                     source_message_ids=["user-1", "assistant-1"],
+                                     base_message_id="assistant-2",
+                                     summary_message_id="stale-recap")
+            raise AssertionError("stale compaction must not overwrite newer transcript messages")
+        except ValueError as error:
+            assert str(error) == "projection_transcript_changed"
+        assert [message.id for message in store.load_model_messages(thread_a)] == [
+            "after-snapshot"]
+        try:
+            store.compact_projection(thread_a, [answer],
+                                     source_message_ids=["user-1", "assistant-1"],
+                                     base_message_id="after-snapshot",
+                                     summary_message_id="after-snapshot")
+            raise AssertionError("recap IDs must not collide with canonical messages")
+        except ValueError as error:
+            assert str(error) == "projection_summary_message_id_collision"
         assert store.search_turn_records(thread_a, "USB")
         recap = store.thread_recap(thread_a)
         assert recap["source_turn_ids"] == ["turn-1"]
         assert recap["turns"][0]["turn_id"] == "turn-1"
+
+    with TemporaryDirectory(prefix="ccad-projection-v3-migration-") as temp:
+        legacy_path = Path(temp) / "legacy.sqlite3"
+        with sqlite3.connect(legacy_path) as legacy:
+            legacy.executescript("""
+                CREATE TABLE threads(thread_id TEXT PRIMARY KEY, created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL);
+                CREATE TABLE projections(thread_id TEXT PRIMARY KEY,
+                    base_sequence INTEGER NOT NULL, messages_json TEXT NOT NULL,
+                    updated_at TEXT NOT NULL);
+                INSERT INTO threads VALUES('legacy-thread','now','now');
+                INSERT INTO projections VALUES('legacy-thread',0,'[]','now');
+                PRAGMA user_version=3;
+            """)
+        legacy.close()
+        migrated = ConversationStore(legacy_path)
+        projection = migrated.projection_metadata("legacy-thread")
+        assert projection["source_message_ids"] == []
+        assert projection["summary_message_id"] == ""
+        with sqlite3.connect(legacy_path) as db:
+            assert int(db.execute("PRAGMA user_version").fetchone()[0]) == 4
+        db.close()
 
 
 if __name__ == "__main__":

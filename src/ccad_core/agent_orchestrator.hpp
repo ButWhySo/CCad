@@ -126,7 +126,10 @@ struct OrchestratorConfig {
     bool provider_execution_enabled = false;
     bool project_mutation_enabled = true;
     // Approval scope. A token is mandatory for mutating execution and is
-    // consumed by ToolBroker after one matching call.
+    // issued before review and consumed only by the exact call and revision.
+    std::string tool_call_id;
+    std::string project_revision;
+    std::string approval_request_token;
     std::string approved_tool_name;
     std::string approved_tool_token;
 
@@ -168,9 +171,19 @@ public:
     
     bool check_policy(const OrchestratorTool& tool, const OrchestratorConfig& cfg);
     std::string execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg);
+    bool cancel_approval(const std::string& token);
 
 private:
+    struct PendingApproval {
+        std::string tool_name;
+        std::string args_json;
+        std::string tool_call_id;
+        std::string project_revision;
+        std::chrono::steady_clock::time_point expires_at;
+    };
+
     std::map<std::string, OrchestratorTool> tools_;
+    std::map<std::string, PendingApproval> pending_approvals_;
     std::set<std::string> consumed_approval_tokens_;
     mutable std::mutex approval_mutex_;
 };
@@ -201,6 +214,7 @@ public:
     std::vector<std::string> list_tools() const;
     std::optional<OrchestratorTool> get_tool(const std::string& name) const;
     std::string execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg);
+    bool cancel_approval(const std::string& token);
 
     using ProgressCallback = std::function<void(const AgentGoal&)>;
     void set_progress_callback(ProgressCallback cb);

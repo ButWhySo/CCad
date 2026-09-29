@@ -1,0 +1,103 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1036-conversation-stm-unlocked",
+    "feature":  "Verify Conversation STM setting and active-thread explanation with bounded compaction provenance changes",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint1036-conversation-stm.json",
+    "target_sequence":  "sprint1027-working-memory-sprint-1036-conversation-stm-unlocked",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-28T20:21:29.6889325Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.91 log=artifacts/evidence/sprint-1036-conversation-stm-unlocked/preflight.log",
+                      "finished_utc":  "2026-09-28T20:21:30.7149352Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.74 log=artifacts/evidence/sprint-1036-conversation-stm-unlocked/build.log",
+                      "finished_utc":  "2026-09-28T20:21:31.4726357Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=147.68 log=artifacts/evidence/sprint-1036-conversation-stm-unlocked/ctest.log",
+                      "finished_utc":  "2026-09-28T20:23:59.1610959Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=24.44 log=artifacts/evidence/sprint-1036-conversation-stm-unlocked/ui_harness.log",
+                      "finished_utc":  "2026-09-28T20:24:23.6061476Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=10; screenshots=5",
+                      "finished_utc":  "2026-09-28T20:24:23.9025237Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-28T20:24:23.9454343Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/ctest.log",
+                                         "sha256":  "4CDC2F667C85DA0B59CF707D9080D02A55F63441F5E0C5188662737ECEEBC65E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked.stdout.log",
+                                         "sha256":  "4E2B2B3D47894F0FBA6F66D5124BA4C3D56D11A0D5B7D339B92686BCCB7C2DB8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked-memory-manager-conversation-tier-selected.png",
+                                         "sha256":  "0B779D6D2951432D04D058DD4BD70663BC2088400FBCEB964AE13958E2267FAA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked-target-sequence.json",
+                                         "sha256":  "42E8AD7E034A2ACF9C895A202AD061E9DC32388AFE0768A533C9737C23678226"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked-working-memory-manager-open.png",
+                                         "sha256":  "D2F6E0E5651183C2D2A88CCFC96C3097180BEDA754D90F97B85F683132A9E517"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked-working-memory-personalisation.png",
+                                         "sha256":  "E16276B2D21D84A95D129AC03F2BFE039B29565F2FB60BC13A95E45CE3304404"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked-working-memory-settings-closed.png",
+                                         "sha256":  "95D6281C8308D37A65785FE166552218962E49764D87BB09D705AC753543F6DC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/sprint1027-working-memory-sprint-1036-conversation-stm-unlocked-working-memory-toggle-applied.png",
+                                         "sha256":  "5090CC0F5F8A6EBF545EFE0F1E1D789956DB932B3FAA04002C37CFDC56BC3F72"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1036-conversation-stm-unlocked/ui_harness.log",
+                                         "sha256":  "7A6232BBB61E5FDC95749C48EE55C617683D6A140F0CADDEC8A3BC413C19388B"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-28T20:24:24.0512492Z"
+}

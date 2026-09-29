@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1041-retrieval-contracts-r2",
+    "feature":  "Canonical retrieval adapters and backend decision",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T11:38:06.1673250Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.77 log=artifacts/evidence/sprint-1041-retrieval-contracts-r2/preflight.log",
+                      "finished_utc":  "2026-09-29T11:38:07.0207951Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.32 log=artifacts/evidence/sprint-1041-retrieval-contracts-r2/build.log",
+                      "finished_utc":  "2026-09-29T11:38:07.3471563Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=159.83 log=artifacts/evidence/sprint-1041-retrieval-contracts-r2/ctest.log",
+                      "finished_utc":  "2026-09-29T11:40:47.1838586Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1041-retrieval-contracts-r2/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1041-retrieval-contracts-r2/ctest.log",
+                                         "sha256":  "337FA658CD5EC25C692A954426D1F07952B643F2ADC55DB8CC7427E01064288A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1041-retrieval-contracts-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T11:40:47.2851718Z"
+}

@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1034-v4-visual-checkpoint",
+    "feature":  "Langfuse v4 migration status and proposal visual diff acceptance checkpoint",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-27T13:29:51.5619162Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.09 log=artifacts/evidence/sprint-1034-v4-visual-checkpoint/preflight.log",
+                      "finished_utc":  "2026-09-27T13:29:52.7725074Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1034-langfuse-v4-wire-contract; source timestamps precede test log",
+                      "finished_utc":  "2026-09-27T13:30:32.2960880Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1034-langfuse-v4-wire-contract; 122/122 passed",
+                      "finished_utc":  "2026-09-27T13:30:32.2960880Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-v4-visual-checkpoint/build.log",
+                                         "sha256":  "00BA2A420488040975BE4253BB98615752D8A76004F7C8FAC3D1E1167B99AECD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-v4-visual-checkpoint/ctest.log",
+                                         "sha256":  "76CB156B3BDA1739DBAAE8832C8177331D3487ED0FA2120E7DEDC12E5852497C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1034-v4-visual-checkpoint/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-27T13:30:32.3390885Z"
+}

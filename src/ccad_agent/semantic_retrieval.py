@@ -126,6 +126,22 @@ class OllamaEmbeddingBackend:
         vectors = self._embed([text])
         return vectors[0]
 
+    def embed_similarity_documents(self, texts) -> list[list[float]]:
+        """Apply each supported model's documented similarity/duplicate task prompt."""
+        values = list(texts)
+        model_name = self.model.rsplit("/", 1)[-1].split(":", 1)[0].casefold()
+        if model_name == "embeddinggemma":
+            values = [f"task: sentence similarity | query: {text}"
+                      if isinstance(text, str) else text for text in values]
+        elif model_name in {"nomic-embed-text", "nomic-embed-text-v1",
+                            "nomic-embed-text-v1.5"}:
+            values = [f"clustering: {text}" if isinstance(text, str) else text
+                      for text in values]
+        return self._embed(values)
+
+    def embed_similarity_query(self, text: str) -> list[float]:
+        return self.embed_similarity_documents([text])[0]
+
     def _embed(self, texts) -> list[list[float]]:
         texts = list(texts)
         if not texts or len(texts) > self.MAX_TEXTS or any(

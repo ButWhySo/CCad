@@ -463,6 +463,10 @@ private slots:
   }
 
   void testChatMarkdownRenderingAndSafety() {
+    QVERIFY(AgentChatBrowser::assistantMessageUsesMarkdown(QString()));
+    QVERIFY(AgentChatBrowser::assistantMessageUsesMarkdown("markdown"));
+    QVERIFY(!AgentChatBrowser::assistantMessageUsesMarkdown("plain"));
+
     AgentChatBrowser browser;
     browser.appendMessage(
         "CCad Agent",

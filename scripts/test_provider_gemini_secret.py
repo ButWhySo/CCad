@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 secret = "gemini-test-secret-not-real"
 env = os.environ.copy()
 env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
+env["CCAD_PROVIDER"] = "openrouter"
 env["PYTHONPATH"] = str(ROOT / "src" / "ccad_agent")
 env["CCAD_GEMINI_MODEL"] = "gemini-test-model"
 request = {"method": "agent.set_provider_secret", "params": {
@@ -22,7 +23,11 @@ secret_result = next(item["params"] for item in events
                      if item.get("method") == "provider_secret_result")
 assert secret_result["provider"] == "google_gemini"
 assert secret_result["secret_value_visible"] is False
+assert secret_result["active"] is False
+assert secret_result["execution_enabled"] is False
 assert secret_result["network_access"] == "not_probed"
+assert not any(item.get("method") == "provider_state" for item in events), \
+    "setting an inactive provider key must not initialize the selected adapter"
 assert secret not in run.stdout
 assert secret not in run.stderr
 

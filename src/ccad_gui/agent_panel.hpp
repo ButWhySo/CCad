@@ -36,6 +36,7 @@ class AgentPanel final : public QWidget {
   using LiveQueryProvider = std::function<QString(const QString&, const QString&)>;
   using ProposalPreviewTrigger = std::function<QString(const QString&, const QJsonObject&)>;
   using ContextProvider = std::function<std::string()>;
+  using ProjectRevisionProvider = std::function<std::string()>;
   using ConfigStateCallback = std::function<void(const QJsonObject&)>;
   using MemoryStateCallback = std::function<void(const QJsonObject&)>;
   using MemoryOperationCallback = std::function<void(const QString&, const QJsonObject&)>;
@@ -70,6 +71,7 @@ class AgentPanel final : public QWidget {
   void setLiveQueryProvider(LiveQueryProvider provider);
   void setProposalPreviewTrigger(ProposalPreviewTrigger trigger);
   void setContextProvider(ContextProvider provider);
+  void setProjectRevisionProvider(ProjectRevisionProvider provider);
   void setProviderSecret(const QString& provider_id, const QString& secret);
   void setConfigStateCallback(ConfigStateCallback cb);
   void setMemoryStateCallback(MemoryStateCallback cb);
@@ -117,6 +119,7 @@ class AgentPanel final : public QWidget {
   void approveNextApproval();
   void declineNextApproval();
   void cancelApproval();
+  void revokePendingApprovalGrant();
   void clearApprovals();
   void showProposal(const QString& summary, const QStringList& changes);
   void clearProposal();
@@ -366,11 +369,13 @@ class AgentPanel final : public QWidget {
   QString pending_tool_args_;
   QString pending_tool_call_id_;
   QString pending_approval_token_;
+  std::string active_turn_design_revision_;
   QString approval_last_decision_ = "none";
 
   QProcess* python_process_ = nullptr;
   std::unique_ptr<ccad::AgentOrchestrator> orchestrator_;
   ContextProvider context_provider_;
+  ProjectRevisionProvider project_revision_provider_;
   ConfigStateCallback config_state_cb_;
   MemoryStateCallback memory_state_cb_;
   MemoryOperationCallback memory_operation_cb_;

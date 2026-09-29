@@ -1,4 +1,5 @@
 """Metadata-only export boundary, including third-party callback spans."""
+import json
 import re
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter
@@ -8,6 +9,36 @@ from opentelemetry.trace import Status
 _SECRET = re.compile(r"api[._-]?key|authorization|credential|password|secret|access[._-]?token|headers", re.I)
 _VALUE = re.compile(r"(?:sk-|pk-lf-|Bearer\s+|Basic\s+|AIza)[A-Za-z0-9_./+=:-]+", re.I)
 _CONTENT = re.compile(r"(?:^|[._])(input|output|prompt|messages?|arguments?|completion|file|path)(?:$|[._])", re.I)
+_ROOT_IO_KEYS = {
+    "langfuse.observation.input",
+    "langfuse.observation.output",
+}
+
+
+def _safe_root_io(span, key, value):
+    """Allow only the content-free root contract required by Langfuse v4."""
+    if span.name != "agent.turn" or key not in _ROOT_IO_KEYS or not isinstance(value, str):
+        return None
+    try:
+        payload = json.loads(value)
+    except (TypeError, ValueError):
+        return None
+    if key == "langfuse.observation.input":
+        if (not isinstance(payload, dict)
+                or set(payload) != {"prompt_sha256", "prompt_chars"}
+                or not isinstance(payload.get("prompt_sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", payload["prompt_sha256"])
+                or not isinstance(payload.get("prompt_chars"), int)
+                or isinstance(payload["prompt_chars"], bool)
+                or not 0 <= payload["prompt_chars"] <= 10_000_000):
+            return None
+        safe = {"prompt_sha256": payload["prompt_sha256"],
+                "prompt_chars": payload["prompt_chars"]}
+    else:
+        if not isinstance(payload, dict) or payload != {"terminal_state": "closed"}:
+            return None
+        safe = {"terminal_state": "closed"}
+    return json.dumps(safe, sort_keys=True, separators=(",", ":"))
 
 
 def redact(value, name=""):
@@ -27,10 +58,18 @@ def sanitize_span(span):
     for key, value in (span.attributes or {}).items():
         # Numeric counters, usage JSON and model identity survive; arbitrary
         # callback inputs, outputs, exception text and filesystem paths do not.
-        if _SECRET.search(key) or _CONTENT.search(key):
+        if _SECRET.search(key):
+            continue
+        if _CONTENT.search(key):
+            safe_root_value = _safe_root_io(span, key, value)
+            if safe_root_value is None:
+                continue
+            attributes[key] = safe_root_value
             continue
         if "metadata" in key and not isinstance(value, (int, float, bool)):
-            if key.rsplit(".", 1)[-1] not in {"provider", "model", "workflow", "thread_id", "tool", "result"}:
+            if key.rsplit(".", 1)[-1] not in {
+                    "provider", "model", "workflow", "thread_id", "tool", "result",
+                    "ccad_turn_id"}:
                 continue
         attributes[key] = redact(value)
     scope = span.instrumentation_scope

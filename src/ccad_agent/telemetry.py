@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 from contextlib import ExitStack, contextmanager, nullcontext
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from typing import Any, cast
 from urllib.parse import urlsplit
@@ -17,6 +18,65 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SpanExportResult
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from telemetry_privacy import MetadataOnlyExporter, redact
+
+LANGFUSE_INGESTION_VERSION_HEADER = "x-langfuse-ingestion-version"
+LANGFUSE_READBACK_TIMEOUT_SECONDS = 20.0
+LANGFUSE_TURN_READBACK_TIMEOUT_SECONDS = 2.0
+LANGFUSE_READBACK_PAGE_SIZE = 100
+LANGFUSE_METADATA_VALUE_LIMIT = 200
+
+
+def _string_metadata(metadata):
+    """Return Langfuse-v4-safe, redacted metadata with bounded string values."""
+    if not isinstance(metadata, dict):
+        return {}
+    safe = cast(dict[str, Any], redact(metadata))
+    result = {}
+    for key, value in safe.items():
+        if isinstance(value, bool):
+            value = str(value).lower()
+        elif isinstance(value, (str, int, float)):
+            value = str(value)
+        else:
+            continue
+        result[str(key)] = value[:LANGFUSE_METADATA_VALUE_LIMIT]
+    return result
+
+
+def _read_trace_observations(client, trace_id, timeout_seconds=LANGFUSE_READBACK_TIMEOUT_SECONDS):
+    """Read all indexed v4 observations for one trace, bounded by a deadline."""
+    deadline = time.monotonic() + timeout_seconds
+    query_end = datetime.now(timezone.utc) + timedelta(minutes=1)
+    query_start = query_end - timedelta(minutes=15)
+    pause = 0.5
+    last_error_type = ""
+    while True:
+        try:
+            rows = []
+            cursor = None
+            while True:
+                page = client.api.observations.get_many(
+                    trace_id=trace_id,
+                    limit=LANGFUSE_READBACK_PAGE_SIZE,
+                    cursor=cursor,
+                    from_start_time=query_start,
+                    to_start_time=query_end,
+                    request_options={"timeout_in_seconds": min(5, max(1, int(timeout_seconds))),
+                                     "max_retries": 0},
+                )
+                rows.extend(item for item in page.data if item.trace_id == trace_id)
+                cursor = page.meta.cursor
+                if not cursor:
+                    break
+            if rows:
+                return rows, ""
+        except Exception as error:
+            last_error_type = type(error).__name__
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return [], last_error_type
+        time.sleep(min(pause, remaining))
+        pause = min(pause * 2, 3.0)
 
 
 def _mask_callback_payload(*, data=None, **_):
@@ -42,7 +102,9 @@ class TelemetryRuntime:
         self._active_span_id = ""
         self._last_trace_id = ""
         self._last_span_id = ""
+        self._observation_count = 0
         self._turn_scope = None
+        self._turn_observation = None
         self._development_logging = os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}
         self._status = self._state(False, False, "disabled")
 
@@ -90,6 +152,7 @@ class TelemetryRuntime:
                 return self.status()
             url = urlsplit(base_url)
             if (url.username or url.password or url.query or url.fragment or not url.hostname
+                    or url.path not in {"", "/"}
                     or (url.scheme != "https" and not (url.scheme == "http" and url.hostname in {"localhost", "127.0.0.1", "::1"}))):
                 self._status["reason"] = "invalid_endpoint"
                 return self.status()
@@ -100,7 +163,8 @@ class TelemetryRuntime:
                 auth = base64.b64encode(f"{public_key}:{secret_key}".encode()).decode()
                 self._exporter = MetadataOnlyExporter(OTLPSpanExporter(
                     endpoint=base_url + "/api/public/otel/v1/traces",
-                    headers={"Authorization": "Basic " + auth}, timeout=5))
+                    headers={"Authorization": "Basic " + auth,
+                             LANGFUSE_INGESTION_VERSION_HEADER: "4"}, timeout=5))
                 # Avoid Resource.create(): auto-detected process/environment
                 # attributes can contain local paths or deployment secrets.
                 self._provider = TracerProvider(resource=Resource({"service.name": service}))
@@ -138,11 +202,12 @@ class TelemetryRuntime:
         with self._lock:
             self._last_trace_id = ""
             self._last_span_id = ""
+            self._observation_count = 0
             if self._exporter is not None:
                 self._exporter.last_result = None
                 self._exporter.last_span_count = 0
 
-    def start_agent_turn(self, thread_id, metadata=None):
+    def start_agent_turn(self, thread_id, metadata=None, *, input_data=None):
         """Open one active root so context and graph observations share a trace."""
         self.finish_agent_turn()
         self.begin_turn()
@@ -151,13 +216,16 @@ class TelemetryRuntime:
                 return False
         scope = ExitStack()
         try:
-            scope.enter_context(self.session(thread_id))
-            scope.enter_context(self.observation("agent.turn", "agent", metadata or {}))
+            turn_id = str((metadata or {}).get("turn_id", ""))
+            scope.enter_context(self.session(thread_id, turn_id=turn_id))
+            root = scope.enter_context(self.observation(
+                "agent.turn", "agent", metadata or {}, input_data=input_data))
         except Exception:
             scope.close()
             raise
         with self._lock:
             self._turn_scope = scope
+            self._turn_observation = root
         return True
 
     def finish_agent_turn(self):
@@ -165,9 +233,15 @@ class TelemetryRuntime:
         with self._lock:
             scope = self._turn_scope
             self._turn_scope = None
+            observation = self._turn_observation
+            self._turn_observation = None
         if scope is None:
             return False
-        scope.close()
+        try:
+            if observation is not None:
+                observation.update(output={"terminal_state": "closed"})
+        finally:
+            scope.close()
         return True
 
     def flush_turn(self):
@@ -200,22 +274,14 @@ class TelemetryRuntime:
                         if client is not None and trace_id != "unavailable":
                             # A successful OTLP response only proves the
                             # collector accepted the batch. In development,
-                            # verify this exact turn by fetching its trace ID.
+                            # verify this exact turn through the v4 observation API.
                             result = "not_received"
-                            for attempt in range(3):
-                                try:
-                                    trace = client.api.trace.get(
-                                    trace_id,
-                                    request_options={"timeout_in_seconds": 5,
-                                                     "max_retries": 0})
-                                    if trace.id == trace_id:
-                                        result = "verified"
-                                        error_type = ""
-                                        break
-                                except Exception as error:
-                                    error_type = type(error).__name__
-                                if attempt < 2:
-                                    time.sleep(0.5)
+                            observations, error_type = _read_trace_observations(
+                                client, trace_id, LANGFUSE_TURN_READBACK_TIMEOUT_SECONDS)
+                            if observations:
+                                result = "verified"
+                                self._observation_count = len(observations)
+                                error_type = ""
                     elif export_result is None:
                         result = "no_spans_exported"
                     else:
@@ -226,6 +292,7 @@ class TelemetryRuntime:
                     error_type = type(error).__name__
             self._status.update(last_export=result, trace_id=trace_id,
                                 exported_span_count=span_count,
+                                observation_count=self._observation_count,
                                 last_export_ok=result in {"success", "verified"})
             if result in {"success", "verified"}:
                 self._status.pop("last_export_error_type", None)
@@ -241,14 +308,16 @@ class TelemetryRuntime:
         return self.observation(name)
 
     @contextmanager
-    def observation(self, name, as_type="span", metadata=None, model=None):
+    def observation(self, name, as_type="span", metadata=None, model=None,
+                    input_data=None):
         with self._lock:
             client = self._langfuse_client
         if client is None:
             yield None
             return
         with client.start_as_current_observation(name=name, as_type=as_type,
-                metadata=redact(metadata or {}), model=model) as observation:
+                metadata=_string_metadata(metadata or {}), model=model,
+                input=redact(input_data) if input_data is not None else None) as observation:
             if observation is None:
                 raise RuntimeError("observation_not_created")
             observation = cast(Any, observation)
@@ -263,11 +332,17 @@ class TelemetryRuntime:
                 with self._lock:
                     self._active_trace_id = self._active_span_id = ""
 
-    def session(self, thread_id):
+    def session(self, thread_id, *, turn_id=""):
         if self._langfuse_client is None:
             return nullcontext()
         from langfuse import propagate_attributes
-        return propagate_attributes(session_id=str(thread_id), tags=["ccad"])
+        attributes = {"session_id": str(thread_id), "tags": ["ccad"]}
+        if turn_id:
+            attributes.update(
+                trace_name="ccad.agent.turn",
+                metadata={"ccad_turn_id": str(turn_id)},
+            )
+        return propagate_attributes(**attributes)
 
     def test_export(self):
         """Emit a real trace and fetch that exact ID; flushing alone is not proof."""
@@ -287,20 +362,14 @@ class TelemetryRuntime:
                     self._status.update(last_test="failed", reason="export_rejected")
                     return self.status()
                 self._status.update(trace_id=trace_id, last_test="not_received", reason="readback_pending")
-                for attempt in range(3):
-                    try:
-                        trace = self._langfuse_client.api.trace.get(trace_id,
-                            request_options={"timeout_in_seconds": 5, "max_retries": 0})
-                        if trace.id == trace_id:
-                            self._status.update(last_test="verified", last_export="verified",
-                                                exported_span_count=int(self._exporter.last_span_count),
-                                                last_export_ok=True, connected=True, reason="ready",
-                                                observation_count=str(len(trace.observations or [])))
-                            break
-                    except Exception as error:
-                        self._status["error_type"] = type(error).__name__
-                    if attempt < 2:
-                        time.sleep(0.5)
+                observations, error_type = _read_trace_observations(self._langfuse_client, trace_id)
+                if observations:
+                    self._status.update(last_test="verified", last_export="verified",
+                                        exported_span_count=int(self._exporter.last_span_count),
+                                        last_export_ok=True, connected=True, reason="ready",
+                                        observation_count=len(observations))
+                elif error_type:
+                    self._status["error_type"] = error_type
             except Exception as error:
                 self._status.update(last_test="failed", reason="export_or_readback_failed",
                                     error_type=type(error).__name__)
