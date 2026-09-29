@@ -2653,6 +2653,17 @@ fallback, and recovery after reconfiguration. Semantic cases disclose when the
 backend was disabled and lexical evidence ran instead. The small fixture result
 does not select a winning model. Product startup, broader retrieval failure
 recovery, and model follow-up tool calls remain unmeasured and block R3
-closure/backend superiority claims.
+closure/backend superiority claims. The orchestrator's `provider_tools_for_messages`
+narrows schemas only when the latest user turn explicitly names a native method;
+the `ToolNode` remains bound to the full catalog. `provider_context_for_tools`
+keeps context whenever any selected catalog entry declares requirements. This
+is a conservative initial narrowing rule, not the complete phase/intent-aware
+capability resolver in TODO section H6. The r7 real-Qwen UI attempt proved
+provider initialization and mapped UI responsiveness, but did not record a
+provider request, native call, accepted result, or count-bearing answer.
+The isolated backend contracts and Qt/MinGW Release/full CTest pass 127/127
+under non-visual manifest `artifacts/evidence/sprint-1043-provider-tool-schema-r1.json`
+(SHA-256 `577E80E79842AA730BD6DDACEB6C4AA9BF974FBE919D4665F553024FACBDFDFE`);
+that build/test evidence does not close the model-backed turn requirement.
 `scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
 retrieval paths; the CTest and CI `agent-python` gates run it.

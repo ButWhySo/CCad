@@ -463,7 +463,156 @@ int main(int argc, char** argv) {
           catalog_startup.contains("\"backend_ready\":true") &&
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
-      if (name.startsWith("sprint968-task") ||
+      if (name.startsWith("sprint1043-agent-live-tool-turn")) {
+        auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
+        const auto capture = [window, &output_dir, &name](const QString& checkpoint) {
+          const QString path = QString::fromStdString(
+              (output_dir / (name + "-" + checkpoint + ".png").toStdString()).string());
+          if (checkpoint == "settings-open") {
+            auto* dialog = window->findChild<QDialog*>("dialog:agent_settings");
+            return dialog && dialog->grab().save(path) ? path : QString{};
+          }
+          return window->grab().save(path) ? path : QString{};
+        };
+        auto add_interaction = [&entries, window](const QString& method,
+                                                   const QString& payload,
+                                                   const QString& target,
+                                                   const QString& label) {
+          const QString result = window->runAgentUiQueryJson(method, payload);
+          const QJsonObject parsed = QJsonDocument::fromJson(result.toUtf8()).object();
+          const bool performed = parsed.value("ok").toBool() &&
+              parsed.value("result").toObject().value("performed").toBool();
+          entries << QString("{\"target\":%1,\"interaction\":%2,\"label\":%3,\"result\":%4}")
+              .arg(jsonStringLocal(target), jsonStringLocal(method),
+                   jsonStringLocal(label), result.trimmed());
+          QApplication::processEvents();
+          return performed;
+        };
+        bool ok = catalog_startup_verified && !capture("before").isEmpty();
+        QJsonObject live_provider_state;
+        for (int attempt = 0; attempt < 120; ++attempt) {
+          QApplication::processEvents();
+          live_provider_state = QJsonDocument::fromJson(
+              window->runAgentUiQueryJson("agent.workspace_state", "{}")
+                  .toUtf8()).object().value("result").toObject();
+          if (live_provider_state.value("backend_provider_initialized").toBool()) break;
+          QThread::msleep(100);
+        }
+        const bool provider_ready_before_turn =
+            live_provider_state.value("backend_provider_initialized").toBool();
+        entries << QString("{\"provider_ready_before_turn\":%1,\"model_label\":%2}")
+            .arg(provider_ready_before_turn ? "true" : "false",
+                 jsonStringLocal(live_provider_state.value("model_label").toString()));
+        ok = provider_ready_before_turn && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"tab:pcb\"}",
+                             "tab:pcb", "pcb-tab") && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"tab:schematic\"}",
+                             "tab:schematic", "schematic-tab") && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"tab:agent\"}",
+                             "tab:agent", "agent-tab") && ok;
+        const QString prompt = QStringLiteral(
+            "Read-only check: call project.object_counts once for the loaded board, then report footprint, track, and via counts from its result. Do not call other tools or change anything.");
+        ok = add_interaction("ui.type_text",
+            QString("{\"id\":\"control:agent_chat_input\",\"text\":%1}")
+                .arg(jsonStringLocal(prompt)), "control:agent_chat_input",
+            "model-tool-turn-prompt") && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                             "action:agent_submit_chat", "model-tool-turn-submit") && ok;
+
+        QJsonObject final_state;
+        QString final_transcript;
+        QString turn_output;
+        int requested_counts = 0;
+        int accepted_results = 0;
+        for (int attempt = 0; attempt < 3600; ++attempt) {
+          QApplication::processEvents();
+          final_transcript = chat ? chat->toPlainText() : QString{};
+          const qsizetype prompt_position = final_transcript.lastIndexOf(prompt);
+          turn_output = prompt_position >= 0
+              ? final_transcript.mid(prompt_position + prompt.size()).trimmed()
+              : QString{};
+          const QJsonObject response = QJsonDocument::fromJson(
+              window->runAgentUiQueryJson("agent.workspace_state", "{}")
+                  .toUtf8()).object();
+          final_state = response.value("result").toObject();
+          requested_counts = 0;
+          accepted_results = 0;
+          for (const QJsonValue& event_value :
+               final_state.value("activity_events").toArray()) {
+            const QJsonObject event = event_value.toObject();
+            if (event.value("method").toString() == "agent.tool" &&
+                event.value("title").toString() == "Tool requested") {
+              const QString tool = event.value("detail").toString();
+              if (tool == "project.object_counts") ++requested_counts;
+            } else if (event.value("method").toString() == "agent.tool_result_ack" &&
+                       event.value("title").toString() == "Tool result accepted") {
+              ++accepted_results;
+            }
+          }
+          if (final_transcript.contains(
+                  "Provider request stopped before a response was completed")) break;
+          const QString run_state = final_state.value("run_state").toString();
+          if ((run_state == "completed" || run_state == "idle") &&
+              requested_counts > 0 && accepted_results >= 1 &&
+              !final_transcript.isEmpty() &&
+              !final_transcript.contains("Provider request stopped")) break;
+          QThread::msleep(100);
+        }
+        const bool tool_turn_verified = final_state.value("backend_provider_initialized").toBool() &&
+            (final_state.value("run_state").toString() == "completed" ||
+             final_state.value("run_state").toString() == "idle") &&
+            requested_counts > 0 && accepted_results >= 1 &&
+            turn_output.contains("footprint", Qt::CaseInsensitive) &&
+            turn_output.contains("track", Qt::CaseInsensitive) &&
+            turn_output.contains("via", Qt::CaseInsensitive) &&
+            !final_transcript.contains("Provider request stopped");
+        const QString result_screenshot = capture("model-tool-results");
+        const bool provider_request_sent = tool_turn_verified ||
+            final_transcript.contains("Provider request stopped before a response");
+        entries << QString("{\"real_model_provider_initialized\":%1,\"provider_request_sent\":%2,\"run_state\":%3,\"object_count_calls\":%4,\"accepted_broker_results\":%5,\"count_summary_visible\":%6,\"screenshot\":%7}")
+            .arg(final_state.value("backend_provider_initialized").toBool() ? "true" : "false",
+                 provider_request_sent ? "true" : "false",
+                 jsonStringLocal(final_state.value("run_state").toString()))
+            .arg(requested_counts).arg(accepted_results)
+            .arg((turn_output.contains("footprint", Qt::CaseInsensitive) &&
+                  turn_output.contains("track", Qt::CaseInsensitive) &&
+                  turn_output.contains("via", Qt::CaseInsensitive))
+                     ? "true" : "false",
+                 jsonStringLocal(result_screenshot));
+        ok = tool_turn_verified && !result_screenshot.isEmpty() && ok;
+
+        ok = add_interaction("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                             "action:settingsBtn", "settings-open") && ok;
+        const QString settings_screenshot = capture("settings-open");
+        ok = !settings_screenshot.isEmpty() && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                             "action:cancelSettingsButton", "settings-close") && ok;
+        const QString restored_screenshot = capture("restored-final");
+        ok = !restored_screenshot.isEmpty() && ok;
+        const QString summary = "Real local Ollama model turn; verify project.object_counts tool request and accepted broker result; read-only; no network provider.";
+        const std::filesystem::path output_path =
+            output_dir / (name + "-target-sequence.json").toStdString();
+        std::ofstream output(output_path, std::ios::binary);
+        const QString report = QString(
+            "{\"schema_version\":1,\"name\":%1,\"interaction_plan\":%2,\"catalog_startup_verified\":%3,\"entries\":[%4]}\n")
+            .arg(jsonStringLocal(name), jsonStringLocal(summary),
+                 catalog_startup_verified ? "true" : "false", entries.join(','));
+        const QByteArray bytes = report.toUtf8();
+        output.write(bytes.constData(), bytes.size());
+        output.close();
+        if (!output || !ok) {
+          std::cerr << "live model/native-tool GUI verification failed: "
+                    << output_path.string() << '\n';
+          std::cerr.flush();
+          QCoreApplication::exit(2);
+          return;
+        }
+        std::cout << "live model/native-tool sequence saved: "
+                  << output_path.string() << '\n';
+        std::cout.flush();
+        QCoreApplication::exit(0);
+        return;
+      } else if (name.startsWith("sprint968-task") ||
           name.startsWith("sprint969-context") ||
           name.startsWith("sprint970-compaction") ||
           name.startsWith("sprint976-conversation") ||

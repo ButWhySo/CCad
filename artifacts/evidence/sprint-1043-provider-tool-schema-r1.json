@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1043-provider-tool-schema-r1",
+    "feature":  "Conservative explicit native tool schema selection and runtime provider readiness contracts",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T20:36:17.9408215Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.8 log=artifacts/evidence/sprint-1043-provider-tool-schema-r1/preflight.log",
+                      "finished_utc":  "2026-09-29T20:36:18.8359793Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.92 log=artifacts/evidence/sprint-1043-provider-tool-schema-r1/build.log",
+                      "finished_utc":  "2026-09-29T20:36:20.7656110Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=154.44 log=artifacts/evidence/sprint-1043-provider-tool-schema-r1/ctest.log",
+                      "finished_utc":  "2026-09-29T20:38:55.2059207Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-provider-tool-schema-r1/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-provider-tool-schema-r1/ctest.log",
+                                         "sha256":  "4C44E0849D9505DEDC96E8102BD775C8397084C4F68F58D27FF911EDCE26E185"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-provider-tool-schema-r1/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T20:38:55.2829184Z"
+}

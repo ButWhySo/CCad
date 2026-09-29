@@ -17,7 +17,7 @@ import urllib.parse
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
 from collections import deque
-from typing import Annotated, Any, Dict, Iterable, List, Literal, TypedDict, cast
+from typing import Annotated, Any, Dict, Iterable, List, Literal, Sequence, TypedDict, cast
 from langchain_core.tools import StructuredTool
 from langchain_core.runnables import RunnableConfig
 from pydantic import Field, create_model
@@ -956,6 +956,14 @@ def validate_native_tool_catalog(catalog: object) -> List[dict]:
             raise ValueError("catalog callable flag must be boolean")
         if not callable_method:
             continue
+        context_requirements = entry.get("context_requirements")
+        if context_requirements is None:
+            context_requirements = ["project_state"]
+        if (not isinstance(context_requirements, list) or
+                len(context_requirements) > 16 or
+                any(not isinstance(value, str) or not value or len(value) > 64
+                    for value in context_requirements)):
+            raise ValueError("catalog context requirements are invalid")
         provider_name = tool_provider_name(method)
         if method in seen_methods or provider_name in seen_provider_names:
             raise ValueError("catalog contains duplicate method identity")
@@ -963,7 +971,8 @@ def validate_native_tool_catalog(catalog: object) -> List[dict]:
         seen_provider_names.add(provider_name)
         accepted.append({"method": method, "description": description.strip(),
                          "inputSchema": schema,
-                         "read_only": bool(entry.get("read_only", False))})
+                         "read_only": bool(entry.get("read_only", False)),
+                         "context_requirements": list(context_requirements)})
     if not accepted:
         raise ValueError("catalog has no callable native methods")
     return accepted
@@ -1006,7 +1015,7 @@ native_tool_catalog: List[dict] = []
 agent_tools: List[StructuredTool] = []
 
 
-def bind_native_tools(model: Any):
+def bind_native_tools(model: Any, tools: List[StructuredTool] | None = None):
     """Bind CCad StructuredTools at the dynamic LangChain adapter boundary.
 
     Provider packages expose narrower `bind_tools` annotations than the
@@ -1016,7 +1025,58 @@ def bind_native_tools(model: Any):
     binder = getattr(model, "bind_tools", None)
     if not callable(binder):
         raise TypeError("provider adapter does not support tool binding")
-    return binder(agent_tools)
+    return binder(agent_tools if tools is None else tools)
+
+
+def provider_tools_for_messages(messages: Sequence[BaseMessage]) -> List[StructuredTool]:
+    """Narrow provider schemas only for native methods explicitly named by the user.
+
+    General natural-language turns keep the complete callable catalog. Explicit
+    method requests avoid sending unrelated JSON schemas to local models, while
+    the LangGraph ToolNode remains bound to the full authoritative catalog.
+    """
+    human_text = ""
+    for message in reversed(messages):
+        if isinstance(message, HumanMessage) or getattr(message, "type", None) == "human":
+            content = getattr(message, "content", "")
+            if isinstance(content, str):
+                human_text = content
+            elif isinstance(content, list):
+                human_text = " ".join(
+                    str(block.get("text", "")) if isinstance(block, dict)
+                    else str(block) for block in content)
+            break
+    if not human_text:
+        return agent_tools
+
+    tools_by_name = {tool.name: tool for tool in agent_tools}
+    selected_names = set()
+    for entry in native_tool_catalog:
+        method = entry["method"]
+        if re.search(r"(?<![A-Za-z0-9_.-])" + re.escape(method) +
+                     r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9_])", human_text):
+            selected_names.add(tool_provider_name(method))
+    for tool in agent_tools:
+        if re.search(r"(?<![A-Za-z0-9_-])" + re.escape(tool.name) +
+                     r"(?![A-Za-z0-9_-])", human_text):
+            selected_names.add(tool.name)
+    selected = [tool for tool in agent_tools if tool.name in selected_names]
+    return selected or agent_tools
+
+
+def provider_context_for_tools(tools: List[StructuredTool], context: str) -> str:
+    """Retain full context unless every explicitly selected tool is context-free."""
+    if tools is agent_tools:
+        return context
+    catalog_by_name = {
+        tool_provider_name(entry["method"]): entry
+        for entry in native_tool_catalog
+    }
+    for tool in tools:
+        entry = catalog_by_name.get(tool.name)
+        if entry is None or entry.get("context_requirements"):
+            return context
+    return ""
 
 
 def install_native_tool_catalog(catalog: object) -> dict:
@@ -1514,6 +1574,23 @@ def init_provider():
 
 provider_initialized = False
 
+
+def activate_provider_runtime() -> bool:
+    """Rebuild the selected adapter and publish its current runtime readiness."""
+    global provider_initialized
+    provider_initialized = bool(init_provider())
+    provider, model = active_provider_model()
+    emit({"jsonrpc": "2.0", "method": "backend_state", "params": {
+        "runtime": "python",
+        "ready": True,
+        "provider_initialized": provider_initialized,
+        "provider": provider,
+        "model": model,
+        "network_access": "not_probed",
+        "secret_value_visible": False,
+    }})
+    return provider_initialized
+
 def initialize_agent_process():
     """Initialize provider state only for a launched orchestration process."""
     global provider_initialized
@@ -1678,29 +1755,34 @@ def router_node(state: AgentState):
         return {"messages": []}
     
     context_str = state.get("context", "")
+    request_tools = provider_tools_for_messages(state["messages"])
+    request_llm = (router_llm if request_tools is agent_tools else
+                   bind_native_tools(llm, request_tools))
+    request_context = provider_context_for_tools(request_tools, context_str)
     role_desc = "the CCad PCB Routing Expert."
     system_text = get_system_prompt(role_desc)
-    system_text += f"\nContext: {context_str}"
+    if request_context:
+        system_text += f"\nContext: {request_context}"
     
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     callbacks = active_callbacks()
     request_context = emit_provider_request_context(
-        system_text, state["messages"], context_str,
-        state.get("context_metadata", {}), agent_tools,
+        system_text, state["messages"], request_context,
+        state.get("context_metadata", {}), request_tools,
         os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"))
     request_context = preflight_provider_input_count(
-        router_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
+        request_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"), request_context)
     with telemetry_runtime.observation("generate-routing-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
-            "context_chars": str(len(context_str)),
+            "context_chars": str(len(request_context)),
             **provider_request_trace_metadata(request_context),
         }, model=os.environ.get("CCAD_MODEL", "configured")) as generation_observation:
         response = invoke_provider_with_retry(
-            router_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
+            request_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
         accounting = record_provider_response_usage(
             request_context, response, generation_observation)
     if "post node" in [h.lower() for h in active_hooks]:
@@ -1716,29 +1798,34 @@ def librarian_node(state: AgentState):
         return {"messages": []}
         
     context_str = state.get("context", "")
+    request_tools = provider_tools_for_messages(state["messages"])
+    request_llm = (librarian_llm if request_tools is agent_tools else
+                   bind_native_tools(llm, request_tools))
+    request_context = provider_context_for_tools(request_tools, context_str)
     role_desc = "the CCad Component Librarian."
     system_text = get_system_prompt(role_desc)
-    system_text += f"\nContext: {context_str}"
+    if request_context:
+        system_text += f"\nContext: {request_context}"
     
     system_msg = SystemMessage(content=system_text)
     prompt = [system_msg] + state["messages"]
     callbacks = active_callbacks()
     request_context = emit_provider_request_context(
-        system_text, state["messages"], context_str,
-        state.get("context_metadata", {}), agent_tools,
+        system_text, state["messages"], request_context,
+        state.get("context_metadata", {}), request_tools,
         os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"))
     request_context = preflight_provider_input_count(
-        librarian_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
+        request_llm, prompt, os.environ.get("CCAD_PROVIDER", "configured"),
         os.environ.get("CCAD_MODEL", "configured"), request_context)
     with telemetry_runtime.observation("generate-library-response", "generation", {
             "provider": os.environ.get("CCAD_PROVIDER", "configured"),
             "model": os.environ.get("CCAD_MODEL", "configured"),
-            "context_chars": str(len(context_str)),
+            "context_chars": str(len(request_context)),
             **provider_request_trace_metadata(request_context),
         }, model=os.environ.get("CCAD_MODEL", "configured")) as generation_observation:
         response = invoke_provider_with_retry(
-            librarian_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
+            request_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
         accounting = record_provider_response_usage(
             request_context, response, generation_observation)
     if "post node" in [h.lower() for h in active_hooks]:
@@ -2386,7 +2473,7 @@ def handle_provider_and_state_request(req, executor):
         normalized_provider = ("local_model" if provider_id == "local_model_server"
                                else provider_id)
         provider_is_active = normalized_provider == active_provider
-        provider_ready = init_provider() if provider_is_active else False
+        provider_ready = activate_provider_runtime() if provider_is_active else False
         # Complete the selected key operation with a dedicated event.
         # Ambient provider_state traffic is not reliable Settings UI
         # feedback because set_config may have emitted an earlier state.
@@ -3161,7 +3248,7 @@ def handle_human_message(req):
             if separator and provider_name.strip() and model_name.strip():
                 os.environ["CCAD_PROVIDER"] = provider_name.strip()
                 os.environ["CCAD_MODEL"] = model_name.strip()
-                init_provider()
+                activate_provider_runtime()
                 emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Model set to {provider_name.strip()}:{model_name.strip()}"}})
             return
         elif cmd_base in ["/cc", "/compact"]:
@@ -3684,7 +3771,7 @@ if __name__ == "__main__":
                     model = clean_config.get("model", "gpt-5.1")
                     os.environ["CCAD_PROVIDER"] = str(provider) if isinstance(provider, str) else "openai"
                     os.environ["CCAD_MODEL"] = str(model) if isinstance(model, str) else "gpt-5.1"
-                    init_provider()
+                    activate_provider_runtime()
                 if "observability" in clean_config:
                     emit({"jsonrpc": "2.0", "method": "observability_state",
                           "params": reconfigure_observability()})
@@ -3712,7 +3799,7 @@ if __name__ == "__main__":
                 os.environ["CCAD_PROVIDER"] = provider_id
                 if model:
                     os.environ["CCAD_MODEL"] = model
-                provider_ready = init_provider()
+                provider_ready = activate_provider_runtime()
                 emit({"jsonrpc": "2.0", "method": "provider_activation_result", "params": {
                     "provider": provider_id, "model": model, "initialized": provider_ready,
                     "secret_value_visible": False,

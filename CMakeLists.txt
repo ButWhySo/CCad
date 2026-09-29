@@ -240,6 +240,15 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME agent_python_method_catalog
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_agent_orchestrator_method_catalog.py")
   if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    add_test(NAME agent_provider_tool_selection
+      COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_provider_tool_selection.py")
+  else()
+    add_test(NAME agent_provider_tool_selection
+      COMMAND "${Python3_EXECUTABLE}"
+              "${CMAKE_SOURCE_DIR}/scripts/test_agent_provider_tool_selection.py")
+  endif()
+  if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
     add_test(NAME agent_engineering_calculator
       COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
               "${CMAKE_SOURCE_DIR}/scripts/test_agent_engineering_calculator.py")

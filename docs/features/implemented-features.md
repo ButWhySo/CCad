@@ -16,8 +16,17 @@ Semantic-channel results are distinguished from lexical-only hits. This tiny
 fixture set does not select a winning model. The benchmark also forces Ollama's
 real missing-model response, verifies lexical fallback is reported as partial,
 and then verifies semantic retrieval recovers after restoring an installed
-model. Product startup, broader retrieval failure recovery, and model follow-up
-Agent tool calls remain unmeasured.
+model. Product startup and broader retrieval failure recovery remain unmeasured.
+For provider calls, the orchestrator now narrows bound native tool schemas only
+when the latest user message explicitly names native method IDs; ordinary turns
+retain the full catalog. It preserves catalog-declared context requirements,
+including project context for `project.object_counts`. Focused contracts pass,
+but the current live Qwen UI attempt recorded no provider request or broker call,
+so end-to-end tool completion is not yet verified. The conservative schema
+selection/runtime-readiness slice passes the Qt/MinGW Release build and full
+CTest 127/127; non-visual manifest
+`artifacts/evidence/sprint-1043-provider-tool-schema-r1.json` has SHA-256
+`577E80E79842AA730BD6DDACEB6C4AA9BF974FBE919D4665F553024FACBDFDFE`.
 
 ## Sprint 1041 — retrieval request/result boundary
 

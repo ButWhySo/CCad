@@ -83,6 +83,16 @@ assert 'provider_combo_->currentData().toString() != "local_model"' in settings
 assert 'model_input_->setReadOnly(true)' in settings
 assert 'model_input_->setReadOnly(!custom_model_provider)' in settings
 assert '(!custom_model_provider && matching < 0)' in settings
+runtime_activation = orchestrator.split("def activate_provider_runtime", 1)
+assert len(runtime_activation) == 2, "runtime provider activation must publish live readiness"
+activation_body = runtime_activation[1].split("\ndef ", 1)[0]
+assert "provider_initialized = bool(init_provider())" in activation_body
+assert '"method": "backend_state"' in activation_body
+assert '"provider_initialized": provider_initialized' in activation_body
+for branch, end_marker in (("elif method == \"agent.activate_provider\":", "elif method == \"agent.mcp_status\":"),
+                           ("elif method == \"agent.set_provider_secret\":", "elif method == \"agent.set_config\":")):
+    section = orchestrator.split(branch, 1)[1].split(end_marker, 1)[0]
+    assert "activate_provider_runtime()" in section
 assert 'model_combo_->setCurrentIndex(0)' in settings
 assert 'api_key_input_ = new QLineEdit(parent_widget);' in settings
 assert 'layout->addWidget(api_key_input_);' in settings

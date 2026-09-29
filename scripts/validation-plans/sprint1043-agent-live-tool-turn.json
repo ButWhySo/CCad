@@ -1,0 +1,16 @@
+{
+  "target_sequence": "sprint1043-agent-live-tool-turn",
+  "project": "artifacts/demos/gui-board.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "tab:agent",
+    "control:agent_chat_input",
+    "action:agent_submit_chat",
+    "action:settingsBtn",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": ["control:agent_chat_input"],
+  "meaningful_screenshots": 4
+}
