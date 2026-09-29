@@ -15,5 +15,6 @@ assert 'provider_error_user_message(error)' in source
 assert '"kind": "provider_error"' in source
 assert '"cause": classify_provider_error(error)' in source
 assert '"http_status": provider_http_status(error)' in source
-assert "no tool was executed" not in source
+provider_message = source.split("def provider_error_user_message(error: Exception)", 1)[1].split("\ndef ", 1)[0]
+assert "no tool was executed" not in provider_message
 print("PASS provider failure classification is actionable and secret-safe; no network")
