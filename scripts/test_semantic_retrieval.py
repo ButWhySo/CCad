@@ -122,19 +122,15 @@ try:
             thread_id="semantic-thread")
         ollama_manager.configure({"ltm": True, "semantic": {
             "enabled": True, "model": "embeddinggemma", "base_url": endpoint}})
+        requests_before_writes = len(OllamaTestHandler.requests)
         ollama_manager.add(
             "A switching regulator powers the supply rail of the board",
             tier="ltm", scope="conversation")
-        try:
-            ollama_manager.add(
-                "A step down regulator powers the board supply rail",
-                tier="ltm", scope="conversation")
-        except ValueError as error:
-            assert "semantic similarity" in str(error)
-        else:
-            raise AssertionError("Ollama-backed semantic duplicate was accepted")
-        assert "task: sentence similarity | query: " in \
-            OllamaTestHandler.requests[-1]["input"][0]
+        ollama_manager.add(
+            "A step down regulator powers the board supply rail",
+            tier="ltm", scope="conversation")
+        assert len(ollama_manager.list(tier="ltm", scope="conversation")) == 2
+        assert len(OllamaTestHandler.requests) == requests_before_writes
     for bad_endpoint in ("https://127.0.0.1:11434", "http://example.com:11434",
                          "http://user:pass@127.0.0.1:11434",
                          "http://localhost:11434"):
@@ -196,15 +192,12 @@ try:
         assert embedding_backend.calls == backend_calls
         paraphrase = (
             "This step down converter changes supply voltage into regulated output rail")
-        try:
-            manager.add(paraphrase, tier="ltm", scope="conversation",
-                        title="Voltage supply")
-        except ValueError as error:
-            assert source["id"] in str(error)
-            assert "semantic similarity" in str(error)
-        else:
-            raise AssertionError("semantically duplicate memory was persisted")
-        assert len(manager.list(tier="ltm", scope="conversation")) == 1
+        accepted_paraphrase = manager.add(
+            paraphrase, tier="ltm", scope="conversation", title="Voltage supply")
+        assert accepted_paraphrase is not None
+        assert accepted_paraphrase["id"] != source["id"]
+        assert len(manager.list(tier="ltm", scope="conversation")) == 2
+        assert embedding_backend.calls == backend_calls
 
         unrelated = manager.add(
             "Ground return connects input filter capacitor to power stage reference",
@@ -212,15 +205,10 @@ try:
         assert unrelated is not None
         manager.add("This step down converter changes supply voltage into regulated output rail",
                     tier="ltm", scope="project", title="Project-specific note")
-        try:
-            manager.update(
-                unrelated["id"],
-                "This step down converter changes supply voltage into regulated output rail")
-        except ValueError as error:
-            assert source["id"] in str(error)
-            assert "semantic similarity" in str(error)
-        else:
-            raise AssertionError("semantic duplicate update was accepted")
+        updated = manager.update(
+            unrelated["id"],
+            "A step down module stabilizes the board power supply")
+        assert updated is not None and updated["id"] == unrelated["id"]
         conversation_records = manager.store.list(
             tier="ltm", namespace="semantic-thread", scope="conversation")
         visible_conversation_records = manager.list(tier="ltm", scope="conversation")
@@ -252,17 +240,13 @@ try:
         first = unavailable.add("A switching regulator converts input power into output voltage",
                                 tier="ltm")
         assert first is not None
-        try:
-            unavailable.add("Store this only after semantic duplicate validation",
-                            tier="ltm")
-        except ValueError as error:
-            assert str(error) == "semantic_duplicate_check_unavailable"
-        else:
-            raise AssertionError("semantic-enabled write bypassed failed duplicate validation")
+        accepted = unavailable.add(
+            "Store this while optional semantic retrieval is unavailable", tier="ltm")
+        assert accepted is not None
         unavailable_records = unavailable.list(tier="ltm")
         assert unavailable_records is not None
-        assert [entry["id"] for entry in unavailable_records] == [first["id"]]
-        assert unavailable.semantic_state()["status"] == "embedding_failed"
+        assert {entry["id"] for entry in unavailable_records} == {first["id"], accepted["id"]}
+        assert unavailable.semantic_state()["ready"] is True
 
     with tempfile.TemporaryDirectory() as directory:
         unavailable = MemoryManager(
@@ -273,15 +257,12 @@ try:
         first = unavailable.add("A switching regulator converts input power to output voltage",
                                 tier="ltm")
         assert first is not None
-        try:
-            unavailable.add("A second record needs duplicate validation", tier="ltm")
-        except ValueError as error:
-            assert str(error) == "semantic_duplicate_check_unavailable"
-        else:
-            raise AssertionError("unready semantic backend allowed an unchecked write")
+        second = unavailable.add("A second record while semantic retrieval is offline",
+                                 tier="ltm")
+        assert second is not None
         unavailable_records = unavailable.list(tier="ltm")
         assert unavailable_records is not None
-        assert [entry["id"] for entry in unavailable_records] == [first["id"]]
+        assert {entry["id"] for entry in unavailable_records} == {first["id"], second["id"]}
         assert unavailable.semantic_state()["ready"] is False
 
     with tempfile.TemporaryDirectory() as directory:

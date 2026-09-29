@@ -1,13 +1,23 @@
 # CCad Agent production TODO
 
-### Sprint 1038 - opt-in semantic memory duplicate prevention
+### Sprint 1040 - safe memory writes with semantic retrieval enabled
 
-- [x] Reject semantic near-duplicates on memory add/update within the same enabled tier and namespace, using the existing opt-in local embedding backend after validation and secret rejection.
-- [x] Keep lexical/exact duplicate behavior when semantic retrieval is disabled; fail writes with a safe error when semantic checking is explicitly enabled but becomes unavailable or is not ready.
+- [x] Remove uncalibrated semantic-similarity rejection from add/update; keep normalized exact and lexical duplicate protection.
+- [x] Prove writes succeed for semantic matches and when embedding retrieval is unavailable; preserve secret rejection and semantic retrieval fallback contracts.
+- [x] Update handover and feature descriptions to state semantic embeddings are retrieval-only.
+- [x] Run changed-module Pyright and focused semantic, memory lifecycle, and memory-command contracts.
+- [x] Run official Qt/MinGW Release and full CTest verifier (123/123); inspect logs and record passing evidence manifest.
+- [x] Run redacted tracked-repository and staged-addition secret scans; zero high-confidence credential-pattern matches. Stage only verified files.
+- [x] Commit and push the verified source, tests, docs, and manifest; hosted CI status remains a separate check for the pushed SHA.
+
+### Sprint 1038 - semantic memory duplicate calibration (historical)
+
+- [x] Prototype same-tier semantic duplicate rejection on add/update, then remove the uncalibrated write-time gate in Sprint 1040 after measured false rejections; semantic embeddings remain retrieval-only.
+- [x] Keep normalized exact and lexical duplicate checks independent of semantic retrieval enablement or readiness; semantic retrieval itself retains its tested safe fallback.
 - [x] Cover semantic add/update, namespace isolation, pre-embedding secret rejection, disabled mode, unavailable backend, and cache behavior in offline contracts.
 - [x] Use documented sentence-similarity prompts for EmbeddingGemma and Nomic clustering prompts for duplicate checks; local Ollama contracts verify exact query/document inputs.
 - [x] Expand and calibrate 71 labeled duplicate plus 71 hard-negative pairs against both current model digests; hash the corpus and report threshold errors in `scripts/benchmark_semantic_memory_duplicates.py`.
-- [ ] Resolve the measured precision/recall conflict before claiming safe automatic semantic rejection: at 0.91, EmbeddingGemma catches 7/71 duplicates with 4/71 false rejections; Nomic catches 14/71 with 11/71 false rejections. Tested zero-false-positive thresholds catch no duplicates.
+- [x] Resolve the measured precision/recall conflict without blocking legitimate writes: semantic similarity is retrieval-only; exact and lexical duplicate guards remain. Tested model thresholds do not justify automatic semantic rejection.
 - [ ] Recalibrate every newly introduced model digest before changing the cutoff or claiming broad paraphrase recall.
 - [x] Run changed-module Pyright and focused memory/semantic contracts.
 - [x] Run the official nonvisual Qt/MinGW Release and full CTest gate after correcting the Nomic prompt and expanding the calibration corpus; inspect preflight/build/CTest logs and record fresh manifest `artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration.json` (123/123).
@@ -1486,7 +1496,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
 - [ ] Implement semantic compaction policy for durable memory records; current retention cap is 64 records per tier namespace. Conversation `/cc` compaction is implemented separately in Sprint 970.
-- [x] Implement semantic near-duplicate checks on add/update using the enabled, ready local embedding backend, limited to the matching tier/namespace; invalid/secret input is rejected before embedding, unavailable enabled checks fail closed, and disabled semantic mode preserves lexical behavior. Real-model cutoff calibration is recorded in Sprint 1038; recall expansion remains open.
+- [x] Keep semantic embeddings retrieval-only; memory add/update enforce normalized exact and lexical duplicate checks without coupling writes to embedding availability. Real-model paraphrase retrieval calibration remains open.
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
 - [x] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart; enable, disable, loaded/persistent counts, and reset outcomes are contract-tested.
@@ -3781,7 +3791,7 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [ ] Validate authorized namespace/scope.
 - [ ] Prevent specialist Agents from directly writing global user preferences.
 - [ ] Detect exact duplicate.
-- [x] Use the MemoryManager's exact/lexical and opt-in semantic near-duplicate guard for writes; automatic extraction, provenance, and contradiction handling remain separate open work.
+- [x] Use the MemoryManager's exact/lexical duplicate guard for writes; semantic similarity remains retrieval-only. Automatic extraction, provenance, and contradiction handling remain separate open work.
 - [ ] Detect contradiction.
 - [ ] Preserve contradictory evidence.
 - [ ] Require explicit supersession for correction.

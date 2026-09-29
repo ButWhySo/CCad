@@ -22,10 +22,7 @@ class MemoryManager:
     MAX_WORKING_MEMORY_TASKS = 32
     MAX_EMBEDDING_CACHE = 2048
     MAX_SEMANTIC_CANDIDATES = 32
-    MAX_DUPLICATE_CANDIDATES = 128
     MIN_SEMANTIC_SIMILARITY = 0.25
-    # Preliminary threshold only; Sprint 1038 found false rejections and no safe useful operating point.
-    MIN_SEMANTIC_DUPLICATE_SIMILARITY = 0.91
     NEAR_DUPLICATE_THRESHOLD = 0.88
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 
@@ -666,13 +663,11 @@ class MemoryManager:
         best = None
         namespace = self.namespace_for(tier, scope)
         duplicate_scope = "project" if tier == "ltm" and scope == "project" else None
-        candidates = []
         for entry in self.list(tier=tier, scope=duplicate_scope):
             if tier != "working_memory" and entry.get("namespace") != namespace:
                 continue
             if entry.get("id") == exclude_id:
                 continue
-            candidates.append(entry)
             existing = set(self._word.findall(
                 str(entry.get("content", "")).casefold()))
             if len(words) < 5 or len(existing) < 5:
@@ -683,74 +678,6 @@ class MemoryManager:
                 best = (entry, similarity)
         if best is not None:
             return (*best, "lexical overlap")
-        return self._semantic_near_duplicate(content, tier, namespace, candidates)
-
-    def _semantic_near_duplicate(self, content, tier, namespace, candidates):
-        """Compare same-namespace memory content only when local embeddings are ready."""
-        if not self.semantic_config.get("enabled") or not candidates:
-            return None
-        backend = self.semantic_embedding_backend
-        if backend is None:
-            raise ValueError("semantic_duplicate_check_unavailable")
-        if len(candidates) > self.MAX_DUPLICATE_CANDIDATES:
-            raise ValueError("semantic_duplicate_candidate_limit_exceeded")
-        try:
-            identity = str(backend.identity)
-            query_key = identity + ":duplicate:q:" + hashlib.sha256(
-                content.encode("utf-8")).hexdigest()
-            query_vector = self._embedding_cache_get(self._query_embedding_cache, query_key)
-            if query_vector is None:
-                query_vector = OllamaEmbeddingBackend._normalize_vector(
-                    getattr(backend, "embed_similarity_query", backend.embed_query)(content))
-                self._cache_embedding(self._query_embedding_cache, query_key, query_vector)
-
-            vectors = {}
-            missing = []
-            namespace_hash = hashlib.sha256(namespace.encode("utf-8")).hexdigest()[:16]
-            for entry in candidates:
-                text = str(entry.get("content", ""))
-                fingerprint = hashlib.sha256(text.encode("utf-8")).hexdigest()
-                key = ":".join((identity, "duplicate", tier, namespace_hash,
-                                str(entry.get("id", "")), fingerprint))
-                vector = self._embedding_cache_get(self._embedding_cache, key)
-                if vector is None:
-                    missing.append((entry, key, text))
-                else:
-                    vectors[str(entry.get("id", ""))] = vector
-            for offset in range(0, len(missing), OllamaEmbeddingBackend.MAX_TEXTS):
-                batch = missing[offset:offset + OllamaEmbeddingBackend.MAX_TEXTS]
-                embed_documents = getattr(backend, "embed_similarity_documents",
-                                          backend.embed_documents)
-                embedded = embed_documents([item[2] for item in batch])
-                if len(embedded) != len(batch):
-                    raise EmbeddingError("embedding_invalid_response")
-                for (entry, key, _), vector in zip(batch, embedded):
-                    normalized = OllamaEmbeddingBackend._normalize_vector(vector)
-                    self._cache_embedding(self._embedding_cache, key, normalized)
-                    vectors[str(entry.get("id", ""))] = normalized
-            if any(len(vector) != len(query_vector) for vector in vectors.values()):
-                raise EmbeddingError("embedding_dimension_mismatch")
-            best = max(((entry, self._cosine(query_vector,
-                                             vectors[str(entry.get("id", ""))]))
-                        for entry in candidates), key=lambda item: item[1], default=None)
-            if best and best[1] >= self.MIN_SEMANTIC_DUPLICATE_SIMILARITY:
-                return best[0], best[1], "semantic similarity"
-            self._semantic_status.update({"ready": True, "status": "ready", "error": "",
-                                          "cache_entries": self.embedding_cache_entries})
-            return None
-        except (EmbeddingError, AttributeError, TypeError, ValueError,
-                OverflowError, ArithmeticError) as error:
-            category = (error.category if isinstance(error, EmbeddingError)
-                        else "embedding_invalid_response")
-            self._semantic_status.update({"ready": False, "status": category,
-                                          "error": category})
-            self._embedding_backend = None
-            raise ValueError("semantic_duplicate_check_unavailable") from None
-        except Exception:
-            self._semantic_status.update({"ready": False, "status": "embedding_failed",
-                                          "error": "embedding_failed"})
-            self._embedding_backend = None
-            raise ValueError("semantic_duplicate_check_unavailable") from None
 
     def list(self, *, tier=None, scope=None):
         self._prune_expired()

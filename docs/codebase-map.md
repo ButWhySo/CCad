@@ -2081,22 +2081,16 @@ filters, not retrieval filters. Capture is explicit via Manage Memories or
 `/memory`; ordinary chat is not auto-saved. Secret-like new records are rejected
 and unsafe legacy records are hidden from runtime/UI. Expiry, exact normalized
 deduplication, lexical near-duplicate checks, and a 64-record per-namespace cap
-are enforced. Durable-memory semantic compaction remains open. Sprint 1038 adds
-opt-in semantic duplicate checks for add/update: after validation and secret
-rejection, same-tier/same-namespace candidates are compared using the existing
-ready local embedding backend, with cached vectors and a bounded 128-candidate
-set. Duplicate comparisons use documented model task prompts: sentence
-similarity for EmbeddingGemma and `clustering:` for Nomic Embed Text. The
-repeatable real-Ollama benchmark is `scripts/benchmark_semantic_memory_duplicates.py`;
-dataset v2 contains 71 labeled duplicate and 71 hard-negative pairs. At the
-existing 0.91 cutoff, EmbeddingGemma caught 7/71 duplicates with 4/71 false
-rejections, while Nomic caught 14/71 with 11/71 false rejections. Tested
-zero-false-positive thresholds caught no duplicates, so safe automatic semantic
-rejection remains an open quality issue rather than a calibrated capability.
-When semantic checking is explicitly
-enabled but unavailable, writes fail with the safe
-`semantic_duplicate_check_unavailable` category; disabled mode retains exact and
-lexical checks. Contracts: `scripts/test_semantic_retrieval.py` and
+are enforced. Durable-memory semantic compaction remains open. The repeatable
+real-Ollama benchmark `scripts/benchmark_semantic_memory_duplicates.py` uses
+dataset v2 with 71 labeled duplicate and 71 hard-negative pairs and documented
+model prompts: sentence similarity for EmbeddingGemma and `clustering:` for
+Nomic Embed Text. At cutoff 0.91, EmbeddingGemma caught 7/71 duplicates with
+4/71 false rejections, while Nomic caught 14/71 with 11/71 false rejections.
+No tested zero-false-positive threshold caught duplicates, so embeddings are
+retrieval-only and never block writes. Exact and lexical duplicate guards remain,
+and semantic service availability does not gate add/update. Contracts:
+`scripts/test_semantic_retrieval.py` and
 `scripts/test_memory_manager.py`.
 
 `memory_commands.py`, Settings RPC, and the Manage Memories dialog use the same
