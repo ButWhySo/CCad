@@ -2635,3 +2635,13 @@ remain in safe non-content package metadata. The architecture and backend compar
 in [ADR-agent-retrieval-architecture.md](decisions/ADR-agent-retrieval-architecture.md).
 This boundary does not yet provide central planning/fusion or cross-index stale
 revision validation; those remain open in R10/R12/R13.
+
+## Sprint 1043 active slice — retrieval evaluation corpus
+
+`scripts/fixtures/agent_retrieval_dataset_v1.json` owns the versioned labeled
+calibration/held-out corpus for R3. `scripts/test_agent_retrieval_dataset.py`
+checks task/split coverage, expected and distractor identities, fixture
+revisions, board-size/class diversity, and explicit semantic-search policy.
+This validates corpus integrity only; it does not execute retrieval engines
+or establish quality/latency results. Continue R3 with the production benchmark
+runner and metrics before comparing retrieval backends.

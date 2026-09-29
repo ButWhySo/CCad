@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "dataset_id": "ccad-agent-retrieval",
+  "dataset_version": "1.0.0",
+  "purpose": "Controlled, versioned retrieval evaluation corpus. Fixture identities are stable benchmark data, not user-project data.",
+  "fixtures": {
+    "power_small": {
+      "source_revision": "ccad-retrieval-fixtures-v1",
+      "project_revision": "power-small-v1",
+      "board_size_mm": [44, 30],
+      "repeated_component_classes": {"capacitor": 3, "resistor": 2},
+      "entity_ids": ["component:U1", "component:U2", "component:U3", "component:J2", "component:C1", "component:C2", "component:C3", "component:R1", "component:R2", "pad:J2.1", "pad:J2.5", "net:+3V3", "net:GND", "net:SPI_CLK", "constraint:usb-length", "constraint:reset-pullup", "track:T1", "track:T2", "zone:ground-plane"]
+    },
+    "controller_large": {
+      "source_revision": "ccad-retrieval-fixtures-v1",
+      "project_revision": "controller-large-v1",
+      "board_size_mm": [100, 80],
+      "repeated_component_classes": {"capacitor": 12, "resistor": 9, "connector": 4},
+      "entity_ids": ["component:U1", "component:U2", "component:U4", "component:C7", "component:C8", "component:R6", "component:R7", "component:J2", "component:J3", "net:+3V3", "net:VDD", "net:GND", "net:I2C_SCL", "pad:J3.1", "track:T20", "track:T21", "zone:rf-keepout", "constraint:reset-pullup"]
+    },
+    "memory_records": {"source_revision": "ccad-retrieval-memory-v1", "entity_ids": ["memory:preferred-track-width", "memory:old-track-width-correction", "memory:rejected-ground-bridge", "memory:accepted-ground-return"]},
+    "turn_records": {"source_revision": "ccad-retrieval-turns-v1", "entity_ids": ["turn:usb-placement-decision", "turn:usb-esd-review"]}
+  },
+  "cases": [
+    {"id":"exact-cal-001","split":"calibration","task":"exact_cad","fixture":"power_small","query":"J2 pin 5","expected_ids":["pad:J2.5"],"distractor_ids":["component:J2","pad:J2.1"],"rationale":"Pin number and owning reference identify exactly one placed connector pad.","semantic_search_allowed":false},
+    {"id":"exact-held-001","split":"held_out","task":"exact_cad","fixture":"controller_large","query":"+3V3","expected_ids":["net:+3V3"],"distractor_ids":["net:VDD","net:GND"],"rationale":"Exact net identity must resolve without vector similarity.","semantic_search_allowed":false},
+    {"id":"lexical-cal-001","split":"calibration","task":"lexical_engineering","fixture":"power_small","query":"USB differential pair length matching","expected_ids":["constraint:usb-length"],"distractor_ids":["net:SPI_CLK","track:T1"],"rationale":"Shared engineering terms identify the explicit USB length constraint.","semantic_search_allowed":false},
+    {"id":"lexical-held-001","split":"held_out","task":"lexical_engineering","fixture":"controller_large","query":"I2C clock line on the controller board","expected_ids":["net:I2C_SCL"],"distractor_ids":["net:GND","net:VDD"],"rationale":"Lexical field overlap should retrieve the named bus net, not a related power net.","semantic_search_allowed":false},
+    {"id":"semantic-cal-001","split":"calibration","task":"semantic_paraphrase","fixture":"power_small","query":"parts that stabilize the MCU supply","expected_ids":["component:C1","component:C2"],"distractor_ids":["component:R1","component:U2"],"rationale":"Paraphrase of decoupling and bulk capacitors connected to the MCU supply.","semantic_search_allowed":true},
+    {"id":"semantic-held-001","split":"held_out","task":"semantic_paraphrase","fixture":"controller_large","query":"what prevents the reset input from floating when the switch is open","expected_ids":["constraint:reset-pullup","component:R6"],"distractor_ids":["component:C7","component:U1"],"rationale":"Functional paraphrase of the documented reset pull-up behavior.","semantic_search_allowed":true},
+    {"id":"negative-cal-001","split":"calibration","task":"hard_negative","fixture":"power_small","query":"USB pair impedance target","expected_ids":[],"distractor_ids":["constraint:usb-length","net:SPI_CLK"],"rationale":"The fixture specifies USB length matching, not an impedance target; semantic proximity must not invent one.","semantic_search_allowed":false},
+    {"id":"negative-held-001","split":"held_out","task":"hard_negative","fixture":"controller_large","query":"I2C differential pair skew limit","expected_ids":[],"distractor_ids":["net:I2C_SCL","net:VDD"],"rationale":"I2C clock/data nets are not a differential pair and no skew constraint is recorded.","semantic_search_allowed":false},
+    {"id":"graph-cal-001","split":"calibration","task":"graph_relationship","fixture":"power_small","query":"which decoupling capacitors share the +3V3 supply with U1","expected_ids":["component:C1","component:C2","net:+3V3"],"distractor_ids":["component:R1","net:SPI_CLK"],"rationale":"Expected entities are connected by authoritative net membership, not text similarity.","semantic_search_allowed":false},
+    {"id":"graph-held-001","split":"held_out","task":"graph_relationship","fixture":"controller_large","query":"show objects assigned to I2C_SCL","expected_ids":["net:I2C_SCL","pad:J3.1"],"distractor_ids":["net:GND","track:T20"],"rationale":"Native net membership links the connector pad to the I2C clock net.","semantic_search_allowed":false},
+    {"id":"spatial-cal-001","split":"calibration","task":"spatial_geometry","fixture":"power_small","query":"components within 1 mm of U1","expected_ids":["component:C1"],"distractor_ids":["component:U3","component:C3"],"rationale":"Only footprints within the requested geometric radius are relevant.","semantic_search_allowed":false},
+    {"id":"spatial-held-001","split":"held_out","task":"spatial_geometry","fixture":"controller_large","query":"objects intersecting the RF keepout","expected_ids":["component:U4"],"distractor_ids":["track:T20","component:U2"],"rationale":"U4's typed bounds intersect the RF keepout; nearby but non-intersecting geometry is not a match.","semantic_search_allowed":false},
+    {"id":"memory-cal-001","split":"calibration","task":"memory","fixture":"memory_records","query":"preferred default signal track width","expected_ids":["memory:preferred-track-width"],"distractor_ids":["memory:old-track-width-correction"],"rationale":"The active explicit preference outranks a superseded correction under current memory rules.","semantic_search_allowed":false},
+    {"id":"memory-held-001","split":"held_out","task":"memory","fixture":"memory_records","query":"which grounding approach did the user reject near the switching node","expected_ids":["memory:rejected-ground-bridge"],"distractor_ids":["memory:accepted-ground-return"],"rationale":"A durable correction is relevant while the related accepted decision is a hard distractor.","semantic_search_allowed":true},
+    {"id":"turn-cal-001","split":"calibration","task":"historical_turn_record","fixture":"turn_records","query":"what did we decide about the USB connector placement","expected_ids":["turn:usb-placement-decision"],"distractor_ids":["turn:usb-esd-review"],"rationale":"Retrieve the older placement decision without loading the full source transcript.","semantic_search_allowed":false},
+    {"id":"turn-held-001","split":"held_out","task":"historical_turn_record","fixture":"turn_records","query":"which earlier review identified the ESD device location","expected_ids":["turn:usb-esd-review"],"distractor_ids":["turn:usb-placement-decision"],"rationale":"The relevant historic turn is distinguishable from another discussion of the same connector.","semantic_search_allowed":true}
+  ]
+}

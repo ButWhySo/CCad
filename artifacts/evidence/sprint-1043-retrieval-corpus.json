@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1043-retrieval-corpus",
+    "feature":  "Versioned split-safe retrieval evaluation corpus and integrity contract",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T13:22:23.1254898Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.94 log=artifacts/evidence/sprint-1043-retrieval-corpus/preflight.log",
+                      "finished_utc":  "2026-09-29T13:22:24.1388878Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=14.7 log=artifacts/evidence/sprint-1043-retrieval-corpus/build.log",
+                      "finished_utc":  "2026-09-29T13:22:38.8402758Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=153.54 log=artifacts/evidence/sprint-1043-retrieval-corpus/ctest.log",
+                      "finished_utc":  "2026-09-29T13:25:12.3779261Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-corpus/build.log",
+                                         "sha256":  "BF059F211A121B0A1E2433791C6FCFD8E049427B7CEDF9A28D31C1B03A3E2358"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-corpus/ctest.log",
+                                         "sha256":  "8006AA0EEA4130E63DA42DB15A73982FF126BB2CEA378165E7AD1401DD73E595"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-retrieval-corpus/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T13:25:12.4437104Z"
+}

@@ -1,5 +1,10 @@
 # CCad Agent production TODO
 
+### Sprint 1043 — retrieval benchmark corpus (active)
+
+- [x] Add versioned, task-separated calibration and held-out datasets with source/project revisions, expected identities, rationale, hard distractors, board-scale/repeated-class coverage, and explicit semantic-use policy; Pyright is clean and Qt/MinGW Release plus full CTest pass 125/125. Manifest `artifacts/evidence/sprint-1043-retrieval-corpus.json` (SHA-256 `2F2033BD8B66312E8AE032BC8793B5BA83542B0E3F353A25C41B440644A52B90`).
+- [ ] Implement production retrieval execution, quality/context-usefulness metrics, systems metrics, and versioned benchmark output; do not claim backend superiority from the corpus contract alone.
+
 ### Sprint 1042 — provider error contract test scope
 
 - [x] Fix the provider error-classification source contract to inspect only `provider_error_user_message`, so unrelated malformed-tool safety messages elsewhere in the orchestrator do not fail the test.
@@ -6874,15 +6879,13 @@ Questions requiring an older relevant discussion without importing entire transc
 
 ### Dataset requirements
 
-- [ ] Separate training/calibration and held-out evaluation sets.
-- [ ] Record dataset version.
-- [ ] Record project revision/source revision.
-- [ ] Record why each result is relevant.
-- [ ] Include difficult distractors.
-- [ ] Include renamed/paraphrased engineering terminology.
-- [ ] Include different board sizes.
-- [ ] Include projects with repeated component classes.
-- [ ] Include queries where semantic search should **not** be used.
+- [x] Separate training/calibration and held-out evaluation sets in the versioned task-specific corpus; contract prevents duplicate query/answer leakage across splits.
+- [x] Record dataset version and stable fixture source/project revisions.
+- [x] Record why each expected result is relevant.
+- [x] Include difficult, explicitly labelled distractors and no-answer hard negatives.
+- [x] Include paraphrased engineering terminology in its own semantic task set.
+- [x] Include different board sizes and repeated component classes.
+- [x] Include exact, graph, spatial, and hard-negative queries explicitly marked as not requiring semantic search.
 
 ### Retrieval quality metrics
 
