@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1039-transcript-event-provenance",
+    "feature":  "Conversation transcript tool-call transaction and revision provenance",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T03:22:34.2268025Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.91 log=artifacts/evidence/sprint-1039-transcript-event-provenance/preflight.log",
+                      "finished_utc":  "2026-09-29T03:22:35.2203307Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.46 log=artifacts/evidence/sprint-1039-transcript-event-provenance/build.log",
+                      "finished_utc":  "2026-09-29T03:22:36.6970214Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=164.88 log=artifacts/evidence/sprint-1039-transcript-event-provenance/ctest.log",
+                      "finished_utc":  "2026-09-29T03:25:21.5760677Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-transcript-event-provenance/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-transcript-event-provenance/ctest.log",
+                                         "sha256":  "C162039F788FA8813E19EE830CEAA2B16955307874DA16E7D576D2DB64DEF61C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1039-transcript-event-provenance/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T03:25:21.6484478Z"
+}

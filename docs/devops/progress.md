@@ -6,9 +6,9 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
-- Sprint: 1038
-- Branch: `sprint-1038-agent-context-editor`
-- Current live status: Sprint 1038 editor-aware Agent context and schematic selection is implemented and verified. Qt/MinGW Release passed; full CTest passed 120/120; the app-owned UI map completed 14 successful interactions, and all four distinct screenshots plus stdout/stderr were inspected (stderr empty). Changed Python modules passed Pyright with 0 diagnostics. Manifest `artifacts/evidence/sprint-1038-agent-context-editor-r8.json`, SHA-256 `2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`. The screenshot fixture has a schematic but no PCB, so the restored PCB tab is correctly empty; broader unsupported project semantics remain out of scope.
+- Sprint: 1039
+- Branch: `sprint-1039-transcript-transaction-links`
+- Current live status: Sprint 1039 Tier 1 conversation provenance slice implemented. Tool-call/result events correlate by call ID and preserve bounded transaction/revision/status plus explicit rejection/cancellation metadata. Focused store/runtime/checkpoint contracts pass; changed-module Pyright reports 0 diagnostics; Qt/MinGW Release verifier passed (no rebuild needed) and full CTest passed 120/120. Nonvisual evidence manifest `artifacts/evidence/sprint-1039-transcript-event-provenance.json`, SHA-256 `003A2EC0917B14DC49C7C4ACC59DC64310C994D49E19D5BF3576B7B07AF374C6`. Multi-operation ambiguity contracts and positive approval/proposal IDs remain open.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution

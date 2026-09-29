@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1039 — Transcript transaction provenance (Tier 1)
+
+- [x] Attach authoritative transaction/revision metadata to exact transcript tool-call/result events; derived event metadata excludes arguments and result text.
+- [ ] Prove multi-operation correlation and that turn-level transaction/revision summaries omit ambiguous values.
+- [ ] Persist proposal IDs and explicit approval decisions/IDs through the authoritative approval path; do not infer approval from tool success.
+- [x] Prove committed result, rejection, cancellation, metadata privacy, and single-operation summary with offline contracts.
+- [x] Run Qt MinGW Release, full CTest (120/120), focused Python conversation/checkpoint contracts, and changed-module Pyright (0 diagnostics); inspect verifier output and evidence.
+- [x] Update codebase map, feature inventory, progress, backlog, and this TODO; run redacted repository/staged-diff scans; commit and push verified files.
+
+Evidence: `artifacts/evidence/sprint-1039-transcript-event-provenance.json`, SHA-256 `003A2EC0917B14DC49C7C4ACC59DC64310C994D49E19D5BF3576B7B07AF374C6`. Qt/MinGW Release gate passed with no work required; CTest passed 120/120. GUI validation is not applicable because no GUI behavior changed.
+
 ### Sprint 1038 — Editor-aware PCB/schematic context and selection
 
 - [x] Include the active editor and exact selected typed object in every Qt project-context envelope; never reuse stale selection from the other canvas.
@@ -30,7 +41,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Show Conversation STM as a separate read-only active-thread status; keep the `ltm` checkbox bound to durable thread-scoped memory and state that ordinary transcript history is independent.
 - [x] Add contracts before behavior changes for bounded source selection, migration, exact source ranges, missing-ID/stale-snapshot refusal, report privacy, context metadata, and GUI label; focused contracts and Pyright pass, Qt/MinGW Release build and full CTest pass (122/122).
 - [x] Complete visible GUI verification for the settings label and active-thread description; 10 mapped interactions and all five screenshots passed inspection (`artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`).
-- [ ] Keep per-transcript-event proposal/approval/transaction linkage open; this slice only records compaction provenance and does not close that audit gap.
+- [ ] Complete proposal-ID and approval-decision linkage through authoritative Qt approval IPC; Sprint 1039 records transaction/revision metadata from transcript tool results only.
 
 ### Graphic proposal diff acceptance — user-visible failure reproduction
 

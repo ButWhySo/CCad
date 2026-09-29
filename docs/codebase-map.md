@@ -2244,7 +2244,12 @@ the separate compact projection. Semantic history retrieval remains open.
 Sprint 1034 TODO reconciliation reran the task-scope, transcript, restart, and
 LangGraph checkpoint contracts against this implementation. Remaining gaps are
 explicit proposal/approval/transaction references attached to transcript
-events, a product-level label for the active conversation as STM (distinct
+events. Sprint 1039 adds safe tool-call/result correlation with transaction and
+revision metadata from authoritative broker results; tool arguments and result
+payloads are not duplicated into derived event metadata. Proposal IDs and
+positive approval decisions/IDs still require explicit IPC linkage. Multi-call
+ambiguity needs additional contract coverage. Other remaining conversation
+gaps include a product-level label for the active conversation as STM (distinct
 from task Working Memory), and an auditable source-message range for each
 generated compaction summary. The projection stores a sequence boundary, but
 that alone is not exposed as a source-range record.

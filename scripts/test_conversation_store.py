@@ -1,6 +1,7 @@
 """Contracts for durable, thread-scoped conversation projection."""
 
 import importlib.util
+import json
 import sqlite3
 import sys
 from pathlib import Path
@@ -60,6 +61,68 @@ def run():
         assert record["assistant_summary"] == "U3 is 12 mm from the USB connector."
         assert store.search_turn_records(thread_a, "USB connector U3")
         assert not store.search_turn_records(thread_b, "USB connector U3")
+
+        # Bind an authoritative committed transaction without duplicating call
+        # arguments or result payload in derived event metadata.
+        mutation_messages = [
+            HumanMessage(content="Move U3", id="mutation-user"),
+            AIMessage(content="", id="mutation-call-message", tool_calls=[{
+                "name": "pcb.move_footprint",
+                "args": {"reference": "U3", "x_mm": 12, "private": "must-not-persist"},
+                "id": "mutation-call", "type": "tool_call",
+            }]),
+            ToolMessage(content=json.dumps({"status": "committed",
+                                            "transaction_id": "txn-42",
+                                            "revision": "rev-7"}),
+                        name="pcb.move_footprint", tool_call_id="mutation-call",
+                        id="mutation-result"),
+            AIMessage(content="Move completed", id="mutation-answer"),
+        ]
+        store.append_messages(thread_a, mutation_messages, turn_id="turn-mutation")
+        mutation_record = store.record_turn(
+            thread_a, "turn-mutation", "Move U3", mutation_messages,
+            outcome="completed", project_revision_before="rev-6")
+        linked_call = next(event for event in mutation_record["source_events"]
+                           if event["id"] == "mutation-call-message")
+        linked_result = next(event for event in mutation_record["source_events"]
+                             if event["id"] == "mutation-result")
+        assert linked_call["tool_calls"] == [{
+            "call_id": "mutation-call", "tool": "pcb.move_footprint",
+            "status": "committed", "transaction_id": "txn-42",
+            "project_revision": "rev-7"}]
+        assert linked_result["tool_call_id"] == "mutation-call"
+        assert linked_result["transaction_id"] == "txn-42"
+        assert linked_result["project_revision"] == "rev-7"
+        assert mutation_record["transaction_id"] == "txn-42"
+        assert mutation_record["project_revision_after"] == "rev-7"
+        assert "must-not-persist" not in json.dumps(mutation_record)
+
+        for suffix, code, decision in (("reject", "approval_denied", "rejected"),
+                                       ("cancel", "approval_canceled", "cancelled")):
+            call_id = f"mutation-{suffix}-call"
+            approval_messages = [
+                HumanMessage(content="Change U3", id=f"{suffix}-user"),
+                AIMessage(content="", id=f"{suffix}-request", tool_calls=[{
+                    "name": "pcb.move_footprint", "args": {"reference": "U3"},
+                    "id": call_id, "type": "tool_call",
+                }]),
+                ToolMessage(content=json.dumps({"error": {"code": -32001,
+                                                            "message": code},
+                                                "call_id": call_id}),
+                            name="pcb.move_footprint", tool_call_id=call_id,
+                            id=f"{suffix}-result"),
+                AIMessage(content="No project change was applied.",
+                          id=f"{suffix}-answer"),
+            ]
+            turn_id = f"turn-{suffix}"
+            store.append_messages(thread_a, approval_messages, turn_id=turn_id)
+            approval_record = store.record_turn(
+                thread_a, turn_id, "Change U3", approval_messages,
+                outcome="failed")
+            failed_call = next(event for event in approval_record["source_events"]
+                               if event["id"] == f"{suffix}-request")
+            assert failed_call["tool_calls"][0]["approval_decision"] == decision
+            assert code not in json.dumps(approval_record["source_events"])
 
         prior_thread = "thread-prior"
         prior_messages = [HumanMessage(content="Preserve GND return clearance around U3",
@@ -176,8 +239,10 @@ def run():
             assert str(error) == "projection_summary_message_id_collision"
         assert store.search_turn_records(thread_a, "USB")
         recap = store.thread_recap(thread_a)
-        assert recap["source_turn_ids"] == ["turn-1"]
+        assert recap["source_turn_ids"] == ["turn-1", "turn-mutation",
+                                             "turn-reject", "turn-cancel"]
         assert recap["turns"][0]["turn_id"] == "turn-1"
+        assert recap["turns"][1]["turn_id"] == "turn-mutation"
 
     with TemporaryDirectory(prefix="ccad-projection-v3-migration-") as temp:
         legacy_path = Path(temp) / "legacy.sqlite3"

@@ -115,6 +115,77 @@ def _content_text(value: Any) -> str:
     return ""
 
 
+_EVENT_FIELDS = frozenset({"proposal_id", "approval_id", "approval_decision",
+                           "transaction_id", "project_revision", "revision", "status"})
+
+
+def _event_result_metadata(message: Any) -> dict[str, str]:
+    """Project only authoritative identifiers/status from a tool result."""
+    if _role(message) != "tool":
+        return {}
+    try:
+        value = json.loads(_content_text(getattr(message, "content", ""))[:65536])
+    except (TypeError, json.JSONDecodeError, RecursionError):
+        return {}
+    if not isinstance(value, dict):
+        return {}
+    found = {}
+    for key in sorted(_EVENT_FIELDS - {"revision"}):
+        child = value.get(key)
+        if key == "project_revision" and child is None:
+            child = value.get("revision")
+        if isinstance(child, (str, int)):
+            safe = str(_safe(child, key)).strip()[:128]
+            if safe:
+                found[key] = safe
+    error = value.get("error")
+    if isinstance(error, dict):
+        code = str(error.get("message", error.get("code", ""))).casefold()
+        if code == "approval_denied":
+            found["approval_decision"] = "rejected"
+        elif code == "approval_canceled":
+            found["approval_decision"] = "cancelled"
+    return found
+
+
+def _source_event_metadata(messages: Iterable[Any]) -> dict[str, dict[str, Any]]:
+    """Correlate tool call and result messages without copying their payloads."""
+    items = list(messages)
+    results: dict[str, dict[str, str]] = {}
+    for message in items:
+        if _role(message) != "tool":
+            continue
+        call_id = str(getattr(message, "tool_call_id", "") or "")
+        if call_id:
+            results[call_id] = _event_result_metadata(message)
+    events: dict[str, dict[str, Any]] = {}
+    for message in items:
+        message_id = str(getattr(message, "id", "") or "")
+        if not message_id:
+            continue
+        role = _role(message)
+        if role == "assistant":
+            calls = getattr(message, "tool_calls", [])
+            projected = []
+            for call in calls[:32] if isinstance(calls, list) else ():
+                if not isinstance(call, dict):
+                    continue
+                call_id = str(call.get("id", "") or "")[:128]
+                item = {"call_id": str(_safe(call_id, "call_id")),
+                        "tool": str(_safe(call.get("name", ""), "tool_name"))[:120]}
+                item.update(results.get(call_id, {}))
+                projected.append(item)
+            if projected:
+                events[message_id] = {"tool_calls": projected}
+        elif role == "tool":
+            call_id = str(getattr(message, "tool_call_id", "") or "")[:128]
+            event = {"tool_call_id": str(_safe(call_id, "call_id")),
+                     "tool": str(_safe(getattr(message, "name", ""), "tool_name"))[:120]}
+            event.update(results.get(call_id, {}))
+            events[message_id] = event
+    return events
+
+
 def _message_tokens(message: Any) -> int:
     payload = _message_payload(message, assign_id=False) or {}
     text = _content_text(payload.get("content", ""))
@@ -596,15 +667,37 @@ class ConversationStore:
             source_ids = [str(row[0]) for row in db.execute(
                 "SELECT message_id FROM messages WHERE thread_id=? AND turn_id=? ORDER BY sequence",
                 (thread_id, turn_id)).fetchall()]
-            recent = [{"id": item, "role": role} for item, role in db.execute(
-                "SELECT message_id,role FROM messages WHERE thread_id=? AND turn_id=? ORDER BY sequence",
-                (thread_id, turn_id)).fetchall()]
+            event_metadata = _source_event_metadata(items)
+            recent = []
+            for item, role, sequence in db.execute(
+                    "SELECT message_id,role,sequence FROM messages "
+                    "WHERE thread_id=? AND turn_id=? ORDER BY sequence",
+                    (thread_id, turn_id)).fetchall():
+                event = {"id": str(item), "role": str(role),
+                         "sequence": int(sequence)}
+                event.update(event_metadata.get(str(item), {}))
+                recent.append(event)
         except sqlite3.Error as error:
             raise ConversationStoreError("conversation_store_read_failed") from error
         finally:
             db.close()
         if not source_ids:
             raise ValueError("turn_has_no_persisted_source_messages")
+        transactions, proposals, revisions = set(), set(), set()
+        for event in recent:
+            calls = event.get("tool_calls", [])
+            for key, values in (("transaction_id", transactions),
+                                ("proposal_id", proposals),
+                                ("project_revision", revisions)):
+                values.update(call[key] for call in calls if call.get(key))
+                if event.get(key):
+                    values.add(event[key])
+        if not transaction_id and len(transactions) == 1:
+            transaction_id = next(iter(transactions))
+        if not proposal_id and len(proposals) == 1:
+            proposal_id = next(iter(proposals))
+        if not project_revision_after and len(revisions) == 1:
+            project_revision_after = next(iter(revisions))
         findings = []
         for message in items[-128:]:
             if _role(message) != "tool":
