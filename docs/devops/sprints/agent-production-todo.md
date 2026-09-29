@@ -12,7 +12,7 @@
 - [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
 - [x] Commit and push verified slice as `0812739`; `git ls-remote` confirms exact branch head `0812739d842f664eda088e756eb63bb583c5f240`.
 - [x] Commit and push measured semantic-retrieval follow-up as `8bf986e`; `git ls-remote` confirms exact branch head `8bf986e236f7a2deb40a9b8f4921a1f04ffbe14f`.
-- [ ] Commit and push measured semantic failure/recovery slice after its local verification gate.
+- [x] Commit and push measured semantic failure/recovery slice as `8121c1e`; `git ls-remote` confirms exact branch head `8121c1e02cde6f24118680ca3fdacbe1f00b11d7`.
 - [ ] Inspect hosted CI for exact pushed SHA after a pull-request event; branch-only pushes do not trigger this repository's configured workflow.
 
 ### Sprint 1042 — provider error contract test scope
