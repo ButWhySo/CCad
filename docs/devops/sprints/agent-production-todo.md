@@ -10,6 +10,7 @@
 - [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright after semantic instrumentation; official non-visual manifest `artifacts/evidence/sprint-1043-semantic-measurement.json` SHA-256 `75FB3BA4EF2BAE60E29ADD19A1442F7AACB058727B7891F6AC4D0D0695B9966B`.
 - [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
 - [x] Commit and push verified slice as `0812739`; `git ls-remote` confirms exact branch head `0812739d842f664eda088e756eb63bb583c5f240`.
+- [x] Commit and push measured semantic-retrieval follow-up as `8bf986e`; `git ls-remote` confirms exact branch head `8bf986e236f7a2deb40a9b8f4921a1f04ffbe14f`.
 - [ ] Inspect hosted CI for exact pushed SHA after a pull-request event; branch-only pushes do not trigger this repository's configured workflow.
 
 ### Sprint 1042 — provider error contract test scope
