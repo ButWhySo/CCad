@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1038-nomic-memory-dedupe-recalibration",
+    "feature":  "Correct model-specific memory duplicate prompts; expand and measure real local-model calibration corpus",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T08:39:33.1059580Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.19 log=artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration/preflight.log",
+                      "finished_utc":  "2026-09-29T08:39:34.4127707Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.85 log=artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration/build.log",
+                      "finished_utc":  "2026-09-29T08:39:36.2777716Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=176.33 log=artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration/ctest.log",
+                      "finished_utc":  "2026-09-29T08:42:32.6135065Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration/ctest.log",
+                                         "sha256":  "8728CC2077DD79488B7CBF23AD3DB50E5C9FA29E6B570661506DF940F2C8E96B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T08:42:32.6987569Z"
+}

@@ -24,7 +24,7 @@ class MemoryManager:
     MAX_SEMANTIC_CANDIDATES = 32
     MAX_DUPLICATE_CANDIDATES = 128
     MIN_SEMANTIC_SIMILARITY = 0.25
-    # Conservative cutoff calibrated on current local-model versions; see Sprint 1038.
+    # Preliminary threshold only; Sprint 1038 found false rejections and no safe useful operating point.
     MIN_SEMANTIC_DUPLICATE_SIMILARITY = 0.91
     NEAR_DUPLICATE_THRESHOLD = 0.88
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
@@ -660,7 +660,7 @@ class MemoryManager:
             raise ValueError("semantic_duplicate_candidate_limit_exceeded")
         try:
             identity = str(backend.identity)
-            query_key = identity + ":sentence_similarity:q:" + hashlib.sha256(
+            query_key = identity + ":duplicate:q:" + hashlib.sha256(
                 content.encode("utf-8")).hexdigest()
             query_vector = self._embedding_cache_get(self._query_embedding_cache, query_key)
             if query_vector is None:

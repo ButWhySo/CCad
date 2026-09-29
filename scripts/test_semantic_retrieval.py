@@ -35,6 +35,7 @@ class OllamaTestHandler(BaseHTTPRequestHandler):
         self._json({"models": [
             {"name": "test-embed:latest", "digest": "sha256:fixture-v1"},
             {"name": "embeddinggemma:latest", "digest": "sha256:gemma-fixture"},
+            {"name": "nomic-embed-text:latest", "digest": "sha256:nomic-fixture"},
         ]})
 
     def do_POST(self):
@@ -56,7 +57,7 @@ class OllamaTestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def log_message(self, *_):
+    def log_message(self, format: str, *args: object) -> None:
         pass
 
 
@@ -105,6 +106,13 @@ try:
     gemma_backend.embed_similarity_documents(similarity_documents)
     assert OllamaTestHandler.requests[-1]["input"] == [
         "task: sentence similarity | query: " + similarity_documents[0]]
+    nomic_backend = OllamaEmbeddingBackend(endpoint, "nomic-embed-text")
+    assert nomic_backend.check_ready()["ready"] is True
+    nomic_backend.embed_similarity_query(similarity_query)
+    assert OllamaTestHandler.requests[-1]["input"] == ["clustering: " + similarity_query]
+    nomic_backend.embed_similarity_documents(similarity_documents)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "clustering: " + similarity_documents[0]]
     ordinary_backend = OllamaEmbeddingBackend(endpoint, "test-embed")
     ordinary_backend.embed_similarity_query(similarity_query)
     assert OllamaTestHandler.requests[-1]["input"] == [similarity_query]
@@ -140,10 +148,12 @@ try:
     with tempfile.TemporaryDirectory() as directory:
         manager = MemoryManager(MemoryStore(Path(directory) / "memory.json"),
                                 thread_id="semantic-thread")
-        manager.set_embedding_backend(MemoryEmbeddingBackend())
+        embedding_backend = MemoryEmbeddingBackend()
+        manager.set_embedding_backend(embedding_backend)
         manager.configure({"ltm": True, "semantic": {"enabled": True}})
         regulator = manager.add("switching regulator powers board", tier="ltm",
                                 title="Power conversion")
+        assert regulator is not None
         manager.add("keep ground return beside input", tier="ltm",
                     title="Ground routing")
         entries, diagnostics = manager.retrieve_with_metadata(
@@ -153,9 +163,9 @@ try:
         assert diagnostics[0]["channel_ranks"]["semantic"] == 1
         assert diagnostics[0]["bm25_score"] == 0
         assert manager.state()["semantic"]["ready"] is True
-        backend_calls = manager._embedding_backend.calls
+        backend_calls = embedding_backend.calls
         manager.retrieve("how to step down supply voltage", limit=4)
-        assert manager._embedding_backend.calls == backend_calls
+        assert embedding_backend.calls == backend_calls
         assert manager.embedding_cache_entries > 0
         manager.disable("ltm")
         assert manager.embedding_cache_entries == 0
@@ -168,12 +178,14 @@ try:
     with tempfile.TemporaryDirectory() as directory:
         manager = MemoryManager(MemoryStore(Path(directory) / "semantic-dedupe.json"),
                                 thread_id="semantic-thread", project_id="project-a")
-        manager.set_embedding_backend(MemoryEmbeddingBackend())
+        embedding_backend = MemoryEmbeddingBackend()
+        manager.set_embedding_backend(embedding_backend)
         manager.configure({"ltm": True, "semantic": {"enabled": True}})
         source = manager.add(
             "A switching regulator converts the input rail into stable output voltage",
             tier="ltm", scope="conversation", title="Power conversion")
-        backend_calls = manager._embedding_backend.calls
+        assert source is not None
+        backend_calls = embedding_backend.calls
         try:
             manager.add("api_key=not-a-real-secret", tier="ltm",
                         scope="conversation")
@@ -181,7 +193,7 @@ try:
             assert "secret" in str(error)
         else:
             raise AssertionError("secret-bearing memory was accepted")
-        assert manager._embedding_backend.calls == backend_calls
+        assert embedding_backend.calls == backend_calls
         paraphrase = (
             "This step down converter changes supply voltage into regulated output rail")
         try:
@@ -197,6 +209,7 @@ try:
         unrelated = manager.add(
             "Ground return connects input filter capacitor to power stage reference",
             tier="ltm", scope="conversation", title="Ground return")
+        assert unrelated is not None
         manager.add("This step down converter changes supply voltage into regulated output rail",
                     tier="ltm", scope="project", title="Project-specific note")
         try:
@@ -208,9 +221,12 @@ try:
             assert "semantic similarity" in str(error)
         else:
             raise AssertionError("semantic duplicate update was accepted")
-        assert manager.store.list(tier="ltm", namespace="semantic-thread",
-                                  scope="conversation")[0]["id"] == source["id"]
-        assert manager.list(tier="ltm", scope="conversation")[-1]["id"] == unrelated["id"]
+        conversation_records = manager.store.list(
+            tier="ltm", namespace="semantic-thread", scope="conversation")
+        visible_conversation_records = manager.list(tier="ltm", scope="conversation")
+        assert conversation_records is not None and conversation_records[0]["id"] == source["id"]
+        assert visible_conversation_records is not None
+        assert visible_conversation_records[-1]["id"] == unrelated["id"]
 
     with tempfile.TemporaryDirectory() as directory:
         lexical_only = MemoryManager(
@@ -220,9 +236,11 @@ try:
         source = lexical_only.add(
             "A switching regulator converts the input rail into stable output voltage",
             tier="ltm", scope="conversation")
+        assert source is not None
         accepted = lexical_only.add(
             "This step down converter changes supply voltage into regulated output rail",
             tier="ltm", scope="conversation")
+        assert accepted is not None
         assert accepted["id"] != source["id"]
 
     with tempfile.TemporaryDirectory() as directory:
@@ -233,6 +251,7 @@ try:
         unavailable.configure({"ltm": True, "semantic": {"enabled": True}})
         first = unavailable.add("A switching regulator converts input power into output voltage",
                                 tier="ltm")
+        assert first is not None
         try:
             unavailable.add("Store this only after semantic duplicate validation",
                             tier="ltm")
@@ -240,7 +259,9 @@ try:
             assert str(error) == "semantic_duplicate_check_unavailable"
         else:
             raise AssertionError("semantic-enabled write bypassed failed duplicate validation")
-        assert [entry["id"] for entry in unavailable.list(tier="ltm")] == [first["id"]]
+        unavailable_records = unavailable.list(tier="ltm")
+        assert unavailable_records is not None
+        assert [entry["id"] for entry in unavailable_records] == [first["id"]]
         assert unavailable.semantic_state()["status"] == "embedding_failed"
 
     with tempfile.TemporaryDirectory() as directory:
@@ -251,13 +272,16 @@ try:
             "enabled": True, "base_url": "http://127.0.0.1:1"}})
         first = unavailable.add("A switching regulator converts input power to output voltage",
                                 tier="ltm")
+        assert first is not None
         try:
             unavailable.add("A second record needs duplicate validation", tier="ltm")
         except ValueError as error:
             assert str(error) == "semantic_duplicate_check_unavailable"
         else:
             raise AssertionError("unready semantic backend allowed an unchecked write")
-        assert [entry["id"] for entry in unavailable.list(tier="ltm")] == [first["id"]]
+        unavailable_records = unavailable.list(tier="ltm")
+        assert unavailable_records is not None
+        assert [entry["id"] for entry in unavailable_records] == [first["id"]]
         assert unavailable.semantic_state()["ready"] is False
 
     with tempfile.TemporaryDirectory() as directory:
@@ -265,7 +289,9 @@ try:
         fallback.set_embedding_backend(FailingEmbeddingBackend())
         fallback.configure({"ltm": True, "semantic": {"enabled": True}})
         lexical_record = fallback.add("voltage converter powers input rail", tier="ltm")
+        assert lexical_record is not None
         result = fallback.retrieve("voltage converter", limit=2)
+        assert result is not None
         assert result and result[0]["id"] == lexical_record["id"]
         assert fallback.state()["semantic"]["status"] == "embedding_failed"
         assert "internal error" not in str(fallback.state()["semantic"])

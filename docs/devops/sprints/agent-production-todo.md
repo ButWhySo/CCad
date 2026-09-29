@@ -5,15 +5,19 @@
 - [x] Reject semantic near-duplicates on memory add/update within the same enabled tier and namespace, using the existing opt-in local embedding backend after validation and secret rejection.
 - [x] Keep lexical/exact duplicate behavior when semantic retrieval is disabled; fail writes with a safe error when semantic checking is explicitly enabled but becomes unavailable or is not ready.
 - [x] Cover semantic add/update, namespace isolation, pre-embedding secret rejection, disabled mode, unavailable backend, and cache behavior in offline contracts.
-- [x] Use EmbeddingGemma's documented sentence-similarity prompt for duplicate checks; local Ollama protocol contract verifies the exact request input.
-- [x] Calibrate the opt-in cosine cutoff to 0.91 on 24 labeled duplicate and 24 hard-negative CCad memory pairs for EmbeddingGemma and Nomic; each model rejected 0/24 negatives, while catching 4/24 and 1/24 paraphrases respectively. Model digests and results recorded in progress; repeatable runner: `scripts/benchmark_semantic_memory_duplicates.py`.
-- [ ] Expand the labeled set and recalibrate each new model digest before changing the cutoff or claiming broad paraphrase recall; current measured recall is deliberately low to avoid false rejection.
+- [x] Use documented sentence-similarity prompts for EmbeddingGemma and Nomic clustering prompts for duplicate checks; local Ollama contracts verify exact query/document inputs.
+- [x] Expand and calibrate 71 labeled duplicate plus 71 hard-negative pairs against both current model digests; hash the corpus and report threshold errors in `scripts/benchmark_semantic_memory_duplicates.py`.
+- [ ] Resolve the measured precision/recall conflict before claiming safe automatic semantic rejection: at 0.91, EmbeddingGemma catches 7/71 duplicates with 4/71 false rejections; Nomic catches 14/71 with 11/71 false rejections. Tested zero-false-positive thresholds catch no duplicates.
+- [ ] Recalibrate every newly introduced model digest before changing the cutoff or claiming broad paraphrase recall.
 - [x] Run changed-module Pyright and focused memory/semantic contracts.
-- [x] Complete official Qt/MinGW Release + full CTest nonvisual gate (123/123); inspect preflight/build/CTest logs and calibration manifest `artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration.json` (SHA-256 `537E25C5F8E25C1230E433B067F1DD5C4F70727A4F4903E2A89D454A6FF96A90`).
-- [x] Update codebase map, feature inventory, progress, and this TODO in the same slice.
+- [x] Run the official nonvisual Qt/MinGW Release and full CTest gate after correcting the Nomic prompt and expanding the calibration corpus; inspect preflight/build/CTest logs and record fresh manifest `artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration.json` (123/123).
+- [x] Update progress, feature inventory, codebase map, and this TODO with the measured Nomic prompt/calibration results and correct the already-pushed baseline commit reference.
+- [x] Run redacted tracked-repository and staged-addition scans for this follow-up; five tracked pattern hits were reviewed as an environment-variable name or deliberate test sentinels, and staged additions had zero matches. Stage only verified source, tests, docs, and manifest.
+- [x] Complete official Qt/MinGW Release + full CTest nonvisual gate (123/123); inspect preflight/build/CTest logs and calibration manifest `artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration.json` (pass; logs retained workspace-only).
+- [x] Update codebase map, feature inventory, progress, and this TODO in the same slice, including measured prompt/corpus results.
 - [x] Run redacted tracked-repository and staged-diff secret scans; staged additions have zero credential-pattern matches. Existing tracked hits were reviewed as test sentinels or `solder-mask`/artifact-name false positives; commit and push only verified source, tests, docs, benchmark, and manifest on the feature branch.
 
-Reference: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) prescribes `task: sentence similarity | query:` for similarity scoring. The 48-pair CCad corpus is an initial conservative calibration, not a general-language benchmark.
+References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) prescribes `task: sentence similarity | query:`; [Nomic Embed Text v1.5 model card](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5) specifies `clustering:` for similarity grouping and semantic duplicate removal. Dataset v2 SHA-256 is recorded in `docs/devops/progress.md`; this CCad-specific corpus is not a general-language benchmark.
 
 ### Sprint 1037 — one-use approvals, truthful tool IDs, and project undo/redo
 
