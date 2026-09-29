@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1039 — retrieval capability reconciliation and memory-tier ranking
+
+The retrieval handover now distinguishes durable memory/history from process-local project indexes, and documents exact, lexical, graph, spatial, semantic, and ContextBroker behavior with their real persistence, revision limits, fallbacks, tests, and benchmark status. `MemoryManager` ranks candidates within each enabled tier and interleaves bounded tier-local rankings, so corpus size in one tier no longer changes another tier's BM25 statistics or crowds every other tier from context. Safe provenance reports tier-local rank/count and merge policy. This is not a general retrieval benchmark or backend-independent retriever contract; those remain open in the active TODO. Validation and delivery status are recorded in `docs/devops/progress.md`.
+
 ## Sprint 1037 — single-use Agent approval and desktop Undo/Redo
 
 The native tool broker now issues expiring approval grants tied to one

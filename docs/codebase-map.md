@@ -2621,3 +2621,7 @@ restored chat. Evidence manifest:
 `artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`. The independent
 proposal-preview requirement remains open: both panes must render staged
 geometry from its exact revision/change-set, not substitute a text summary.
+
+## Retrieval capability matrix (Sprint 1039 reconciliation)
+
+The complete channel-by-channel matrix—including authority, persistence, revision, backend, fallback, contract tests, benchmark status, and canonical TODO owner—is maintained in [retrieval-capability-matrix.md](devops/retrieval-capability-matrix.md). Current retrieval is functional but incomplete; C++ typed project state remains authoritative, and R0-R18 in the active sprint TODO owns remaining work.

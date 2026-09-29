@@ -308,8 +308,8 @@ class MemoryManager:
     def retrieve_with_metadata(self, query: str, *, limit=8):
         """Return ranked entries plus content-free provenance for diagnostics."""
         self._prune_expired()
-        candidates = []
-        for tier_index, tier in enumerate(self.TIERS):
+        candidates_by_tier = {tier: [] for tier in self.TIERS}
+        for tier in self.TIERS:
             if not self.enabled[tier] or self.storage_errors.get(tier):
                 continue
             for entry_index, entry in enumerate(self.runtime[tier]):
@@ -320,61 +320,91 @@ class MemoryManager:
                 raw_tags = entry.get("tags", [])
                 tag_values = raw_tags if isinstance(raw_tags, (list, tuple)) else ()
                 tags = " ".join(tag for tag in tag_values if isinstance(tag, str))
-                candidates.append({"tier": tier, "tier_index": tier_index,
-                                   "entry_index": entry_index, "entry": entry,
-                                   "text": f"{title} {content} {tags}",
-                                   "title_text": title, "content_text": content,
-                                   "tags_text": tags,
-                                   "kind": entry.get("kind", "fact"),
-                                   "importance": entry.get("importance", 3),
-                                   "created_at": str(entry.get("created_at", "")),
-                                   "last_used_at": str(entry.get("last_used_at", "")),
-                                   "updated_at": str(entry.get("updated_at", "")),
-                                   "use_count": entry.get("use_count", 0)})
+                candidates_by_tier[tier].append({
+                    "tier": tier, "entry_index": entry_index, "entry": entry,
+                    "text": f"{title} {content} {tags}",
+                    "title_text": title, "content_text": content,
+                    "tags_text": tags, "kind": entry.get("kind", "fact"),
+                    "importance": entry.get("importance", 3),
+                    "created_at": str(entry.get("created_at", "")),
+                    "last_used_at": str(entry.get("last_used_at", "")),
+                    "updated_at": str(entry.get("updated_at", "")),
+                    "use_count": entry.get("use_count", 0)})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
-        lexical = rank_documents(query, candidates,
-                                 min_matches=min(2, query_term_count))
-        eligible = {item["document"]["entry"]["id"] for item in lexical}
-        channels = {}
-        for channel, field in (("title", "title_text"),
-                               ("content", "content_text"),
-                               ("tags", "tags_text")):
-            field_docs = [candidate for candidate in candidates
-                          if candidate["entry"]["id"] in eligible]
-            channels[channel] = rank_documents(query, field_docs,
-                                               text_key=field, min_matches=1)
-        fused = fuse_rankings(channels, weights={"title": 1.2,
-                                                 "content": 1.0,
-                                                 "tags": 0.8})
-        semantic_ranked = self._semantic_rankings(candidates, str(query))
-        semantic_by_id = {item["document"]["entry"]["id"]: item
-                          for item in semantic_ranked}
-        if semantic_ranked:
-            fused = fuse_rankings({**channels, "semantic": semantic_ranked},
-                                  weights={"title": 1.2, "content": 1.0,
-                                           "tags": 0.8, "semantic": 1.0})
-        # Kind only adjusts already-relevant candidates; it cannot introduce a
-        # preference/correction that failed the lexical/semantic eligibility gate.
+        ranked_by_tier = {}
+        candidate_count_by_tier = {}
+        lexical_scores_by_tier = {}
+        semantic_scores_by_tier = {}
         kind_weights = {"fact": 1.0, "preference": 1.08, "correction": 1.16}
         ranked_at = self._now()
-        for item in fused:
-            document = item["document"]
-            kind = document.get("kind", "fact")
-            importance = document.get("importance", 3)
-            item["score"] *= kind_weights.get(kind, 1.0)
-            item["kind_weight"] = kind_weights.get(kind, 1.0)
-            item["importance_weight"] = self._importance_weight(importance)
-            item["recency_weight"] = self._recency_weight(document, ranked_at)
-            item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
-            item["score"] *= (item["importance_weight"] * item["recency_weight"] *
-                               item["usage_weight"])
-        fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
-        lexical_by_id = {item["document"]["entry"]["id"]: item
-                         for item in lexical}
-        diversified = diversify_ranked(fused, limit=max(0, min(32, int(limit))),
-                                       text_key="text", relevance_weight=0.7,
-                                       similarity_fn=self._candidate_similarity)
-        selected = diversified
+        result_limit = max(0, min(32, int(limit)))
+        for tier in self.TIERS:
+            candidates = candidates_by_tier[tier]
+            lexical = rank_documents(query, candidates,
+                                     min_matches=min(2, query_term_count))
+            eligible_ids = {item["document"]["entry"]["id"] for item in lexical}
+            channels = {}
+            for channel, field in (("title", "title_text"),
+                                   ("content", "content_text"),
+                                   ("tags", "tags_text")):
+                field_docs = [candidate for candidate in candidates
+                              if candidate["entry"]["id"] in eligible_ids]
+                channels[channel] = rank_documents(
+                    query, field_docs, text_key=field, min_matches=1)
+            fused = fuse_rankings(channels, weights={"title": 1.2,
+                                                     "content": 1.0,
+                                                     "tags": 0.8})
+            semantic_ranked = self._semantic_rankings(candidates, str(query))
+            semantic_by_id = {item["document"]["entry"]["id"]: item
+                              for item in semantic_ranked}
+            if semantic_ranked:
+                fused = fuse_rankings(
+                    {**channels, "semantic": semantic_ranked},
+                    weights={"title": 1.2, "content": 1.0,
+                             "tags": 0.8, "semantic": 1.0})
+            # Rank, weight, and diversify within the tier: unrelated memories
+            # in other namespaces cannot perturb this tier's document stats.
+            for item in fused:
+                document = item["document"]
+                kind = document.get("kind", "fact")
+                item["score"] *= kind_weights.get(kind, 1.0)
+                item["kind_weight"] = kind_weights.get(kind, 1.0)
+                item["importance_weight"] = self._importance_weight(
+                    document.get("importance", 3))
+                item["recency_weight"] = self._recency_weight(document, ranked_at)
+                item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
+                item["score"] *= (item["importance_weight"] * item["recency_weight"] *
+                                  item["usage_weight"])
+            fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
+            candidate_count_by_tier[tier] = len(fused)
+            ranked_by_tier[tier] = diversify_ranked(
+                fused, limit=result_limit, text_key="text", relevance_weight=0.7,
+                similarity_fn=self._candidate_similarity)
+            lexical_scores_by_tier[tier] = {
+                item["document"]["entry"]["id"]: item["score"] for item in lexical}
+            semantic_scores_by_tier[tier] = {
+                entry_id: item["score"] for entry_id, item in semantic_by_id.items()}
+
+        # Interleave tier-local rankings so one larger tier cannot crowd every
+        # other enabled tier out of the bounded provider context.
+        selected = []
+        tier_rank = 0
+        while len(selected) < result_limit:
+            appended = False
+            for tier in self.TIERS:
+                ranked = ranked_by_tier[tier]
+                if tier_rank >= len(ranked):
+                    continue
+                item = ranked[tier_rank]
+                item["tier_rank"] = tier_rank + 1
+                item["tier_candidate_count"] = candidate_count_by_tier[tier]
+                selected.append(item)
+                appended = True
+                if len(selected) >= result_limit:
+                    break
+            if not appended:
+                break
+            tier_rank += 1
         durable_ids = [item["document"]["entry"]["id"] for item in selected
                        if item["document"]["tier"] != "working_memory"]
         try:
@@ -410,19 +440,25 @@ class MemoryManager:
             "recency_weight": round(item.get("recency_weight", 1.0), 6),
             "usage_weight": round(item.get("usage_weight", 1.0), 6),
             "usage_persistence": item["document"].get("usage_persistence", "unavailable"),
+            "tier_rank": item["tier_rank"],
+            "tier_candidate_count": item["tier_candidate_count"],
+            "tier_merge_policy": "round_robin",
             "query_overlap_terms": len(item["matched_terms"]),
-            "bm25_score": round(lexical_by_id.get(
-                item["document"]["entry"]["id"], {}).get("score", 0.0), 6),
-            "ranking_method": ("hybrid_bm25_rrf_mmr" if semantic_ranked
-                               else "fielded_bm25_rrf_mmr"),
+            "bm25_score": round(lexical_scores_by_tier[item["document"]["tier"]].get(
+                item["document"]["entry"]["id"], 0.0), 6),
+            "ranking_method": (
+                "tiered_hybrid_bm25_rrf_mmr"
+                if semantic_scores_by_tier[item["document"]["tier"]]
+                else "tiered_fielded_bm25_rrf_mmr"),
             "channel_ranks": item["channel_ranks"],
             "rrf_score": round(item["score"], 8),
             "diversity_score": item["diversity_score"],
             "redundancy_score": item["redundancy_score"],
             "matched_terms": item["matched_terms"],
-            **({"semantic_similarity": round(semantic_by_id[
-                item["document"]["entry"]["id"]]["score"], 6)}
-               if item["document"]["entry"]["id"] in semantic_by_id else {}),
+            **({"semantic_similarity": round(semantic_scores_by_tier[
+                item["document"]["tier"]][item["document"]["entry"]["id"]], 6)}
+               if item["document"]["entry"]["id"] in semantic_scores_by_tier[
+                   item["document"]["tier"]] else {}),
             "namespace_hash": hashlib.sha256(
                 str(item["document"]["entry"].get(
                     "namespace", self.identities[item["document"]["tier"]])).encode()

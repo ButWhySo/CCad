@@ -27,7 +27,10 @@ with tempfile.TemporaryDirectory() as temp:
     assert ranked_memories[0]["title"] == "routing"
     assert memory_sources[0]["bm25_score"] > 0
     assert memory_sources[0]["matched_terms"] == ["return", "path"]
-    assert memory_sources[0]["ranking_method"] == "fielded_bm25_rrf_mmr"
+    assert memory_sources[0]["ranking_method"] == "tiered_fielded_bm25_rrf_mmr"
+    assert memory_sources[0]["tier_rank"] == 1
+    assert memory_sources[0]["tier_candidate_count"] == 1
+    assert memory_sources[0]["tier_merge_policy"] == "round_robin"
     assert memory_sources[0]["channel_ranks"]["content"] == 1
     assert memory_sources[0]["rrf_score"] > 0
     assert memory_sources[0]["recency_weight"] >= 1.0

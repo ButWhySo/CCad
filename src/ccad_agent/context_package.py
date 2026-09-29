@@ -51,6 +51,15 @@ def _safe_retrieval_metadata(item: dict, *, include_bm25: bool) -> dict:
     persistence = item.get("usage_persistence")
     if persistence in {"durable", "process", "process_only", "unavailable"}:
         safe["usage_persistence"] = persistence
+    tier_rank = item.get("tier_rank")
+    if isinstance(tier_rank, int) and not isinstance(tier_rank, bool) and 1 <= tier_rank <= 32:
+        safe["tier_rank"] = tier_rank
+    candidate_count = item.get("tier_candidate_count")
+    if (isinstance(candidate_count, int) and not isinstance(candidate_count, bool)
+            and 0 <= candidate_count <= 4096):
+        safe["tier_candidate_count"] = candidate_count
+    if item.get("tier_merge_policy") == "round_robin":
+        safe["tier_merge_policy"] = "round_robin"
     return safe
 
 

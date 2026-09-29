@@ -159,7 +159,7 @@ try:
         entries, diagnostics = manager.retrieve_with_metadata(
             "how to step down supply voltage", limit=4)
         assert entries and entries[0]["id"] == regulator["id"]
-        assert diagnostics[0]["ranking_method"] == "hybrid_bm25_rrf_mmr"
+        assert diagnostics[0]["ranking_method"] == "tiered_hybrid_bm25_rrf_mmr"
         assert diagnostics[0]["channel_ranks"]["semantic"] == 1
         assert diagnostics[0]["bm25_score"] == 0
         assert manager.state()["semantic"]["ready"] is True
