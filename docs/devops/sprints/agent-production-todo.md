@@ -5,11 +5,15 @@
 - [x] Reject semantic near-duplicates on memory add/update within the same enabled tier and namespace, using the existing opt-in local embedding backend after validation and secret rejection.
 - [x] Keep lexical/exact duplicate behavior when semantic retrieval is disabled; fail writes with a safe error when semantic checking is explicitly enabled but becomes unavailable or is not ready.
 - [x] Cover semantic add/update, namespace isolation, pre-embedding secret rejection, disabled mode, unavailable backend, and cache behavior in offline contracts.
-- [ ] Calibrate the 0.90 cosine threshold against supported real local embedding models; no model was installed/configured for this slice, so deterministic embedding contracts are not quality evidence.
+- [x] Use EmbeddingGemma's documented sentence-similarity prompt for duplicate checks; local Ollama protocol contract verifies the exact request input.
+- [x] Calibrate the opt-in cosine cutoff to 0.91 on 24 labeled duplicate and 24 hard-negative CCad memory pairs for EmbeddingGemma and Nomic; each model rejected 0/24 negatives, while catching 4/24 and 1/24 paraphrases respectively. Model digests and results recorded in progress; repeatable runner: `scripts/benchmark_semantic_memory_duplicates.py`.
+- [ ] Expand the labeled set and recalibrate each new model digest before changing the cutoff or claiming broad paraphrase recall; current measured recall is deliberately low to avoid false rejection.
 - [x] Run changed-module Pyright and focused memory/semantic contracts.
-- [x] Complete official Qt/MinGW Release + full CTest nonvisual gate (123/123); inspect preflight/build/CTest logs and manifest `artifacts/evidence/sprint-1038-semantic-memory-dedupe-final.json` (SHA-256 `3CEF973997179A98BAA78ED0F733108CAD1C40D5AC752C19911201A7FD38B741`).
+- [x] Complete official Qt/MinGW Release + full CTest nonvisual gate (123/123); inspect preflight/build/CTest logs and calibration manifest `artifacts/evidence/sprint-1038-semantic-memory-dedupe-calibration.json` (SHA-256 `537E25C5F8E25C1230E433B067F1DD5C4F70727A4F4903E2A89D454A6FF96A90`).
 - [x] Update codebase map, feature inventory, progress, and this TODO in the same slice.
-- [x] Run redacted tracked-repository and staged-diff secret scans (zero candidate lines); commit and push only verified source, tests, docs, and manifest on the feature branch (`dec349e`).
+- [x] Run redacted tracked-repository and staged-diff secret scans; staged additions have zero credential-pattern matches. Existing tracked hits were reviewed as test sentinels or `solder-mask`/artifact-name false positives; commit and push only verified source, tests, docs, benchmark, and manifest on the feature branch.
+
+Reference: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) prescribes `task: sentence similarity | query:` for similarity scoring. The 48-pair CCad corpus is an initial conservative calibration, not a general-language benchmark.
 
 ### Sprint 1037 — one-use approvals, truthful tool IDs, and project undo/redo
 
@@ -1478,7 +1482,7 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
 - [ ] Implement semantic compaction policy for durable memory records; current retention cap is 64 records per tier namespace. Conversation `/cc` compaction is implemented separately in Sprint 970.
-- [x] Implement semantic near-duplicate checks on add/update using the enabled, ready local embedding backend, limited to the matching tier/namespace; invalid/secret input is rejected before embedding, unavailable enabled checks fail closed, and disabled semantic mode preserves lexical behavior. Deterministic contracts pass; real-model threshold calibration remains open (Sprint 1038).
+- [x] Implement semantic near-duplicate checks on add/update using the enabled, ready local embedding backend, limited to the matching tier/namespace; invalid/secret input is rejected before embedding, unavailable enabled checks fail closed, and disabled semantic mode preserves lexical behavior. Real-model cutoff calibration is recorded in Sprint 1038; recall expansion remains open.
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
 - [x] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart; enable, disable, loaded/persistent counts, and reset outcomes are contract-tested.

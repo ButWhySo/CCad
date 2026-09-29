@@ -2085,8 +2085,14 @@ are enforced. Durable-memory semantic compaction remains open. Sprint 1038 adds
 opt-in semantic duplicate checks for add/update: after validation and secret
 rejection, same-tier/same-namespace candidates are compared using the existing
 ready local embedding backend, with cached vectors and a bounded 128-candidate
-set. The 0.90 cosine threshold is not calibrated against an installed real model;
-contracts use deterministic embeddings. When semantic checking is explicitly
+set. Duplicate comparisons use the backend's sentence-similarity operation;
+EmbeddingGemma receives its documented task prefix. The opt-in 0.91 cutoff was
+calibrated on 24 labeled paraphrase and 24 hard-negative pairs each for
+EmbeddingGemma digest `85462619ee72` and Nomic digest `0a109f422b47`; each had
+zero false rejections in that initial set, with 4/24 and 1/24 paraphrases caught.
+This is conservative, low-recall evidence, not broad model/version calibration.
+The repeatable real-Ollama benchmark is `scripts/benchmark_semantic_memory_duplicates.py`.
+When semantic checking is explicitly
 enabled but unavailable, writes fail with the safe
 `semantic_duplicate_check_unavailable` category; disabled mode retains exact and
 lexical checks. Contracts: `scripts/test_semantic_retrieval.py` and

@@ -18,6 +18,7 @@ from semantic_retrieval import EmbeddingError, OllamaEmbeddingBackend
 
 
 class OllamaTestHandler(BaseHTTPRequestHandler):
+    requests = []
     @staticmethod
     def vector(value):
         text = value.casefold()
@@ -31,13 +32,17 @@ class OllamaTestHandler(BaseHTTPRequestHandler):
         if self.path != "/api/tags":
             self.send_error(404)
             return
-        self._json({"models": [{"name": "test-embed:latest", "digest": "sha256:fixture-v1"}]})
+        self._json({"models": [
+            {"name": "test-embed:latest", "digest": "sha256:fixture-v1"},
+            {"name": "embeddinggemma:latest", "digest": "sha256:gemma-fixture"},
+        ]})
 
     def do_POST(self):
         if self.path != "/api/embed":
             self.send_error(404)
             return
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        self.requests.append(body)
         values = body["input"]
         values = [values] if isinstance(values, str) else values
         vectors = [self.vector(value) for value in values]
@@ -90,6 +95,38 @@ try:
     assert backend.model_version == "sha256:fixture-v1"
     assert backend.embed_documents(["switching regulator powers board"])[0] == [1.0, 0.0, 0.0]
     assert backend.embed_query("how to step down supply voltage") == [1.0, 0.0, 0.0]
+    gemma_backend = OllamaEmbeddingBackend(endpoint, "embeddinggemma")
+    assert gemma_backend.check_ready()["ready"] is True
+    similarity_query = "A switching regulator converts an input rail to stable output voltage."
+    gemma_backend.embed_similarity_query(similarity_query)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "task: sentence similarity | query: " + similarity_query]
+    similarity_documents = ["The power rail uses a 0.25 mm track."]
+    gemma_backend.embed_similarity_documents(similarity_documents)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "task: sentence similarity | query: " + similarity_documents[0]]
+    ordinary_backend = OllamaEmbeddingBackend(endpoint, "test-embed")
+    ordinary_backend.embed_similarity_query(similarity_query)
+    assert OllamaTestHandler.requests[-1]["input"] == [similarity_query]
+    with tempfile.TemporaryDirectory() as directory:
+        ollama_manager = MemoryManager(
+            MemoryStore(Path(directory) / "ollama-semantic-dedupe.json"),
+            thread_id="semantic-thread")
+        ollama_manager.configure({"ltm": True, "semantic": {
+            "enabled": True, "model": "embeddinggemma", "base_url": endpoint}})
+        ollama_manager.add(
+            "A switching regulator powers the supply rail of the board",
+            tier="ltm", scope="conversation")
+        try:
+            ollama_manager.add(
+                "A step down regulator powers the board supply rail",
+                tier="ltm", scope="conversation")
+        except ValueError as error:
+            assert "semantic similarity" in str(error)
+        else:
+            raise AssertionError("Ollama-backed semantic duplicate was accepted")
+        assert "task: sentence similarity | query: " in \
+            OllamaTestHandler.requests[-1]["input"][0]
     for bad_endpoint in ("https://127.0.0.1:11434", "http://example.com:11434",
                          "http://user:pass@127.0.0.1:11434",
                          "http://localhost:11434"):

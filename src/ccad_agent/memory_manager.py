@@ -24,7 +24,8 @@ class MemoryManager:
     MAX_SEMANTIC_CANDIDATES = 32
     MAX_DUPLICATE_CANDIDATES = 128
     MIN_SEMANTIC_SIMILARITY = 0.25
-    MIN_SEMANTIC_DUPLICATE_SIMILARITY = 0.90
+    # Conservative cutoff calibrated on current local-model versions; see Sprint 1038.
+    MIN_SEMANTIC_DUPLICATE_SIMILARITY = 0.91
     NEAR_DUPLICATE_THRESHOLD = 0.88
     _word = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
 
@@ -659,12 +660,12 @@ class MemoryManager:
             raise ValueError("semantic_duplicate_candidate_limit_exceeded")
         try:
             identity = str(backend.identity)
-            query_key = identity + ":q:" + hashlib.sha256(
+            query_key = identity + ":sentence_similarity:q:" + hashlib.sha256(
                 content.encode("utf-8")).hexdigest()
             query_vector = self._embedding_cache_get(self._query_embedding_cache, query_key)
             if query_vector is None:
                 query_vector = OllamaEmbeddingBackend._normalize_vector(
-                    backend.embed_query(content))
+                    getattr(backend, "embed_similarity_query", backend.embed_query)(content))
                 self._cache_embedding(self._query_embedding_cache, query_key, query_vector)
 
             vectors = {}
@@ -682,7 +683,9 @@ class MemoryManager:
                     vectors[str(entry.get("id", ""))] = vector
             for offset in range(0, len(missing), OllamaEmbeddingBackend.MAX_TEXTS):
                 batch = missing[offset:offset + OllamaEmbeddingBackend.MAX_TEXTS]
-                embedded = backend.embed_documents([item[2] for item in batch])
+                embed_documents = getattr(backend, "embed_similarity_documents",
+                                          backend.embed_documents)
+                embedded = embed_documents([item[2] for item in batch])
                 if len(embedded) != len(batch):
                     raise EmbeddingError("embedding_invalid_response")
                 for (entry, key, _), vector in zip(batch, embedded):

@@ -126,6 +126,17 @@ class OllamaEmbeddingBackend:
         vectors = self._embed([text])
         return vectors[0]
 
+    def embed_similarity_documents(self, texts) -> list[list[float]]:
+        """Use EmbeddingGemma's documented sentence-similarity instruction."""
+        values = list(texts)
+        if self.model.split(":", 1)[0].casefold() == "embeddinggemma":
+            values = [f"task: sentence similarity | query: {text}"
+                      if isinstance(text, str) else text for text in values]
+        return self._embed(values)
+
+    def embed_similarity_query(self, text: str) -> list[float]:
+        return self.embed_similarity_documents([text])[0]
+
     def _embed(self, texts) -> list[list[float]]:
         texts = list(texts)
         if not texts or len(texts) > self.MAX_TEXTS or any(
