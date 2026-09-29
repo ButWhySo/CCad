@@ -9,7 +9,7 @@
 - [x] Pass provider-error classification, runtime observability, and local Langfuse v4 ingestion tests; telemetry-module Pyright reports zero diagnostics.
 - [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); final combined-fix evidence is `artifacts/evidence/sprint-1042-ci-contracts-final.json` (SHA-256 `3AE77DBFD402C70835532730A3EEABA7EA6A9B90D93D36F2216ED63C4190CF9F`).
 - [x] Run the staged-diff credential scan; no credential-pattern matches were found.
-- [ ] Verify hosted CI is green on the resulting `main` commit before marking Sprint 1042 complete.
+- [x] Verify hosted CI run #576 is green on exact code commit `9f4e418f99f9365c03705c8c0135305f7fd05d44` (all five jobs passed).
 
 ### Sprint 1041 — retrieval architecture boundary
 
