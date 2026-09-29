@@ -2646,9 +2646,12 @@ temporary stores. Reports retain source revisions, actual channels, stable
 entity aliases, Recall/Precision/MRR/nDCG, hard-negative outcomes, context
 bytes/character-based token estimates, index build/update and query timings,
 process peak RSS, and temporary-store disk sizes. Exact, lexical, graph,
-spatial, memory, and historical-turn results are measured offline; semantic
-cases identify when only lexical retrieval actually ran. Product startup,
-separately isolated embedding latency, failure recovery, and model follow-up
-tool calls remain unmeasured and block R3 closure/backend superiority claims.
+spatial, memory, and historical-turn results are measured offline. Optional
+loopback Ollama mode measures real `embeddinggemma` and `nomic-embed-text`
+semantic hits and query/document embedding latency; semantic cases disclose
+when the backend was disabled and lexical evidence ran instead. The small
+fixture result does not select a winning model. Product startup, retrieval
+failure recovery, and model follow-up tool calls remain unmeasured and block R3
+closure/backend superiority claims.
 `scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
 retrieval paths; the CTest and CI `agent-python` gates run it.

@@ -5,9 +5,9 @@
 - [x] Add versioned, task-separated calibration and held-out datasets with source/project revisions, expected identities, rationale, hard distractors, board-scale/repeated-class coverage, and explicit semantic-use policy; Pyright is clean and Qt/MinGW Release plus full CTest pass 125/125. Manifest `artifacts/evidence/sprint-1043-retrieval-corpus.json` (SHA-256 `2F2033BD8B66312E8AE032BC8793B5BA83542B0E3F353A25C41B440644A52B90`).
 - [x] Execute calibration and held-out cases through real `ProjectIndex`, `MemoryManager`, and `ConversationStore` retrieval; report ranked quality and bounded-context measurements without synthetic retrieval hits.
 - [x] Measure in-memory index build/update, query percentiles, process peak RSS, temporary-store disk use, and versioned execution reports; retain missing measurements as explicit `not measured` statuses.
-- [ ] Measure local embedding latency and true semantic-channel quality with an available configured model; current offline results must not be presented as semantic evaluation.
+- [x] Measure held-out semantic retrieval and query/document embedding latency with installed local `embeddinggemma` and `nomic-embed-text`; reports distinguish model/channel and offline lexical-only results.
 - [ ] Measure retrieval failure recovery and follow-up Agent tool calls in a real model-backed context turn; offline retrieval harness does not measure these.
-- [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright; official non-visual manifest `artifacts/evidence/sprint-1043-retrieval-runner-final.json` SHA-256 `C2BB3B9652F8AA8DC4B2B9A0B98A0D9F4FDCB4DA67D3EFD19FF8230C61643CC7`.
+- [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright after semantic instrumentation; official non-visual manifest `artifacts/evidence/sprint-1043-semantic-measurement.json` SHA-256 `75FB3BA4EF2BAE60E29ADD19A1442F7AACB058727B7891F6AC4D0D0695B9966B`.
 - [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
 - [x] Commit and push verified slice as `0812739`; `git ls-remote` confirms exact branch head `0812739d842f664eda088e756eb63bb583c5f240`.
 - [ ] Inspect hosted CI for exact pushed SHA after a pull-request event; branch-only pushes do not trigger this repository's configured workflow.
@@ -7912,7 +7912,7 @@ Do not call the retrieval architecture complete until all are demonstrated.
 - [ ] Typesense has not been introduced without a measured reason.
 - [ ] FTS5 has been objectively evaluated against current lexical retrieval.
 - [ ] ANN has not been introduced without a measured scaling need.
-- [ ] Real-model semantic retrieval has a held-out benchmark.
+- [x] Real-model semantic retrieval has a held-out benchmark for installed local `embeddinggemma` and `nomic-embed-text`; per-model reports are manifest-bound workspace evidence, with no backend winner claimed.
 - [ ] Langfuse can explain retrieval planning, fallback, fusion and budgeting.
 - [ ] Failure, cancellation, revision-race and backend-unavailable tests pass.
 - [ ] `MAP.md`, `DECISIONS.md`, `PROGRESS.md`, `HANDOVER.md`, `RUNBOOK.md`, feature inventory and consolidated TODO reflect the final architecture.

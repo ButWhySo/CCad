@@ -9,10 +9,12 @@ TurnRecords. `scripts/benchmark_agent_retrieval.py` executes those cases through
 the production project, memory, and conversation retrievers and writes
 versioned per-case quality, context, channel, revision, and system measurements.
 The offline baseline has caught real lexical-ranking misses and a calibration
-hard-negative false positive. A case labelled semantic is not treated as a
-semantic success unless a semantic channel actually ran. Model-backed semantic
-quality/embedding latency, backend recovery, product startup, and follow-up
-Agent tool calls remain unmeasured; no backend superiority is claimed.
+hard-negative false positive. Optional loopback Ollama mode has now executed
+held-out and calibration semantic cases using installed `embeddinggemma` and
+`nomic-embed-text`, and measures actual query and document embedding calls.
+Semantic-channel results are distinguished from lexical-only hits. This tiny
+fixture set does not select a winning model; retrieval failure recovery,
+product startup, and model follow-up Agent tool calls remain unmeasured.
 
 ## Sprint 1041 — retrieval request/result boundary
 

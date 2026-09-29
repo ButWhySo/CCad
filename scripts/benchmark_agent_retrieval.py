@@ -31,6 +31,7 @@ from memory_store import MemoryStore  # noqa: E402
 from project_index import ProjectIndex  # noqa: E402
 from retrieval_adapters import MemoryManagerRetriever, ProjectIndexRetriever  # noqa: E402
 from retrieval_contracts import RetrievalChannel, RetrievalRequest  # noqa: E402
+from semantic_retrieval import OllamaEmbeddingBackend  # noqa: E402
 
 DATASET_PATH = ROOT / "scripts" / "fixtures" / "agent_retrieval_dataset_v1.json"
 K_VALUES = (1, 3, 5)
@@ -45,6 +46,31 @@ TASK_CHANNELS = {
                          RetrievalChannel.EXACT),
     "memory": (RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC),
 }
+
+
+class TimedEmbeddingBackend:
+    """Measure local embedding calls while delegating unchanged request/results."""
+
+    def __init__(self, backend: OllamaEmbeddingBackend):
+        self._backend = backend
+        self.identity = backend.identity
+        self.query_latency_ms: list[float] = []
+        self.document_latency_ms: list[float] = []
+
+    def embed_query(self, text: str) -> list[float]:
+        started = time.perf_counter_ns()
+        try:
+            return self._backend.embed_query(text)
+        finally:
+            self.query_latency_ms.append((time.perf_counter_ns() - started) / 1_000_000)
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        started = time.perf_counter_ns()
+        try:
+            return self._backend.embed_documents(texts)
+        finally:
+            self.document_latency_ms.append(
+                (time.perf_counter_ns() - started) / 1_000_000)
 
 
 def _snapshot(fixture_name: str) -> dict[str, Any]:
@@ -195,6 +221,21 @@ def _percentile(samples: list[float], percentile: float) -> float | None:
     return round(ordered[max(0, math.ceil(percentile * len(ordered)) - 1)], 6)
 
 
+def _embedding_latency(backend: TimedEmbeddingBackend | None) -> dict[str, Any]:
+    if backend is None:
+        return {"status": "not_requested", "query": None, "documents": None}
+    query = backend.query_latency_ms
+    documents = backend.document_latency_ms
+    return {
+        "status": "measured" if query or documents else "no_embedding_requests",
+        "query": {"p50": _percentile(query, 0.50), "p95": _percentile(query, 0.95),
+                  "request_count": len(query)},
+        "documents": {"p50": _percentile(documents, 0.50),
+                      "p95": _percentile(documents, 0.95),
+                      "request_count": len(documents)},
+    }
+
+
 def _peak_rss_bytes() -> int | None:
     if os.name == "nt":
         import ctypes
@@ -339,7 +380,14 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                             project_id="retrieval-benchmark")
     memory_aliases = _seed_memories(manager, "memory_records")
     semantic_state = {"status": "disabled", "enabled": False, "model": ""}
+    timed_embeddings: TimedEmbeddingBackend | None = None
     if local_semantic:
+        embedding_backend = OllamaEmbeddingBackend(ollama_url, embedding_model)
+        readiness = embedding_backend.check_ready()
+        if not readiness.get("ready"):
+            raise RuntimeError("local_semantic_backend_not_ready")
+        timed_embeddings = TimedEmbeddingBackend(embedding_backend)
+        manager.set_embedding_backend(timed_embeddings)
         failures = manager.configure({"working_memory": False, "ltm": True, "episodic": False,
                                       "semantic": {"enabled": True, "backend": "ollama_local",
                                                    "base_url": ollama_url,
@@ -519,8 +567,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                     "fixture_memory_store_disk_bytes": memory_disk,
                     "fixture_conversation_store_disk_bytes": conversation_disk,
                     "project_index_disk_bytes": 0,
-                    "embedding_latency_ms": {"p50": None, "p95": None,
-                                             "status": "not_separately_instrumented"},
+                    "embedding_latency_ms": _embedding_latency(timed_embeddings),
                     "benchmark_execution_ms": round((time.perf_counter() - started) * 1000, 6),
                     "product_startup_latency_ms": None,
                     "backend_failure_recovery": "not_measured_no_persistent_search_backend",

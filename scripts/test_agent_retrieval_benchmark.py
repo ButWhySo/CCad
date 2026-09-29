@@ -76,7 +76,7 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertTrue(all(row["timing_ms"]["p50"] >= 0 for row in report["cases"]))
         self.assertEqual(report["systems"]["product_startup_latency_ms"], None)
         self.assertEqual(report["systems"]["embedding_latency_ms"]["status"],
-                         "not_separately_instrumented")
+                         "not_requested")
         self.assertEqual(report["systems"]["follow_up_tool_calls"],
                          "not_measured_offline_retrieval_only")
 
