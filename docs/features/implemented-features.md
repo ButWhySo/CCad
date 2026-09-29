@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1038 — Editor-aware Agent context and schematic selection
+
+Qt project context now identifies the active PCB or schematic editor and serializes the exact active-canvas selection. The GUI-map selection method accepts only its declared PCB/schematic canvases, resolves native object identity, switches to the target editor, and returns the resulting selection state. The context broker includes editor identity in its cache key and request digest; project retrieval uses explicit query intent first and otherwise scopes spatial queries to the active editor. Bounded provider context and `context_state` expose only the safe retrieval domain (`board`, `schematic`, or `unavailable`). This does not claim complete schematic/PCB semantic coverage: unsupported object classes and absent source data remain unavailable rather than fabricated. Verified on 2026-09-29: Qt/MinGW Release, CTest 120/120, 14 mapped interactions, four inspected screenshots, and clean captured stderr. Evidence manifest `artifacts/evidence/sprint-1038-agent-context-editor-r8.json` (SHA-256 `2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`).
+
 ## Sprint 1036 — Conversation STM metadata and compaction provenance
 
 The canonical active conversation is identified in safe context metadata as

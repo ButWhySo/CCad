@@ -586,6 +586,14 @@ QJsonObject canvasProperty() {
   return property;
 }
 
+QJsonObject selectableCanvasProperty() {
+  QJsonObject property = schemaProperty(
+      "string", "Canvas id: canvas:pcb or canvas:schematic.");
+  property.insert("enum", QJsonArray{"canvas:pcb", "canvas:schematic"});
+  property.insert("default", "canvas:pcb");
+  return property;
+}
+
 QJsonObject boardPointSchema(const bool with_dry_run) {
   QJsonObject properties;
   properties.insert("x_mm", schemaProperty("number", "Board X coordinate in millimeters."));
@@ -893,12 +901,14 @@ QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}
                           "Deletion result and board counts.",
                           QJsonObject{{"id", "V1"}}));
   append(agentMethodEntry("ui.select_canvas_object", "workflow", "Select Canvas Object",
-                          "Select a PCB canvas object by CAD object id.",
-                          false, true, false, true, false, idSchema("CAD object id or canvas_object:id."),
+                          "Select a PCB or schematic canvas object by CAD object id.",
+                          false, true, false, true, false,
+                          schemaObject(QJsonObject{{"id", schemaProperty("string", "CAD object id or canvas_object:id.")},
+                                                   {"canvas", selectableCanvasProperty()}}, {"id"}),
                           "Selection result and selected count.",
                           QJsonObject{{"id", "U1.1"}}));
   append(agentMethodEntry("ui.get_selection", "workflow", "Get Selection",
-                          "Return currently selected PCB canvas objects.",
+                          "Return objects selected in the active PCB or schematic canvas.",
                           true, false, false, false, false, emptySchema(),
                           "Selected object list."));
   append(agentMethodEntry("ui.wait_for_epoch", "workflow", "Wait For Epoch",
@@ -2849,6 +2859,7 @@ ReviewWindow::ReviewWindow() {
             add_via_action->setVisible(pcb_tab);
             add_zone_action->setVisible(pcb_tab);
             add_keepout_action->setVisible(pcb_tab);
+            updateAgentPanelContext();
             markUiMapChanged({"tab:pcb", "tab:schematic", "action:add_footprint",
                               "action:add_symbol", "action:add_wire", "action:add_label",
                               "action:add_tracks", "action:add_via", "action:add_zone", "action:add_keepout_area",
@@ -7019,6 +7030,10 @@ QString ReviewWindow::projectContextJson() const {
   QJsonObject response = projectObjectCountsObject(project_cache_);
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
+  const bool schematic_active = editor_tabs_ != nullptr &&
+                                editor_tabs_->currentWidget() == schematic_view_;
+  response.insert("active_editor", schematic_active ? "schematic" : "pcb");
+  response.insert("active_view", schematic_active ? "schematic" : "pcb");
   response.insert("project_path", qstr(current_path_.generic_string()));
   response.insert("active_pcb_layer_id", qstr(activePcbLayerOrDefault()));
   response.insert("active_pcb_net_id", qstr(activePcbNetOrDefault()));
@@ -7067,6 +7082,10 @@ QString ReviewWindow::projectStateJson() const {
   response.insert("ui_epoch", ui_map_epoch_);
   response.insert("active_pcb_layer_id", qstr(activePcbLayerOrDefault()));
   response.insert("active_pcb_net_id", qstr(activePcbNetOrDefault()));
+  response.insert("active_editor", editor_tabs_ != nullptr &&
+                  editor_tabs_->currentWidget() == schematic_view_ ? "schematic" : "pcb");
+  response.insert("active_view", editor_tabs_ != nullptr &&
+                  editor_tabs_->currentWidget() == schematic_view_ ? "schematic" : "pcb");
   response.insert("selection", parsedJsonObjectOrRaw(uiSelectionJson()));
   return jsonObjectLine(response);
 }
@@ -7514,8 +7533,11 @@ QString ReviewWindow::uiKeyJson(const QString& key) {
 }
 
 QString ReviewWindow::uiSelectCanvasObjectJson(const QString& id, const QString& canvas_id) {
-  const QString normalized_canvas =
-      canvas_id.trimmed().isEmpty() ? QString("canvas:pcb") : canvas_id.trimmed();
+  const bool canvas_was_omitted = canvas_id.trimmed().isEmpty();
+  const QString normalized_canvas = canvas_was_omitted
+      ? ((editor_tabs_ != nullptr && editor_tabs_->currentWidget() == schematic_view_)
+             ? QString("canvas:schematic") : QString("canvas:pcb"))
+      : canvas_id.trimmed();
   QString object_id = id.trimmed();
   if (object_id.startsWith("canvas_object:")) {
     object_id = object_id.mid(QString("canvas_object:").size());
@@ -7527,12 +7549,9 @@ QString ReviewWindow::uiSelectCanvasObjectJson(const QString& id, const QString&
   response.insert("canvas", normalized_canvas);
   response.insert("id", QString("canvas_object:") + object_id);
   response.insert("object_id", object_id);
-  if (normalized_canvas != "canvas:pcb") {
-    response.insert("performed", false);
-    response.insert("reason", "unsupported_canvas");
-    return jsonObjectLine(response);
-  }
-  if (canvas_scene_ == nullptr) {
+  const bool schematic_canvas = normalized_canvas == "canvas:schematic";
+  QGraphicsScene* target_scene = schematic_canvas ? schematic_scene_ : canvas_scene_;
+  if (target_scene == nullptr) {
     response.insert("performed", false);
     response.insert("reason", "canvas_unavailable");
     return jsonObjectLine(response);
@@ -7542,20 +7561,32 @@ QString ReviewWindow::uiSelectCanvasObjectJson(const QString& id, const QString&
     response.insert("reason", "missing_object_id");
     return jsonObjectLine(response);
   }
-  const bool selected = selectCanvasObjectById(*canvas_scene_, object_id);
+  if (normalized_canvas != "canvas:pcb" && !schematic_canvas) {
+    response.insert("performed", false);
+    response.insert("reason", "unsupported_canvas");
+    return jsonObjectLine(response);
+  }
+  if (schematic_canvas && editor_tabs_ != nullptr) {
+    editor_tabs_->setCurrentWidget(schematic_view_);
+  } else if (editor_tabs_ != nullptr) {
+    editor_tabs_->setCurrentWidget(canvas_view_);
+  }
+  QGraphicsScene* prior_scene = schematic_canvas ? canvas_scene_ : schematic_scene_;
+  if (prior_scene != nullptr) prior_scene->clearSelection();
+  const bool selected = selectCanvasObjectById(*target_scene, object_id);
   QApplication::processEvents();
   updateSelectionStatus();
-  canvas_scene_->update();
+  target_scene->update();
   if (selected) {
     response.insert("performed", true);
     response.insert("reason", "selected");
-    response.insert("count", canvas_scene_->selectedItems().size());
+    response.insert("count", target_scene->selectedItems().size());
     markUiMapChanged();
     return jsonObjectLine(response);
   }
   response.insert("performed", false);
   response.insert("reason", "object_not_found");
-  response.insert("count", canvas_scene_->selectedItems().size());
+  response.insert("count", target_scene->selectedItems().size());
   markUiMapChanged();
   return jsonObjectLine(response);
 }
@@ -7564,10 +7595,13 @@ QString ReviewWindow::uiSelectionJson() const {
   QJsonObject response;
   response.insert("schema_version", 1);
   response.insert("ui_epoch", ui_map_epoch_);
-  response.insert("canvas", "canvas:pcb");
+  const bool schematic_active = editor_tabs_ != nullptr &&
+                                editor_tabs_->currentWidget() == schematic_view_;
+  const QGraphicsScene* active_scene = schematic_active ? schematic_scene_ : canvas_scene_;
+  response.insert("canvas", schematic_active ? "canvas:schematic" : "canvas:pcb");
   QJsonArray items;
-  if (canvas_scene_ != nullptr) {
-    for (const QGraphicsItem* item : canvas_scene_->selectedItems()) {
+  if (active_scene != nullptr) {
+    for (const QGraphicsItem* item : active_scene->selectedItems()) {
       if (item == nullptr) {
         continue;
       }

@@ -1436,6 +1436,8 @@ void AgentPanel::handlePythonOutput() {
         context_history_message_count_ = params["history_message_count"].toInt();
         context_project_retrieval_block_net_count_ =
             params["project_retrieval_block_net_count"].toInt();
+        context_project_retrieval_domain_ =
+            params["project_retrieval_domain"].toString();
         context_truncated_ = params["truncated"].toBool(false);
         context_sources_.clear();
         for (const QJsonValue& source : params["sources"].toArray()) {
@@ -1444,6 +1446,7 @@ void AgentPanel::handlePythonOutput() {
         const QString digest = params["package_digest"].toString();
         const int estimated_tokens = params["estimated_token_count"].toInt();
         const int project_match_count = params["project_retrieval_count"].toInt();
+        const QString project_domain = params["project_retrieval_domain"].toString();
         const int schematic_pin_count = params["project_retrieval_schematic_pin_count"].toInt();
         const int schematic_symbol_count = params["project_retrieval_schematic_symbol_count"].toInt();
         const int board_net_count = params["project_retrieval_board_net_count"].toInt();
@@ -1492,7 +1495,9 @@ void AgentPanel::handlePythonOutput() {
                              .arg(context_memory_entry_count_)
                              .arg(context_history_message_count_)
                              .arg(context_truncated_ ? "truncated" : "bounded") +
-                             QString(" | %1 project matches").arg(project_match_count)
+                         QString(" | %1 project matches").arg(project_match_count)
+                             + (project_domain.isEmpty() || project_domain == "unavailable"
+                                    ? QString() : QString(" | %1 retrieval").arg(project_domain))
                              + schematic_detail
                              + (digest.isEmpty() ? QString() : QString(" | %1").arg(digest)),
                          "agent.context_state");
@@ -3521,6 +3526,7 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("context_history_message_count", context_history_message_count_);
   response.insert("context_project_retrieval_block_net_count",
                   context_project_retrieval_block_net_count_);
+  response.insert("context_project_retrieval_domain", context_project_retrieval_domain_);
   response.insert("context_truncated", context_truncated_);
   response.insert("context_sources", QJsonArray::fromStringList(context_sources_));
   response.insert("result_state", resultStateText());

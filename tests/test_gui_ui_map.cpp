@@ -155,6 +155,63 @@ int main(int argc, char** argv) {
       !state.contains("binary_payloads_excluded") || !state.contains("GND")) {
     return 13;
   }
+  QJsonObject context_result = QJsonDocument::fromJson(context.toUtf8()).object()
+                                   .value("result").toObject();
+  if (context_result.value("active_editor").toString() != "pcb" ||
+      context_result.value("active_view").toString() != "pcb") {
+    return 23;
+  }
+  const QString select_schematic = window.runAgentUiQueryJson(
+      "ui.select_canvas_object",
+      "{\"id\":\"U1\",\"canvas\":\"canvas:schematic\"}");
+  const QJsonObject schematic_selection_result = QJsonDocument::fromJson(
+      select_schematic.toUtf8()).object().value("result").toObject();
+  if (!schematic_selection_result.value("performed").toBool()) return 24;
+  const QJsonObject unsupported_canvas = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("ui.select_canvas_object",
+          "{\"id\":\"U1\",\"canvas\":\"canvas:unknown\"}")
+          .toUtf8()).object().value("result").toObject();
+  if (unsupported_canvas.value("performed").toBool() ||
+      unsupported_canvas.value("reason").toString() != "unsupported_canvas") return 29;
+  const QJsonObject selected_context = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.context", "{}").toUtf8()).object()
+      .value("result").toObject();
+  const QJsonObject selection = selected_context.value("selection").toObject();
+  const QJsonArray selected_items = selection.value("items").toArray();
+  if (selected_context.value("active_editor").toString() != "schematic" ||
+      selected_context.value("active_view").toString() != "schematic" ||
+      selection.value("canvas").toString() != "canvas:schematic" ||
+      selected_items.size() != 1 ||
+      selected_items.at(0).toObject().value("object_id").toString() != "U1") {
+    return 25;
+  }
+  const QJsonObject selected = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("ui.get_selection", "{}").toUtf8()).object()
+      .value("result").toObject();
+  if (selected.value("canvas").toString() != "canvas:schematic" ||
+      selected.value("items").toArray().size() != 1) {
+    return 26;
+  }
+  const QJsonObject select_catalog_entry = [&]() {
+    for (const QJsonValue& value : QJsonDocument::fromJson(methods.toUtf8())
+                                       .object().value("result").toObject()
+                                       .value("methods").toArray()) {
+      const QJsonObject entry = value.toObject();
+      if (entry.value("method").toString() == "ui.select_canvas_object") return entry;
+    }
+    return QJsonObject{};
+  }();
+  if (!select_catalog_entry.value("inputSchema").toObject()
+           .value("properties").toObject().contains("canvas")) return 27;
+  window.uiClickJson("tab:pcb", false, false);
+  context_result = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.context", "{}").toUtf8()).object()
+      .value("result").toObject();
+  if (context_result.value("active_editor").toString() != "pcb" ||
+      context_result.value("selection").toObject().value("canvas").toString() !=
+          "canvas:pcb") {
+    return 28;
+  }
 
   window.loadProjectPath(diagnostic_path.toStdString());
   const QJsonObject diagnostic_context = QJsonDocument::fromJson(

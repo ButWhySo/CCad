@@ -55,6 +55,7 @@ from memory_commands import execute_memory_command
 from memory_compaction import (MemoryCompactionError, MemoryCompactionPlans,
                                MEMORY_SUMMARY_SYSTEM_PROMPT)
 from context_broker import (ContextBroker, extract_context_signals,
+                            project_retrieval_signals,
                             memory_exposure_counts, memory_exposure_manifest)
 from engineering_calculator import build_engineering_tools
 from history_compaction import (HistoryCompactionError,
@@ -335,40 +336,6 @@ def invalidate_thread_context(thread_id):
     if thread:
         context_broker.invalidate_thread(thread)
         active_turn_contexts.pop(thread, None)
-
-
-def project_retrieval_signals(raw_context):
-    """Extract only stable selection/editor IDs from the typed context envelope."""
-    try:
-        decoded = json.loads(raw_context) if isinstance(raw_context, str) else {}
-    except (TypeError, json.JSONDecodeError):
-        return "", []
-    if not isinstance(decoded, dict):
-        return "", []
-    project = decoded.get("project", decoded)
-    if not isinstance(project, dict):
-        project = decoded
-    editor = ""
-    for source in (decoded, project, decoded.get("editor_state", {})):
-        if isinstance(source, dict):
-            editor = next((str(source[key]) for key in
-                           ("active_editor", "editor", "document_kind")
-                           if source.get(key)), editor)
-        if editor:
-            break
-    selection = decoded.get("selection", project.get("selection", []))
-    selected = []
-    if isinstance(selection, dict):
-        selection = selection.get("objects", selection.get("items", []))
-    if isinstance(selection, list):
-        for item in selection[:32]:
-            if isinstance(item, (str, int)):
-                selected.append(str(item))
-            elif isinstance(item, dict):
-                for key in ("id", "uuid", "reference", "ref", "refdes", "net", "layer"):
-                    if item.get(key):
-                        selected.append(str(item[key]))
-    return editor[:40], selected[:32]
 
 
 def recent_retrieval_text(messages):
@@ -2970,6 +2937,8 @@ def handle_human_message(req):
         "project_source_chars": context_metadata["project_source_chars"],
         "project_snapshot_omitted": context_metadata["project_snapshot_omitted"],
         "project_retrieval_count": context_metadata["project_retrieval_count"],
+        "project_retrieval_domain": context_metadata.get(
+            "project_retrieval_domain", "board"),
         "project_retrieval_schematic_pin_count": context_metadata.get(
             "project_retrieval_kinds", {}).get("schematic_pin", 0),
         "project_retrieval_schematic_symbol_count": context_metadata.get(

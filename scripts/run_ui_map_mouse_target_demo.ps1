@@ -74,14 +74,15 @@ foreach ($secretName in $providerSecretNames) {
 }
 $isolatedMemoryProfile = $null
 $isolatedProjectPath = $null
-if ($Name.StartsWith("sprint982-multilayer-project-context") -or
+if ($Name.StartsWith("sprint1038-agent-context-editor") -or
+    $Name.StartsWith("sprint982-multilayer-project-context") -or
     $Name.StartsWith("sprint983-project-index-typed-geometry") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
     $Name.StartsWith("sprint986-project-spatial-index") -or
     $Name.StartsWith("sprint987-schematic-metadata") -or
     $Name.StartsWith("sprint998-functional-block-net-context")) {
   $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
-    "ccad-sprint" + $(if ($Name.StartsWith("sprint998")) { "998-block-net-" } elseif ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
+    "ccad-sprint" + $(if ($Name.StartsWith("sprint1038")) { "1038-context-editor-" } elseif ($Name.StartsWith("sprint998")) { "998-block-net-" } elseif ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
     [Guid]::NewGuid().ToString("N") + ".ccad.json")
   Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
   if ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
@@ -286,10 +287,14 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
-if ($Name.StartsWith("sprint1030-conversation-history") -or
+if ($Name.StartsWith("sprint1038-agent-context-editor") -or
+    $Name.StartsWith("sprint1030-conversation-history") -or
     $Name.StartsWith("sprint1031-agent-markdown")) {
-  $agentPython = Join-Path $PSScriptRoot "..\src\ccad_agent\venv\Scripts\python.exe"
-  $agentPython = [IO.Path]::GetFullPath($agentPython)
+  $agentPython = $env:CCAD_AGENT_PYTHON
+  if (-not $agentPython -or -not (Test-Path -LiteralPath $agentPython)) {
+    $agentPython = Join-Path $PSScriptRoot "..\src\ccad_agent\venv\Scripts\python.exe"
+    $agentPython = [IO.Path]::GetFullPath($agentPython)
+  }
   if (-not (Test-Path -LiteralPath $agentPython)) {
     $agentPython = (& py -3.12 -c "import sys; print(sys.executable)" 2>$null | Select-Object -Last 1).Trim()
   }
@@ -1136,13 +1141,15 @@ if ($Name.StartsWith("sprint974-memory")) {
   if ($isolatedProjectPath -and (Test-Path -LiteralPath $isolatedProjectPath)) {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $projectFile = [IO.Path]::GetFullPath($isolatedProjectPath)
+    $allowedProjectName = [IO.Path]::GetFileName($projectFile) -like "ccad-sprint1038-context-editor-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint982-multilayer-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint998-block-net-*.ccad.json"
     if (-not $projectFile.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
-        -not ([IO.Path]::GetFileName($projectFile) -like "ccad-sprint982-multilayer-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint983-typed-geometry-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json" -or
-              [IO.Path]::GetFileName($projectFile) -like "ccad-sprint998-block-net-*.ccad.json")) {
+        -not $allowedProjectName) {
       throw "Refusing to remove a project outside the verified temporary targets."
     }
     Remove-Item -LiteralPath $projectFile -Force

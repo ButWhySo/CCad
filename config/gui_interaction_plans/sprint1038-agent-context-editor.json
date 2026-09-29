@@ -1,0 +1,18 @@
+{
+  "feature": "Verify that the live editor view and exact CAD selection reach project context, schematic UI-map selection, and no-network context assembly.",
+  "target_sequence": "sprint1038-agent-context-editor-ui",
+  "project": "tests/fixtures/agent-editor-context-project.json",
+  "minimum_mapped_interactions": 8,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "canvas:schematic",
+    "tab:agent",
+    "action:settingsBtn",
+    "control:categoryList",
+    "action:cancelSettingsButton",
+    "tab:pcb"
+  ],
+  "required_text_entries": [],
+  "meaningful_screenshots": 4
+}

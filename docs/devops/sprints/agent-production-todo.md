@@ -1,5 +1,17 @@
 # CCad Agent production TODO
 
+### Sprint 1038 — Editor-aware PCB/schematic context and selection
+
+- [x] Include the active editor and exact selected typed object in every Qt project-context envelope; never reuse stale selection from the other canvas.
+- [x] Resolve schematic canvas selection by its native object ID and expose `ui.select_canvas_object` for both supported editors with explicit canvas validation.
+- [x] Pass the active editor into bounded project retrieval; explicit query domain takes precedence, otherwise use current editor, then existing safe fallback.
+- [x] Preserve the retrieval domain in bounded provider context and safe context-state metadata so the Agent can report board versus schematic matches truthfully.
+- [x] Add contracts for exact selection identity, both editor domains, precedence, context digest/cache separation, and retrieval metadata.
+- [x] Pass Qt MinGW Release/full CTest and app-owned mapped interaction plan; inspect only distinct before, schematic-selection, settings, and restored-state screenshots and captured logs.
+- [x] Record evidence: Qt/MinGW Release build, full CTest 120/120, 14 successful GUI-map interactions, four inspected screenshots, stdout reviewed, stderr empty. Manifest `artifacts/evidence/sprint-1038-agent-context-editor-r8.json`, SHA-256 `2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`.
+
+Scope note: the final capture returns to the PCB tab on a schematic-only test fixture, so the empty PCB canvas is expected. This verifies editor switching, not PCB design content. Context remains limited to data available from typed project sources; unsupported object classes and absent domain data are reported unavailable, not invented.
+
 ### Sprint 1036 follow-up — Langfuse v4 metadata attribute contract
 
 - [x] Reproduce the reported Langfuse v4 metadata type warning with the real SDK and local OTLP receiver; normalize redacted scalar observation metadata to strings capped at 200 characters and omit structured values. Local ingestion contract passes.

@@ -114,12 +114,49 @@ def extract_context_signals(user_request: str, *, goal: str = "", project_id: st
                                if not _SECRET.search(term)))[:96]
     query_parts = [source[:2048], " ".join(identifiers)]
     query = " ".join(part for part in query_parts if part).strip()[:3072]
-    canonical = json.dumps({"terms": terms, "identifiers": identifiers},
+    canonical = json.dumps({"terms": terms, "identifiers": identifiers,
+                           "editor": _safe_signal(active_editor, 40).casefold()},
                            sort_keys=True, separators=(",", ":"))
     return {"version": 1, "terms": terms, "identifiers": identifiers,
             "domains": [name for name in ("pcb", "schematic", "library", "routing")
                         if re.search(rf"\b{name}\b", source, re.IGNORECASE)],
+            "editor": _safe_signal(active_editor, 40).casefold(),
             "query": query, "digest": hashlib.sha256(canonical.encode()).hexdigest()[:24]}
+
+
+def project_retrieval_signals(raw_context):
+    """Extract bounded editor and native CAD selection IDs from GUI context."""
+    try:
+        decoded = json.loads(raw_context) if isinstance(raw_context, str) else {}
+    except (TypeError, json.JSONDecodeError):
+        return "", []
+    if not isinstance(decoded, dict):
+        return "", []
+    project = decoded.get("project", decoded)
+    project = project if isinstance(project, dict) else decoded
+    editor = ""
+    for source in (decoded, project, decoded.get("editor_state", {})):
+        if isinstance(source, dict):
+            editor = next((str(source[key]) for key in
+                           ("active_editor", "active_view", "editor", "document_kind")
+                           if source.get(key)), editor)
+        if editor:
+            break
+    selection = decoded.get("selection", project.get("selection", []))
+    if isinstance(selection, dict):
+        selection = selection.get("items", selection.get("objects", []))
+    selected = []
+    if isinstance(selection, list):
+        for item in selection[:32]:
+            if isinstance(item, (str, int)):
+                selected.append(str(item))
+            elif isinstance(item, dict):
+                for key in ("object_id", "uuid", "reference", "ref", "refdes",
+                            "net", "layer", "id"):
+                    if item.get(key):
+                        selected.append(str(item[key]).removeprefix("canvas_object:"))
+                        break
+    return editor[:40], selected[:32]
 
 
 class ContextBroker:
@@ -335,6 +372,7 @@ class ContextBroker:
                                    comparison_digest,
                                    _safe_signal(active_layer, 80),
                                    _safe_signal(active_net, 80),
+                                   _safe_signal(active_editor, 40),
                                    int(self.memory_token_budget)],
                                   separators=(",", ":"))
         key = hashlib.sha256(key_material.encode()).hexdigest()
@@ -372,6 +410,7 @@ class ContextBroker:
             project_result = project_index.retrieve(
                 project_snapshot, signals["query"], active_layer=active_layer,
                 active_net=active_net, selected_objects=selected_objects,
+                active_editor=active_editor,
                 embedding_backend=getattr(manager, "semantic_embedding_backend", None))
             project_retrieval = project_result
             if project_result.get("available"):

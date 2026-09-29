@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 
 from context_broker import (ContextBroker, extract_context_signals,
-                            memory_exposure_manifest)
+                            memory_exposure_manifest, project_retrieval_signals)
 from context_package import build_context_package
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
@@ -120,6 +120,38 @@ class ContextBrokerTests(unittest.TestCase):
         self.assertLessEqual(len(signals["query"]), 2048)
         secret = extract_context_signals("api_key=not-a-real-secret")
         self.assertNotIn("not-a-real-secret", secret["query"])
+
+    def test_live_editor_and_canvas_object_id_are_extracted_without_wrapper_prefix(self):
+        editor, selected = project_retrieval_signals(json.dumps({
+            "active_view": "schematic",
+            "selection": {"canvas": "canvas:schematic", "items": [{
+                "id": "canvas_object:U1", "object_id": "U1",
+                "type": "Component"}]}}))
+        self.assertEqual(editor, "schematic")
+        self.assertEqual(selected, ["U1"])
+        pcb_signals = extract_context_signals("inspect", active_editor="pcb")
+        schematic_signals = extract_context_signals("inspect", active_editor="schematic")
+        self.assertNotEqual(pcb_signals["digest"], schematic_signals["digest"])
+
+    def test_context_broker_passes_active_editor_into_project_retrieval(self):
+        with tempfile.TemporaryDirectory() as temp:
+            manager = MemoryManager(MemoryStore(Path(temp) / "memory.json"),
+                                    task_id="task", thread_id="thread",
+                                    project_id="project")
+            manager.configure({"ltm": True})
+            snapshot = {"id": "project-context-editor", "board": {
+                "layers": [], "footprints": [{"reference": "R1", "value": "1k",
+                    "position": {"x_nm": 0, "y_nm": 0}}], "tracks": [],
+                "pads": [], "vias": [], "zones": []},
+                "components": [{"id": "sch-r1", "reference": "R1",
+                    "position": {"x_nm": 1_000_000, "y_nm": 1_000_000}}],
+                "nets": [], "wires": [], "labels": []}
+            context = ContextBroker().prepare(
+                manager, thread_id="thread", project_revision="rev-1",
+                user_request="inspect objects near 0,0", active_editor="schematic",
+                project_snapshot=snapshot)
+            self.assertEqual(context["signals"]["editor"], "schematic")
+            self.assertEqual(context["project_retrieval"]["search_domain"], "schematic")
 
     def test_broker_retrieves_relevant_memory_once_and_invalidates_by_revision(self):
         with tempfile.TemporaryDirectory() as temp:

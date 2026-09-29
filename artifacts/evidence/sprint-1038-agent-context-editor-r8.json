@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1038-agent-context-editor-r8",
+    "feature":  "Carry active PCB or schematic view and exact typed selection through bounded Agent context and retrieval, with mapped schematic object selection.",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint1038-agent-context-editor.json",
+    "target_sequence":  "sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-29T00:42:50.5332187Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.65 log=artifacts/evidence/sprint-1038-agent-context-editor-r8/preflight.log",
+                      "finished_utc":  "2026-09-29T00:42:51.2443802Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.2 log=artifacts/evidence/sprint-1038-agent-context-editor-r8/build.log",
+                      "finished_utc":  "2026-09-29T00:42:51.4586384Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=132.46 log=artifacts/evidence/sprint-1038-agent-context-editor-r8/ctest.log",
+                      "finished_utc":  "2026-09-29T00:45:03.9227522Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=25.31 log=artifacts/evidence/sprint-1038-agent-context-editor-r8/ui_harness.log",
+                      "finished_utc":  "2026-09-29T00:45:29.2368431Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=14; screenshots=4",
+                      "finished_utc":  "2026-09-29T00:45:29.5071464Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-29T00:45:29.6229209Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/ctest.log",
+                                         "sha256":  "E623D5779B88AF00BA317A6D7E5322D2D733951F47583103D2FCB3663D2AF510"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8.stdout.log",
+                                         "sha256":  "98A4D55BA3B4A5CD8FE715415367128A10778BE0E96FD2390C8A94B7330D6942"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8-before.png",
+                                         "sha256":  "AAF4A0B667165553A6FEE04F72EF4959650F2937345C65E91D38982493F758F2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8-context-settings-opened.png",
+                                         "sha256":  "739AF0778ED2D62C19D8DA40823F04CD077E2E96A19777E9A54B02001F92D839"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8-restored-final.png",
+                                         "sha256":  "D43EF69A532A91A5660BAD775C62A5FDDD9CD568D136B9A7897AD9E4AF24C5CA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8-schematic-object-selected.png",
+                                         "sha256":  "CB8DA2CC12DD42EB92C5118211E76A53EAC0199857A37C2BF20593DD686C87D5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/sprint1038-agent-context-editor-ui-sprint-1038-agent-context-editor-r8-target-sequence.json",
+                                         "sha256":  "DFCBECBA83B03A4EC5336B03C1A93BFB5CB0B3D7A82ECE52A971524415C9F12E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1038-agent-context-editor-r8/ui_harness.log",
+                                         "sha256":  "5A9F68FAB2965251A86698B17DC931E53D50CF21EABD0C851C9F90A51E626635"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T00:45:29.7393967Z"
+}

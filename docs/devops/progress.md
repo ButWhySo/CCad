@@ -6,6 +6,12 @@ This file is the canonical phase/sprint counter for local CCad agent work.
 
 - Phase: 9 / 9
 - Phase name: Deterministic KiCad Parity Execution
+- Sprint: 1038
+- Branch: `sprint-1038-agent-context-editor`
+- Current live status: Sprint 1038 editor-aware Agent context and schematic selection is implemented and verified. Qt/MinGW Release passed; full CTest passed 120/120; the app-owned UI map completed 14 successful interactions, and all four distinct screenshots plus stdout/stderr were inspected (stderr empty). Changed Python modules passed Pyright with 0 diagnostics. Manifest `artifacts/evidence/sprint-1038-agent-context-editor-r8.json`, SHA-256 `2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`. The screenshot fixture has a schematic but no PCB, so the restored PCB tab is correctly empty; broader unsupported project semantics remain out of scope.
+
+- Phase: 9 / 9
+- Phase name: Deterministic KiCad Parity Execution
 - Sprint: 1036
 - Branch: `sprint-1036-conversation-stm-provenance` (active-thread context metadata and auditable compaction source range)
 - Current live status: Conversation compaction persists source message IDs, canonical sequence bounds, recap ID, and snapshot high-water message ID; schema-v3 stores migrate additively, and missing IDs or stale snapshots fail closed. Pyright is clean; Qt/MinGW Release build and full CTest pass (122/122). The unlocked mapped Settings run completed 10 interactions and all five screenshots were inspected; manifest `artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`. Langfuse Cloud receipt remains unverified without project access.

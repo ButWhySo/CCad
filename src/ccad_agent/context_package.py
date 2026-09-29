@@ -259,6 +259,8 @@ def _project_retrieval_payload(value: dict | None) -> dict:
         "available": bool(source.get("available", False)),
         "revision": _safe_text(source.get("revision"), 32),
         "search_method": _safe_text(source.get("search_method"), 80),
+        "search_domain": source.get("search_domain") if source.get(
+            "search_domain") in {"board", "schematic"} else "unavailable",
         "semantic_status": _safe_text(source.get("semantic_status"), 48) or "disabled",
         "relationship_semantics": "shared_net_association_only",
         "board_net_semantics":
@@ -528,7 +530,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     elif project_snapshot_omitted:
         sources.append("project_summary")
     included_project_retrieval = envelope.get("project_retrieval", {
-        "revision": "", "search_method": "", "entities": [],
+        "revision": "", "search_method": "", "search_domain": "unavailable",
+        "entities": [],
         "stats": {"near_component_match_count": 0,
                   "region_member_match_count": 0}})
     project_retrieval_kinds: dict[str, int] = {}
@@ -643,6 +646,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "project_counts": project_counts,
             "project_retrieval_revision": included_project_retrieval["revision"],
             "project_retrieval_method": included_project_retrieval["search_method"],
+            "project_retrieval_domain": included_project_retrieval["search_domain"],
             "project_retrieval_semantic_status": included_project_retrieval.get(
                 "semantic_status", "disabled"),
             "project_retrieval_stats": included_project_retrieval["stats"],

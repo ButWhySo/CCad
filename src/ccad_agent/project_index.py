@@ -1762,13 +1762,16 @@ class ProjectIndex:
 
     @staticmethod
     def _coordinate_domain(query: str, active_layer: str, exact_ids: set[str],
-                           docs: dict[str, dict]) -> str:
+                           docs: dict[str, dict], active_editor: str = "") -> str:
+        if re.search(r"\b(pcb|board|physical|footprint|track|via|copper|layer)\b",
+                     query, re.IGNORECASE):
+            return "board"
         if re.search(r"\b(schematic|sheet|symbol|pin|wire|netlist)\b", query,
                      re.IGNORECASE):
             return "schematic"
-        if active_layer or re.search(
-                r"\b(pcb|board|physical|footprint|track|via|copper|layer)\b",
-                query, re.IGNORECASE):
+        if active_editor in {"pcb", "schematic"}:
+            return "board" if active_editor == "pcb" else "schematic"
+        if active_layer:
             return "board"
         if any(docs.get(uid, {}).get("fields", {}).get("kind") == "footprint"
                for uid in exact_ids):
@@ -1780,7 +1783,7 @@ class ProjectIndex:
 
     def retrieve(self, snapshot: Any, query: str, *, active_layer: str = "",
                  active_net: str = "", selected_objects=(), limit: int = 10,
-                 embedding_backend=None) -> dict:
+                 embedding_backend=None, active_editor: str = "") -> dict:
         self.set_embedding_backend(embedding_backend)
         if isinstance(snapshot, str):
             try:
@@ -1789,6 +1792,7 @@ class ProjectIndex:
                 snapshot = {}
         if not isinstance(snapshot, dict) or not project_model(snapshot):
             return {"available": False, "reason": "typed_project_snapshot_unavailable",
+                    "search_domain": "unavailable",
                     "entities": [], "characters": 0, "revision": "",
                     "relationship_semantics": "shared_net_association_only",
                     "board_net_semantics":
@@ -1821,8 +1825,8 @@ class ProjectIndex:
         points = [] if query_box else _coordinates(query)
         nearby = bool(re.search(r"\b(near|around|nearby|within|radius|close\s+to|beside)\b",
                                 query, re.IGNORECASE))
-        coordinate_domain = self._coordinate_domain(query, active_layer, exact_ids,
-                                                    self._docs)
+        coordinate_domain = self._coordinate_domain(
+            query, active_layer, exact_ids, self._docs, active_editor)
         if nearby and not points:
             for uid in sorted(exact_ids):
                 kind = self._docs.get(uid, {}).get("fields", {}).get("kind", "")
@@ -2020,6 +2024,7 @@ class ProjectIndex:
                       "omitted_count": max(0, len(scores) - len(output)),
                       "total_entities": len(self._docs)})
         return {"available": True, "reason": "", "revision": self._revision,
+                "search_domain": coordinate_domain,
                 "entities": output, "characters": used_chars, "stats": stats,
                 "relationship_semantics": "shared_net_association_only",
                 "board_net_semantics":

@@ -2593,3 +2593,25 @@ restored chat. Evidence manifest:
 `artifacts/evidence/sprint-1036-conversation-stm-unlocked.json`. The independent
 proposal-preview requirement remains open: both panes must render staged
 geometry from its exact revision/change-set, not substitute a text summary.
+
+## Sprint 1038 editor-aware context
+
+`ReviewWindow::projectContextJson()` and the project-state response identify the
+active editor and serialize selection from that editor's scene. The GUI-map
+`ui.select_canvas_object` contract permits `canvas:pcb` and
+`canvas:schematic`; its implementation validates the target, activates that
+editor, and reports native object IDs. `AgentPanel` publishes the safe active
+view in workspace state and the turn activity summary. Python
+`context_broker.project_retrieval_signals()` normalizes the active editor and
+selected native ID, and the broker includes editor in its cache key. The
+`ProjectIndex` applies explicit query-domain intent before active-editor scope
+for spatial retrieval; `context_package.py` carries only the safe retrieval
+domain into request metadata. Do not interpret this as full cross-domain
+retrieval or electrical continuity; existing typed-source and query limits
+remain authoritative. Focused Python/Qt contracts and Sprint 1038 evidence are
+listed in `docs/devops/sprints/agent-production-todo.md`. Verification on
+2026-09-29 passed Qt/MinGW Release and full CTest (120/120); the app-owned UI
+map recorded 14 successful interactions and four inspected screenshots. The
+evidence manifest is
+`artifacts/evidence/sprint-1038-agent-context-editor-r8.json` (SHA-256
+`2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`).

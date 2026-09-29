@@ -448,12 +448,31 @@ int main(int argc, char** argv) {
                        [window, output_dir, project_path, name, initial_wait_ms,
                         per_target_wait_ms, &placed_via_id]() {
       QStringList entries;
+      bool editor_context_target_actions_ok = true;
+      const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
+        const QString path = QString::fromStdString(
+            (output_dir / (name + "-" + state + ".png").toStdString()).string());
+        QWidget* capture_window = window;
+        if (state == "context-settings-dialog") {
+          QWidget* active = QApplication::activeWindow();
+          if (active && active != window && active->isVisible())
+            capture_window = active;
+        }
+        capture_window->raise();
+        capture_window->activateWindow();
+        QApplication::processEvents();
+        if (!capture_window->grab().save(path)) return false;
+        entries << QString("{\"conversation_screenshot\":%1,\"state\":%2}")
+                       .arg(jsonStringLocal(path), jsonStringLocal(state));
+        return true;
+      };
       const QString catalog_startup = window->runAgentUiQueryJson("agent.workspace_state", "{}");
       const bool catalog_startup_verified =
           catalog_startup.contains("\"backend_ready\":true") &&
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
       if (name.startsWith("sprint968-task") ||
+          name.startsWith("sprint1038-agent-context-editor") ||
           name.startsWith("sprint969-context") ||
           name.startsWith("sprint970-compaction") ||
           name.startsWith("sprint976-conversation") ||
@@ -493,6 +512,7 @@ int main(int argc, char** argv) {
               "working-memory-settings-closed"};
           QString screenshot_path;
           if ((!name.startsWith("sprint975-memory-ui") &&
+               !name.startsWith("sprint1038-agent-context-editor") &&
                !name.startsWith("sprint976-conversation") &&
                !name.startsWith("sprint977-context") &&
                !name.startsWith("sprint980-project-retrieval") &&
@@ -512,6 +532,7 @@ int main(int argc, char** argv) {
           }
           QString popup_screenshot;
           if (auto* popup = window->findChild<QListWidget*>("panel:agent_slash_commands");
+               !name.startsWith("sprint1038-agent-context-editor") &&
                !name.startsWith("sprint983-project-index-typed-geometry") &&
                !name.startsWith("sprint984-board-net-retrieval") &&
                !name.startsWith("sprint986-project-spatial-index") &&
@@ -533,8 +554,82 @@ int main(int argc, char** argv) {
           const QJsonObject action_result = parsed.object().value("result").toObject();
           return action_result.value("performed").toBool(true);
         };
-        bool ok = true;
-        if (name.startsWith("sprint969-context")) {
+      bool ok = true;
+      if (name.startsWith("sprint1038-agent-context-editor")) {
+        ok = capture("before") && ok;
+        ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                      "tab:pcb", "context-pcb-active") && ok;
+        const QJsonObject catalog = QJsonDocument::fromJson(
+            window->runAgentUiQueryJson("agent.methods", "{}").toUtf8())
+            .object().value("result").toObject();
+        bool canvas_enum_valid = false;
+        for (const QJsonValue& value : catalog.value("methods").toArray()) {
+          const QJsonObject method = value.toObject();
+          if (method.value("method").toString() != "ui.select_canvas_object") continue;
+          const QJsonArray canvases = method.value("inputSchema").toObject()
+              .value("properties").toObject().value("canvas").toObject()
+              .value("enum").toArray();
+          canvas_enum_valid = canvases.contains("canvas:pcb") &&
+                              canvases.contains("canvas:schematic");
+        }
+        entries << QString("{\"canvas_schema_has_both_editors\":%1}")
+                       .arg(canvas_enum_valid ? "true" : "false");
+        ok = canvas_enum_valid && ok;
+        const QJsonObject pcb_context = QJsonDocument::fromJson(
+            window->runAgentUiQueryJson("project.context", "{}").toUtf8())
+            .object().value("result").toObject();
+        const QJsonObject selection = pcb_context.value("selection").toObject();
+        const bool pcb_state = pcb_context.value("active_editor").toString() == "pcb" &&
+            pcb_context.value("active_view").toString() == "pcb" &&
+            selection.value("canvas").toString() == "canvas:pcb";
+        entries << QString("{\"pcb_active_context_truthful\":%1}")
+                       .arg(pcb_state ? "true" : "false");
+        ok = pcb_state && ok;
+        ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
+                      "tab:schematic", "context-schematic-active") && ok;
+        const QJsonObject schematic_context = QJsonDocument::fromJson(
+            window->runAgentUiQueryJson("project.context", "{}").toUtf8())
+            .object().value("result").toObject();
+        const bool schematic_state =
+            schematic_context.value("active_editor").toString() == "schematic" &&
+            schematic_context.value("active_view").toString() == "schematic" &&
+            schematic_context.value("selection").toObject().value("canvas").toString() ==
+                "canvas:schematic";
+        entries << QString("{\"schematic_active_context_truthful\":%1}")
+                       .arg(schematic_state ? "true" : "false");
+        ok = schematic_state && ok;
+        ok = interact("ui.select_canvas_object",
+                      "{\"id\":\"U1\",\"canvas\":\"canvas:schematic\"}",
+                      "canvas:schematic", "context-schematic-object-selected") && ok;
+        const QJsonObject selected = QJsonDocument::fromJson(
+            window->runAgentUiQueryJson("project.context", "{}").toUtf8())
+            .object().value("result").toObject();
+        const QJsonArray selected_items = selected.value("selection").toObject()
+            .value("items").toArray();
+        const bool exact_selection = selected.value("active_editor").toString() ==
+                "schematic" && selected_items.size() == 1 &&
+            selected_items.first().toObject().value("object_id").toString() == "U1" &&
+            selected_items.first().toObject().value("id").toString() ==
+                "canvas_object:U1";
+        entries << QString("{\"schematic_native_selection_id\":%1}")
+                       .arg(exact_selection ? "true" : "false");
+        ok = exact_selection && ok;
+        ok = capture("schematic-object-selected") && ok;
+        ok = interact("ui.click", "{\"id\":\"tab:agent\"}",
+                      "tab:agent", "context-agent-open") && ok;
+        ok = interact("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                      "action:settingsBtn", "context-settings-open") && ok;
+        ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
+                      "control:categoryList", "context-settings-category") && ok;
+        ok = capture("context-settings-opened") && ok;
+        ok = interact("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                      "action:cancelSettingsButton", "context-settings-closed") && ok;
+        ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
+                      "tab:pcb", "context-restored-pcb") && ok;
+        ok = capture("restored-final") && ok;
+        editor_context_target_actions_ok = ok;
+      }
+      if (name.startsWith("sprint969-context")) {
           ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
                         "tab:pcb", "pcb-tab-checked") && ok;
           ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
@@ -595,23 +690,6 @@ int main(int argc, char** argv) {
                    name.startsWith("sprint986-project-spatial-index") ||
                    name.startsWith("sprint987-schematic-metadata") ||
                    name.startsWith("sprint998-functional-block-net-context")) {
-          const auto capture = [window, &output_dir, &name, &entries](const QString& state) {
-            const QString path = QString::fromStdString(
-                (output_dir / (name + "-" + state + ".png").toStdString()).string());
-            QWidget* capture_window = window;
-            if (state == "context-settings-dialog") {
-              QWidget* active = QApplication::activeWindow();
-              if (active && active != window && active->isVisible())
-                capture_window = active;
-            }
-            capture_window->raise();
-            capture_window->activateWindow();
-            QApplication::processEvents();
-            if (!capture_window->grab().save(path)) return false;
-            entries << QString("{\"conversation_screenshot\":%1,\"state\":%2}")
-                           .arg(jsonStringLocal(path), jsonStringLocal(state));
-            return true;
-          };
           ok = capture("before") && ok;
           ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
                         "tab:pcb", "conversation-pcb-tab") && ok;
@@ -1032,7 +1110,7 @@ int main(int argc, char** argv) {
                            .arg(transcript_retained ? "true" : "false");
             ok = transcript_retained && capture("restored-final") && ok;
           }
-        } else if (name.startsWith("sprint1027-working-memory")) {
+      } else if (name.startsWith("sprint1027-working-memory")) {
           ok = interact("ui.click", "{\"id\":\"tab:pcb\"}",
                         "tab:pcb", "working-memory-pcb-tab") && ok;
           ok = interact("ui.click", "{\"id\":\"tab:schematic\"}",
@@ -1352,7 +1430,9 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_path =
             output_dir / (name + "-target-sequence.json").toStdString();
         std::ofstream output(output_path, std::ios::binary);
-        const QString interaction_plan = name.startsWith("sprint986-project-spatial-index")
+        const QString interaction_plan = name.startsWith("sprint1038-agent-context-editor")
+            ? QStringLiteral("Verify active PCB/schematic context and exact schematic object selection through the native UI map, exercise Settings, then restore PCB; no model request")
+            : name.startsWith("sprint986-project-spatial-index")
             ? QStringLiteral("Run authoritative DRC on an isolated zero-length track, then ask the real Agent context builder for DRC markers inside an explicit PCB bounding box; verify the affected-object diagnostic count and provider-disabled result through mapped controls")
             : name.startsWith("sprint985-project-reference-graph")
             ? QStringLiteral("Verify exact live DRC/ERC diagnostics and affected-object identity through project.context; test typed graph retrieval separately with no-network context-broker contracts, then verify the GUI truthfully reports provider configuration failure across seven mapped actions")
@@ -1416,7 +1496,11 @@ int main(int argc, char** argv) {
       const bool memory_kind_target_sequence = name.startsWith("sprint1001-memory-kind");
       const bool memory_importance_target_sequence = name.startsWith("sprint1003-memory-importance");
       const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
-      const QStringList target_ids = conversation_history_target_sequence
+      const bool editor_context_target_sequence =
+          name.startsWith("sprint1038-agent-context-editor");
+      const QStringList target_ids = editor_context_target_sequence
+          ? QStringList{}
+          : conversation_history_target_sequence
           ? QStringList{"tab:pcb", "tab:schematic", "tab:agent",
                         "action:agent_history", "action:agent_new_chat",
                         "control:agent_chat_input", "action:agent_submit_chat",
@@ -2094,7 +2178,7 @@ int main(int argc, char** argv) {
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
-      if (!semantic_memory_target_sequence && !gemini_count_target_sequence &&
+      if (!editor_context_target_sequence && !semantic_memory_target_sequence && !gemini_count_target_sequence &&
           !conversation_history_target_sequence &&
           !memory_secret_target_sequence &&
           !memory_kind_target_sequence &&
@@ -2257,7 +2341,8 @@ int main(int argc, char** argv) {
               .arg(entries.join(','));
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
-      if (!output || ((memory_target_sequence || memory_secret_target_sequence ||
+      if (!output || (editor_context_target_sequence && !editor_context_target_actions_ok) ||
+                      ((memory_target_sequence || memory_secret_target_sequence ||
                        provider_target_sequence ||
                        gemini_count_target_sequence ||
                        memory_importance_target_sequence ||

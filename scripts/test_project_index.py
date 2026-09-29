@@ -1517,6 +1517,37 @@ class ProjectIndexTests(unittest.TestCase):
                              item["retrieval"] == "spatial"
                              for item in near_u3["entities"]))
 
+    def test_active_editor_scopes_spatial_retrieval_unless_request_overrides_it(self):
+        snapshot = project_snapshot()
+        index = ProjectIndex()
+
+        schematic = index.retrieve(snapshot, "find objects near 5,2 mm", limit=24,
+                                   active_editor="schematic")
+        self.assertEqual(schematic["search_domain"], "schematic")
+        self.assertTrue(any(item["kind"] == "schematic_symbol" and
+                            item["retrieval"] == "spatial"
+                            for item in schematic["entities"]))
+        self.assertFalse(any(item["kind"] in {"footprint", "pad", "track", "via"} and
+                             item["retrieval"] == "spatial"
+                             for item in schematic["entities"]))
+        from context_package import build_context_package
+        package = build_context_package(json.dumps(snapshot), [], [], char_limit=8192,
+                                        project_retrieval=schematic)
+        envelope = json.loads(package["content"].split("\n", 1)[1])
+        self.assertEqual(envelope["project_retrieval"]["search_domain"], "schematic")
+        self.assertEqual(package["metadata"]["project_retrieval_domain"], "schematic")
+
+        pcb = index.retrieve(snapshot, "find objects near 0,0 mm", limit=24,
+                             active_editor="pcb")
+        self.assertEqual(pcb["search_domain"], "board")
+        self.assertTrue(any(item["kind"] == "footprint" and
+                            item["retrieval"] == "spatial"
+                            for item in pcb["entities"]))
+
+        explicit = index.retrieve(snapshot, "find PCB objects near 5,2 mm", limit=24,
+                                  active_editor="schematic")
+        self.assertEqual(explicit["search_domain"], "board")
+
     def test_nearby_component_relation_stays_in_pcb_coordinate_space(self):
         snapshot = project_snapshot()
         project = snapshot["typed_state"]["project"]

@@ -157,6 +157,7 @@ assert "provider_state" in human_contract["responses"]
 assert "backend_state" in human_contract["responses"]
 assert "change_kind" in human_contract["response_contracts"]["context_state"]["fields"]
 assert "thread_id" in human_contract["response_contracts"]["context_state"]["fields"]
+assert "project_retrieval_domain" in human_contract["response_contracts"]["context_state"]["fields"]
 for field in ("project_retrieval_near_component_count",
               "project_retrieval_region_member_count",
               "project_retrieval_block_net_count", "project_retrieval_stats"):

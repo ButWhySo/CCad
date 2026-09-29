@@ -233,6 +233,7 @@ def orchestrator_method_catalog():
                      "memory_content_emitted", "memory_entry_count",
                      "history_message_count", "context_schema_version",
                      "project_retrieval_count", "project_retrieval_method",
+                     "project_retrieval_domain",
                      "project_retrieval_stats",
                      "project_retrieval_near_component_count",
                      "project_retrieval_region_member_count",

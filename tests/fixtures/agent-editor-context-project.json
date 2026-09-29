@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "id": "agent-editor-context-fixture",
+  "name": "agent-editor-context-fixture",
+  "text_variables": {},
+  "components": [
+    {
+      "id": "U1",
+      "lib_id": "MCU",
+      "reference": "U1",
+      "position": { "x_nm": 4000000, "y_nm": 5000000 },
+      "rotation_degrees": 0,
+      "fields": [],
+      "pins": []
+    }
+  ],
+  "constraints": [],
+  "nets": [],
+  "wires": [],
+  "buses": [],
+  "labels": [],
+  "power_symbols": []
+}
