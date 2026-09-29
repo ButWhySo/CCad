@@ -4,8 +4,10 @@
 
 - [x] Fix the provider error-classification source contract to inspect only `provider_error_user_message`, so unrelated malformed-tool safety messages elsewhere in the orchestrator do not fail the test.
 - [x] Remove OpenTelemetry exporter private-field assertions; the actual local OTLP receiver contract remains authoritative for Langfuse v4 endpoint, auth, and ingestion headers.
+- [x] Align the Pyright CI-configuration contract with the checked-in source-plus-benchmark include list and both configured execution environments.
+- [x] Reproduce every `agent-python` workflow test locally with the project virtual environment, including isolated checkpoint accept, deny, and cancel restarts.
 - [x] Pass provider-error classification, runtime observability, and local Langfuse v4 ingestion tests; telemetry-module Pyright reports zero diagnostics.
-- [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); final combined-fix evidence is `artifacts/evidence/sprint-1042-otel-exporter-contract.json` (SHA-256 `1D9068C518517381D3EF9E96E3B510515B3FB5D30DE8AF6AD2C4BCDFA170AE93`).
+- [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); final combined-fix evidence is `artifacts/evidence/sprint-1042-ci-contracts-final.json` (SHA-256 `3AE77DBFD402C70835532730A3EEABA7EA6A9B90D93D36F2216ED63C4190CF9F`).
 - [x] Run the staged-diff credential scan; no credential-pattern matches were found.
 - [ ] Verify hosted CI is green on the resulting `main` commit before marking Sprint 1042 complete.
 

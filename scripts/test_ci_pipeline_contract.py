@@ -48,11 +48,15 @@ assert "} 2>&1 | tee agent-python-tests.log" not in python_job, (
 )
 pyright_config_path = Path(__file__).resolve().parents[1] / "pyrightconfig.json"
 pyright_config = json.loads(pyright_config_path.read_text(encoding="utf-8"))
-assert pyright_config["include"] == ["src/ccad_agent"]
+assert set(pyright_config["include"]) == {
+    "src/ccad_agent",
+    "scripts/benchmark_semantic_memory_duplicates.py",
+}
 assert pyright_config["pythonVersion"] == "3.12"
 assert pyright_config["typeCheckingMode"] == "standard"
 assert pyright_config["executionEnvironments"] == [
-    {"root": "src/ccad_agent", "extraPaths": ["src/ccad_agent"]}
+    {"root": "src/ccad_agent", "extraPaths": ["src/ccad_agent"]},
+    {"root": "scripts", "extraPaths": ["src/ccad_agent"]},
 ]
 for test_name in ("test_agent_context_contract.py", "test_project_index.py"):
     test_source = (Path(__file__).resolve().parent / test_name).read_text(encoding="utf-8")

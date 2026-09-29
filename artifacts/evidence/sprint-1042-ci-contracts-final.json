@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1042-ci-contracts-final",
+    "feature":  "Repair stale hosted CI contracts for provider, OTLP, and Pyright settings",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T12:33:15.1213200Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.66 log=artifacts/evidence/sprint-1042-ci-contracts-final/preflight.log",
+                      "finished_utc":  "2026-09-29T12:33:15.8444235Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.26 log=artifacts/evidence/sprint-1042-ci-contracts-final/build.log",
+                      "finished_utc":  "2026-09-29T12:33:16.1219861Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=150.63 log=artifacts/evidence/sprint-1042-ci-contracts-final/ctest.log",
+                      "finished_utc":  "2026-09-29T12:35:46.7543172Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-ci-contracts-final/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-ci-contracts-final/ctest.log",
+                                         "sha256":  "D1568C3D5CFF13DAC4E8700190B0829A256441BA60356173F9EDBE5D68E0840F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-ci-contracts-final/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T12:35:46.8122851Z"
+}
