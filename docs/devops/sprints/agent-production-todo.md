@@ -9,7 +9,8 @@
 - [x] Run corrected Qt MinGW Release, full CTest (120/120), focused Python conversation store/runtime/checkpoint contracts including restart accept/reject/cancel, and changed-module Pyright (0 diagnostics); inspect verifier output and evidence.
 - [x] Update codebase map, feature inventory, progress, backlog, and this TODO; corrected evidence manifest is `artifacts/evidence/sprint-1039-approval-provenance-r3.json` (SHA-256 `08E8ED4983FE9ED637EBD61B79A0A1FD63407DE03CDAAB03FE860F80DA259455`).
 - [x] Run redacted repository and staged-diff secret scans; both reported no findings.
-- [ ] Commit this verified slice and push the feature branch; hosted CI/merge remain after publication.
+- [x] Commit this verified slice (`a94094b`) and push the feature branch; the remote ref matches the published commit.
+- [ ] Open/update the PR, verify hosted CI on its exact head SHA, then merge to `main` only after all required checks pass.
 
 Evidence: `artifacts/evidence/sprint-1039-transcript-event-provenance.json`, SHA-256 `003A2EC0917B14DC49C7C4ACC59DC64310C994D49E19D5BF3576B7B07AF374C6`. Qt/MinGW Release gate passed with no work required; CTest passed 120/120. GUI validation is not applicable because no GUI behavior changed.
 
