@@ -1,5 +1,12 @@
 # CCad Agent production TODO
 
+### Sprint 1042 — provider error contract test scope
+
+- [x] Fix the provider error-classification source contract to inspect only `provider_error_user_message`, so unrelated malformed-tool safety messages elsewhere in the orchestrator do not fail the test.
+- [x] Run `scripts/test_provider_error_classification.py` and changed-module Pyright; both pass without network access.
+- [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); evidence is `artifacts/evidence/sprint-1042-provider-test-scope.json` (SHA-256 `6E5E8AE866FA9A7C225556B1A5E0C4BD8497498A795F568664D6613237884A17`).
+- [ ] Verify hosted CI is green on the resulting `main` commit before marking Sprint 1042 complete.
+
 ### Sprint 1041 — retrieval architecture boundary
 
 - [x] Compare embedded CCad retrieval, SQLite FTS5, Typesense, exact cosine, and USearch ANN across capability, license, deployment/Windows, process/startup, memory/disk, update/indexing, packaging, failures, privacy, synchronization, testing, rollback, and maintenance; keep backend adoption benchmark-gated.
