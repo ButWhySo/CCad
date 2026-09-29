@@ -43,10 +43,9 @@ def main() -> None:
     assert configured["configured"] is True
     assert configured["exporter_initialized"] is True, configured
     assert configured["masking"] == "metadata_only_export_boundary", configured
-    exporter_headers = runtime._exporter.exporter._headers
-    assert exporter_headers["x-langfuse-ingestion-version"] == "4"
-    assert exporter_headers["Authorization"].startswith("Basic ")
-    assert runtime._exporter.exporter._endpoint == "https://cloud.langfuse.com/api/public/otel/v1/traces"
+    # OTLP endpoint construction, Langfuse-v4 headers, and authorization are
+    # asserted against an actual local receiver in test_langfuse_v4_local_ingestion.
+    # Do not inspect private exporter fields; their names vary across OTel SDKs.
     assert len(runtime.callbacks()) == 1
     client = runtime._langfuse_client
     assert runtime.configure({
@@ -68,7 +67,6 @@ def main() -> None:
         "enabled": True, "base_url": "https://us.cloud.langfuse.com",
     }, {"public_key": "public-test-value", "secret_key": "secret-test-value"})
     assert regional_state["exporter_initialized"] is True, regional_state
-    assert regional._exporter.exporter._endpoint == "https://us.cloud.langfuse.com/api/public/otel/v1/traces"
     invalid_base = regional.configure({
         "enabled": True, "base_url": "https://us.cloud.langfuse.com/api/public",
     }, {"public_key": "public-test-value", "secret_key": "secret-test-value"})

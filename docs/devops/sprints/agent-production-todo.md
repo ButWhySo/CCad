@@ -3,8 +3,10 @@
 ### Sprint 1042 — provider error contract test scope
 
 - [x] Fix the provider error-classification source contract to inspect only `provider_error_user_message`, so unrelated malformed-tool safety messages elsewhere in the orchestrator do not fail the test.
-- [x] Run `scripts/test_provider_error_classification.py` and changed-module Pyright; both pass without network access.
-- [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); evidence is `artifacts/evidence/sprint-1042-provider-test-scope.json` (SHA-256 `6E5E8AE866FA9A7C225556B1A5E0C4BD8497498A795F568664D6613237884A17`).
+- [x] Remove OpenTelemetry exporter private-field assertions; the actual local OTLP receiver contract remains authoritative for Langfuse v4 endpoint, auth, and ingestion headers.
+- [x] Pass provider-error classification, runtime observability, and local Langfuse v4 ingestion tests; telemetry-module Pyright reports zero diagnostics.
+- [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); final combined-fix evidence is `artifacts/evidence/sprint-1042-otel-exporter-contract.json` (SHA-256 `1D9068C518517381D3EF9E96E3B510515B3FB5D30DE8AF6AD2C4BCDFA170AE93`).
+- [x] Run the staged-diff credential scan; no credential-pattern matches were found.
 - [ ] Verify hosted CI is green on the resulting `main` commit before marking Sprint 1042 complete.
 
 ### Sprint 1041 — retrieval architecture boundary
