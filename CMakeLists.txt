@@ -268,6 +268,8 @@ if(Python3_Interpreter_FOUND)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_context_broker.py")
   add_test(NAME agent_project_index
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_project_index.py")
+  add_test(NAME agent_retrieval_contracts
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_retrieval_contracts.py")
   add_test(NAME agent_protocol_handler_boundaries
     COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_SOURCE_DIR}/scripts/test_agent_protocol_handler_boundaries.py")

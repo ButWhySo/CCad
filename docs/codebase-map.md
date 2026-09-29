@@ -2619,3 +2619,19 @@ geometry from its exact revision/change-set, not substitute a text summary.
 ## Retrieval capability matrix (Sprint 1039 reconciliation)
 
 The complete channel-by-channel matrix—including authority, persistence, revision, backend, fallback, contract tests, benchmark status, and canonical TODO owner—is maintained in [retrieval-capability-matrix.md](devops/retrieval-capability-matrix.md). Current retrieval is functional but incomplete; C++ typed project state remains authoritative, and R0-R18 in the active sprint TODO owns remaining work.
+
+## Canonical retrieval contracts (Sprint 1041)
+
+`src/ccad_agent/retrieval_contracts.py` owns immutable request/result records,
+channel names, readiness status, and the retriever protocol. `retrieval_adapters.py`
+maps the current `ProjectIndex` and `MemoryManager` into canonical hits. The
+adapter enforces project/thread scope, bounds and normalizes filters, projects
+requested project fields, records source revision and provenance, and reports
+backend status without exporting raw BM25/cosine scores as comparable values.
+`ContextBroker.prepare()` and `refresh_memory()` consume these adapter results;
+project context is converted back through `to_context_payload()` so existing
+provider-facing JSON stays stable, while canonical readiness and channel states
+remain in safe non-content package metadata. The architecture and backend comparison live
+in [ADR-agent-retrieval-architecture.md](decisions/ADR-agent-retrieval-architecture.md).
+This boundary does not yet provide central planning/fusion or cross-index stale
+revision validation; those remain open in R10/R12/R13.

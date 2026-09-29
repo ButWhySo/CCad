@@ -2899,6 +2899,8 @@ def handle_human_message(req):
                 memory_summary_entry_ids=turn_context["memory_summary_entry_ids"],
                 memory_manifest=turn_context["manifest"],
                 project_retrieval=turn_context["project_retrieval"],
+                memory_retrieval_status=turn_context["memory_retrieval_status"],
+                project_retrieval_status=turn_context["project_retrieval_status"],
                 turn_context={key: turn_context[key] for key in
                               ("version", "change_reason", "signal_digest")})
             if package_observation is not None:

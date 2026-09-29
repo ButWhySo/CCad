@@ -1,5 +1,17 @@
 # CCad Agent production TODO
 
+### Sprint 1041 — retrieval architecture boundary
+
+- [x] Compare embedded CCad retrieval, SQLite FTS5, Typesense, exact cosine, and USearch ANN across capability, license, deployment/Windows, process/startup, memory/disk, update/indexing, packaging, failures, privacy, synchronization, testing, rollback, and maintenance; keep backend adoption benchmark-gated.
+- [x] Record authoritative project-model rules, channel separation, backend-independent boundary, and the reversible current-backend decision in `docs/decisions/ADR-agent-retrieval-architecture.md`.
+- [x] Add bounded typed `RetrievalRequest`, canonical `RetrievalHit` / `RetrievalResult`, channel and truthful status contracts.
+- [x] Adapt the real ProjectIndex and MemoryManager; enforce project/thread identity, support typed filters and requested field projection, and carry source revision/provenance.
+- [x] Route initial and refreshed ContextBroker retrieval through canonical results while preserving the provider-facing project-context schema.
+- [x] Add focused CTest registration and prove request bounds, canonical identities, field projection, scope mismatch, disabled memory status, and existing context payload compatibility; run changed-module Pyright and related retrieval suites.
+- [x] Run the official Qt/MinGW Release and complete CTest verifier; inspect logs and record passing evidence `artifacts/evidence/sprint-1041-retrieval-contracts-r2.json` (124/124; SHA-256 `A51AA31EAA0AA10BBF079BC579E53512B355FC3A549D74593C5E95AC49BA7BC3`).
+- [x] Run redacted tracked-repository and staged-addition secret scans; four existing pattern-bearing files were inspected and contain test-only redaction sentinels, and staged additions contain zero credential-pattern matches; stage only verified source, tests, docs, and evidence.
+- [ ] Commit and push the verified slice; confirm the remote branch points to the exact tested commit.
+
 ### Sprint 1040 - safe memory writes with semantic retrieval enabled
 
 - [x] Remove uncalibrated semantic-similarity rejection from add/update; keep normalized exact and lexical duplicate protection.
@@ -6620,25 +6632,25 @@ RetrievalPlanner
 
 ### Required rules
 
-- [ ] No external search product becomes the source of truth.
+- [x] No external search product becomes the source of truth.
 
-- [ ] The authoritative C++ project/schematic/PCB model remains canonical.
+- [x] The authoritative C++ project/schematic/PCB model remains canonical.
 
-- [ ] Exact CAD identity must never depend on embeddings.
+- [x] Exact CAD identity must never depend on embeddings.
 
-- [ ] Electrical connectivity must never be reconstructed purely from text similarity.
+- [x] Electrical connectivity must never be reconstructed purely from text similarity.
 
-- [ ] Geometry/nearness must never be reconstructed purely from embeddings.
+- [x] Geometry/nearness must never be reconstructed purely from embeddings.
 
-- [ ] Semantic retrieval is supplementary.
+- [x] Semantic retrieval is supplementary.
 
-- [ ] Retrieval architecture and retrieval backend are separate concepts.
+- [x] Retrieval architecture and retrieval backend are separate concepts.
 
-- [ ] ContextBroker consumes canonical retrieval results, not backend-native objects.
+- [x] ContextBroker consumes canonical retrieval results, not backend-native objects.
 
-- [ ] A future switch from custom BM25 to FTS5 must not require rewriting Agent orchestration.
+- [x] A future switch from custom BM25 to FTS5 must not require rewriting Agent orchestration.
 
-- [ ] A future switch from exact cosine search to an ANN index must not require rewriting ContextBroker.
+- [x] A future switch from exact cosine search to an ANN index must not require rewriting ContextBroker.
 
 ### Options that must be explicitly compared
 
@@ -6746,7 +6758,7 @@ RetrievalHit
 
 ### Important scoring rule
 
-- [ ] Do not directly compare raw BM25 numbers with cosine similarity.
+- [x] Do not directly compare raw BM25 numbers with cosine similarity.
 
 These scores have unrelated scales.
 
@@ -6775,6 +6787,8 @@ failed
 ### Done when
 
 Changing a lexical or vector backend does not alter provider-facing ContextBroker contracts.
+
+- [x] Focused contract verifies canonical typed hits and preservation of the existing provider-facing project payload; the official full CTest gate remains a separate Sprint 1041 delivery requirement.
 
 ---
 

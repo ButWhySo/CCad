@@ -9,6 +9,8 @@ from collections import OrderedDict
 from typing import Any
 
 from project_index import ProjectIndex, project_model
+from retrieval_adapters import MemoryManagerRetriever, ProjectIndexRetriever
+from retrieval_contracts import RetrievalChannel, RetrievalRequest
 
 
 _WORDS = re.compile(r"[a-z0-9_]{3,}", re.IGNORECASE)
@@ -193,6 +195,15 @@ class ContextBroker:
                     getattr(manager, "semantic_state", lambda: {})().get("ready", False)),
                 "contents_included": False}
 
+    @staticmethod
+    def _retrieval_status(result):
+        return {"status": result.status.value,
+                "reason": result.reason[:96],
+                "revision": result.revision[:256],
+                "hit_count": len(result.hits),
+                "channels": {channel.value: status.value
+                             for channel, status in result.channel_statuses.items()}}
+
     def _select(self, entries, provenance):
         meta_by_id = {str(item.get("entry_id")): item for item in provenance
                       if isinstance(item, dict)}
@@ -342,8 +353,15 @@ class ContextBroker:
             cached = self._cache.pop(key)
             self._cache[key] = cached
             return {**cached, "cache_hit": True}
-        entries, provenance = manager.retrieve_with_metadata(signals["query"],
-                                                              limit=self.MAX_MEMORY_ENTRIES)
+        memory_result = MemoryManagerRetriever(manager).retrieve(RetrievalRequest(
+            query=signals["query"], project_id=current_project_id,
+            thread_id=str(thread_id), requested_revision=str(project_revision),
+            scope="memory", top_k=self.MAX_MEMORY_ENTRIES,
+            candidate_budget=max(self.MAX_MEMORY_ENTRIES, 32),
+            channels=(RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)))
+        memory_retrieval_status = self._retrieval_status(memory_result)
+        entries = [dict(hit.content) for hit in memory_result.hits]
+        provenance = [dict(hit.provenance) for hit in memory_result.hits]
         entries, provenance = self._deduplicate_against_context(
             entries, provenance, comparison_texts)
         entries, provenance, chars = self._select(entries, provenance)
@@ -360,6 +378,9 @@ class ContextBroker:
                              "relationship_semantics": "shared_net_association_only",
                              "board_net_semantics":
                              "native_net_id_association_not_physical_continuity"}
+        project_retrieval_status = {"status": "unavailable",
+                                    "reason": "project_snapshot_unavailable",
+                                    "revision": "", "hit_count": 0, "channels": {}}
         if project_snapshot:
             project_model_data = project_model(project_snapshot)
             project_key = str(project_model_data.get("id") or
@@ -369,12 +390,22 @@ class ContextBroker:
             if project_index is None:
                 project_index = ProjectIndex()
                 self._project_indexes[project_key] = project_index
-            project_result = project_index.retrieve(
-                project_snapshot, signals["query"], active_layer=active_layer,
-                active_net=active_net, selected_objects=selected_objects,
+            project_retriever = ProjectIndexRetriever(
+                project_index, project_snapshot, project_id=project_key,
+                active_layer=active_layer, active_net=active_net,
+                selected_objects=selected_objects,
                 embedding_backend=getattr(manager, "semantic_embedding_backend", None))
-            project_retrieval = project_result
-            if project_result.get("available"):
+            project_result = project_retriever.retrieve(RetrievalRequest(
+                query=signals["query"], project_id=project_key,
+                requested_revision=str(project_revision), scope="project",
+                top_k=10, candidate_budget=max(10, project_index.max_entities),
+                net_ids=(active_net,) if active_net else (),
+                layer_ids=(active_layer,) if active_layer else (),
+                selected_object_ids=tuple(selected_objects),
+                channels=tuple(RetrievalChannel)))
+            project_retrieval_status = self._retrieval_status(project_result)
+            project_retrieval = project_retriever.to_context_payload(project_result)
+            if project_result.status.value == "ready":
                 # Retain populated indexes for incremental updates across turns.
                 self._project_indexes.move_to_end(project_key)
                 while len(self._project_indexes) > 1:
@@ -387,10 +418,12 @@ class ContextBroker:
                   "project_revision": str(project_revision), "signal_digest": signals["digest"],
                   "memory_generation": generation, "signals": signals,
                   "memories": entries, "memory_retrieval": provenance,
+                  "memory_retrieval_status": memory_retrieval_status,
                   "dedup_context": comparison_texts,
                   "memory_summary": summary,
                   "memory_summary_entry_ids": summary_ids, "manifest": manifest,
                   "project_retrieval": project_retrieval,
+                  "project_retrieval_status": project_retrieval_status,
                   "memory_chars": chars, "memory_token_budget": self.memory_token_budget,
                   "historical_turn_count": max(0, int(historical_turn_count)),
                   "change_reason": "initial_context" if version == 1 else "context_changed"}
@@ -408,8 +441,15 @@ class ContextBroker:
             raise ValueError("memory_context_project_changed")
         extra = extract_context_signals(query)["query"]
         merged_query = (str(context.get("signals", {}).get("query", "")) + " " + extra).strip()
-        entries, provenance = manager.retrieve_with_metadata(merged_query,
-                                                              limit=self.MAX_MEMORY_ENTRIES)
+        memory_result = MemoryManagerRetriever(manager).retrieve(RetrievalRequest(
+            query=merged_query, project_id=current_project,
+            thread_id=str(context.get("thread_id", "")), scope="memory",
+            top_k=self.MAX_MEMORY_ENTRIES,
+            candidate_budget=max(self.MAX_MEMORY_ENTRIES, 32),
+            channels=(RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)))
+        memory_retrieval_status = self._retrieval_status(memory_result)
+        entries = [dict(hit.content) for hit in memory_result.hits]
+        provenance = [dict(hit.provenance) for hit in memory_result.hits]
         entries, provenance = self._deduplicate_against_context(
             entries, provenance, list(context.get("dedup_context", ())))
         old_entries = {str(item.get("id")): item for item in context.get("memories", [])}
@@ -441,6 +481,7 @@ class ContextBroker:
                 self._add_inclusion_channel([item], "memory_summary")
         refreshed = {**context, "version": version, "cache_hit": False,
                      "memories": selected, "memory_retrieval": selected_meta,
+                     "memory_retrieval_status": memory_retrieval_status,
                      "memory_summary": summary,
                      "memory_summary_entry_ids": summary_ids, "memory_chars": chars,
                      "signals": refreshed_signals,
