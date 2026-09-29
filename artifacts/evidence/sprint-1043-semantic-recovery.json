@@ -1,0 +1,65 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1043-semantic-recovery",
+    "feature":  "Measure real Ollama semantic retrieval failure fallback and recovery, alongside model-backed relevance and embedding latency",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T15:27:40.1634614Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.96 log=artifacts/evidence/sprint-1043-semantic-recovery/preflight.log",
+                      "finished_utc":  "2026-09-29T15:27:41.2518734Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=4.42 log=artifacts/evidence/sprint-1043-semantic-recovery/build.log",
+                      "finished_utc":  "2026-09-29T15:27:45.6883878Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=199.55 log=artifacts/evidence/sprint-1043-semantic-recovery/ctest.log",
+                      "finished_utc":  "2026-09-29T15:31:05.2390597Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/calibration-embeddinggemma.json",
+                                         "sha256":  "3089A899621E125D18ADEC561470885A28F9535864CF5C735E272839F902792E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/calibration-nomic-embed-text.json",
+                                         "sha256":  "2145DAF19C6A86A3762C9D5D35C97B2175AABFA4A85A260DF6651B246BA92C51"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/ctest.log",
+                                         "sha256":  "184C4AD6E50474113517772B3A1A7FC83923AB6058EC5770A9B12E0234FA374D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/held-out-embeddinggemma.json",
+                                         "sha256":  "A88AF3BBA473EF7904DEED1FC4310D521AD007A03824222968D48898A6E4F7BF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/held-out-nomic-embed-text.json",
+                                         "sha256":  "34A52EC3D7D4AD61308E5061ADF2EF81F34EF5D8F46A10FDE49C9C84C9C27278"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-recovery/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T15:31:05.7866476Z"
+}

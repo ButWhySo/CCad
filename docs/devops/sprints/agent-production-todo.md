@@ -6,11 +6,13 @@
 - [x] Execute calibration and held-out cases through real `ProjectIndex`, `MemoryManager`, and `ConversationStore` retrieval; report ranked quality and bounded-context measurements without synthetic retrieval hits.
 - [x] Measure in-memory index build/update, query percentiles, process peak RSS, temporary-store disk use, and versioned execution reports; retain missing measurements as explicit `not measured` statuses.
 - [x] Measure held-out semantic retrieval and query/document embedding latency with installed local `embeddinggemma` and `nomic-embed-text`; reports distinguish model/channel and offline lexical-only results.
-- [ ] Measure retrieval failure recovery and follow-up Agent tool calls in a real model-backed context turn; offline retrieval harness does not measure these.
-- [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright after semantic instrumentation; official non-visual manifest `artifacts/evidence/sprint-1043-semantic-measurement.json` SHA-256 `75FB3BA4EF2BAE60E29ADD19A1442F7AACB058727B7891F6AC4D0D0695B9966B`.
+- [x] Measure real semantic-service failure and recovery through production retrieval: Ollama's missing-model response is classified, lexical fallback returns a truthful partial result, and reconfiguration restores semantic results; calibration/held-out reports record failure and recovery latency.
+- [ ] Measure follow-up Agent tool calls in an end-to-end model-backed context turn; local installation has embedding models only, not a chat model, so do not infer this from retrieval-only measurements.
+- [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright after real failure/recovery instrumentation; official non-visual manifest `artifacts/evidence/sprint-1043-semantic-recovery.json` SHA-256 `DFADF456236ECFA471FA15966ED740E16CC97FFBDD599A7D9CC7C422D5555AC6`.
 - [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
 - [x] Commit and push verified slice as `0812739`; `git ls-remote` confirms exact branch head `0812739d842f664eda088e756eb63bb583c5f240`.
 - [x] Commit and push measured semantic-retrieval follow-up as `8bf986e`; `git ls-remote` confirms exact branch head `8bf986e236f7a2deb40a9b8f4921a1f04ffbe14f`.
+- [ ] Commit and push measured semantic failure/recovery slice after its local verification gate.
 - [ ] Inspect hosted CI for exact pushed SHA after a pull-request event; branch-only pushes do not trigger this repository's configured workflow.
 
 ### Sprint 1042 — provider error contract test scope

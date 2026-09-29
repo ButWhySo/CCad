@@ -30,7 +30,7 @@ from memory_manager import MemoryManager  # noqa: E402
 from memory_store import MemoryStore  # noqa: E402
 from project_index import ProjectIndex  # noqa: E402
 from retrieval_adapters import MemoryManagerRetriever, ProjectIndexRetriever  # noqa: E402
-from retrieval_contracts import RetrievalChannel, RetrievalRequest  # noqa: E402
+from retrieval_contracts import RetrievalChannel, RetrievalRequest, RetrievalStatus  # noqa: E402
 from semantic_retrieval import OllamaEmbeddingBackend  # noqa: E402
 
 DATASET_PATH = ROOT / "scripts" / "fixtures" / "agent_retrieval_dataset_v1.json"
@@ -236,6 +236,58 @@ def _embedding_latency(backend: TimedEmbeddingBackend | None) -> dict[str, Any]:
     }
 
 
+def _measure_semantic_recovery(manager: MemoryManager, *, ollama_url: str,
+                               embedding_model: str, query: str) -> dict[str, Any]:
+    """Exercise real Ollama missing-model fallback, then restore the installed model."""
+    def config(model: str) -> dict[str, Any]:
+        return {"working_memory": False, "ltm": True, "episodic": False,
+                "semantic": {"enabled": True, "backend": "ollama_local",
+                             "base_url": ollama_url, "model": model}}
+
+    manager.set_embedding_backend(None)
+    missing_model = f"{embedding_model}-ccad-recovery-probe-missing"
+    started = time.perf_counter_ns()
+    configuration_failures = manager.configure(config(missing_model))
+    unavailable_state = manager.semantic_state()
+    failed_result = MemoryManagerRetriever(manager).retrieve(RetrievalRequest(
+        query=query, project_id="retrieval-benchmark", thread_id="retrieval-benchmark-thread",
+        requested_revision="memory-fixture-v1", scope="memory", top_k=10,
+        candidate_budget=32, channels=(RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)))
+    failure_ms = (time.perf_counter_ns() - started) / 1_000_000
+
+    recovery_started = time.perf_counter_ns()
+    recovery_failures = manager.configure(config(embedding_model))
+    recovered_state = manager.semantic_state()
+    recovered_result = MemoryManagerRetriever(manager).retrieve(RetrievalRequest(
+        query=query, project_id="retrieval-benchmark", thread_id="retrieval-benchmark-thread",
+        requested_revision="memory-fixture-v1", scope="memory", top_k=10,
+        candidate_budget=32, channels=(RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)))
+    recovery_ms = (time.perf_counter_ns() - recovery_started) / 1_000_000
+
+    return {
+        "status": "measured",
+        "fault": "real_ollama_missing_model_response",
+        "unavailable_status": unavailable_state.get("status", "unknown"),
+        "unavailable_configuration_failures": configuration_failures,
+        "fallback_result_status": failed_result.status.value,
+        "fallback_lexical_hits": sum(hit.channel == RetrievalChannel.LEXICAL
+                                      for hit in failed_result.hits),
+        "recovered_status": recovered_state.get("status", "unknown"),
+        "recovered_model": recovered_state.get("model", ""),
+        "recovery_configuration_failures": recovery_failures,
+        "recovered_result_status": recovered_result.status.value,
+        "recovered_semantic_hits": sum(hit.channel == RetrievalChannel.SEMANTIC
+                                        for hit in recovered_result.hits),
+        "failure_detection_and_fallback_ms": round(failure_ms, 6),
+        "reconfiguration_and_retrieval_ms": round(recovery_ms, 6),
+        "passed": (unavailable_state.get("ready") is False and
+                   failed_result.status == RetrievalStatus.PARTIAL and
+                   any(hit.channel == RetrievalChannel.LEXICAL for hit in failed_result.hits) and
+                   recovered_state.get("ready") is True and
+                   recovered_result.status == RetrievalStatus.READY),
+    }
+
+
 def _peak_rss_bytes() -> int | None:
     if os.name == "nt":
         import ctypes
@@ -381,6 +433,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     memory_aliases = _seed_memories(manager, "memory_records")
     semantic_state = {"status": "disabled", "enabled": False, "model": ""}
     timed_embeddings: TimedEmbeddingBackend | None = None
+    semantic_recovery: dict[str, Any] = {"status": "not_measured_no_local_semantic_backend"}
     if local_semantic:
         embedding_backend = OllamaEmbeddingBackend(ollama_url, embedding_model)
         readiness = embedding_backend.check_ready()
@@ -395,6 +448,15 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
         semantic_state = manager.semantic_state()
         if failures or not semantic_state.get("ready"):
             raise RuntimeError("local_semantic_backend_not_ready")
+        recovery_case = next(case for case in dataset["cases"]
+                             if case["split"] == split and case["task"] == "memory")
+        semantic_recovery = _measure_semantic_recovery(
+            manager, ollama_url=ollama_url, embedding_model=embedding_model,
+            query=recovery_case["query"])
+        if not semantic_recovery["passed"]:
+            raise RuntimeError("local_semantic_failure_recovery_failed")
+        manager.set_embedding_backend(timed_embeddings)
+        semantic_state = manager.semantic_state()
     store = ConversationStore(conversation_path)
     turn_aliases = _seed_turns(store)
     cases = [case for case in dataset["cases"] if case["split"] == split]
@@ -570,7 +632,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                     "embedding_latency_ms": _embedding_latency(timed_embeddings),
                     "benchmark_execution_ms": round((time.perf_counter() - started) * 1000, 6),
                     "product_startup_latency_ms": None,
-                    "backend_failure_recovery": "not_measured_no_persistent_search_backend",
+                    "backend_failure_recovery": semantic_recovery,
                     "follow_up_tool_calls": "not_measured_offline_retrieval_only"},
     }
 

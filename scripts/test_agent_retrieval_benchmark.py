@@ -77,6 +77,8 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertEqual(report["systems"]["product_startup_latency_ms"], None)
         self.assertEqual(report["systems"]["embedding_latency_ms"]["status"],
                          "not_requested")
+        self.assertEqual(report["systems"]["backend_failure_recovery"]["status"],
+                         "not_measured_no_local_semantic_backend")
         self.assertEqual(report["systems"]["follow_up_tool_calls"],
                          "not_measured_offline_retrieval_only")
 
