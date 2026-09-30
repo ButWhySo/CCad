@@ -1,5 +1,16 @@
 # Implemented Features
 
+## Sprint 1048 — checkpoint-restart CI fixture parity
+
+The checkpoint restart contract fixture now consumes the provider-safe
+function-schema dictionaries that the production orchestrator actually passes
+to provider `bind_tools()`. It asserts that the native route declaration is
+present, then exercises accepted, denied, and canceled calls across separate
+processes. This is a test reliability correction; no production runtime or GUI
+behavior changed. The complete Python CI contract set, Python compilation,
+Pyright, Qt/MinGW Release build, and full CTest (127/127) pass locally. Hosted
+CI confirmation is pending publication of the fix.
+
 ## Sprint 1047 — memory and project-entity retrieval ablations
 
 Retrieval dataset 1.2.0 adds separate project-entity and memory-retrieval cases

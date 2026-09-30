@@ -49,6 +49,8 @@ Owns the `ccad agent orchestrate` and `ccad agent plan` CLI wrapper, providing t
 
 Sprint 207 addendum: `src/ccad_gui/agent_panel.cpp` added the fifth reference-inspired Agent pane contract with compact header action bar, evidence thumbnails, approval preview, and UI-map target proof.
 
+Sprint 1048 note: `scripts/test_agent_checkpoint_restart.py` fakes the provider boundary and must consume provider-safe OpenAI function declaration dictionaries (`declaration["function"]["name"]`), as passed by `orchestrator.bind_native_tools()`. The restart matrix uses independent process invocations for first interruption and accepted/denied/canceled resume. Do not change production binding back to LangChain object instances to accommodate test doubles.
+
 ## Sprint 1022 CI / CTest / CD diagnosis
 
 The reported red CTest run `36234661589` failed in the Linux core, Linux GUI, and Windows core lanes because `agent_project_index` depended on an ignored local demo-board file that clean runners do not have. Sprint 1015 already repaired this with self-contained typed fixtures. Later hosted run `36261448041` passes all five jobs on merged `main` SHA `bab8aed149015a6c763dfec861c86b7d69326d86`. The official nonvisual verifier confirms the unchanged Qt/MinGW Release build and all 120 CTests; manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json` (SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`). `.github/workflows/ci.yml` is the only configured workflow; CD has no workflow or deployment target and is unconfigured, not failing.

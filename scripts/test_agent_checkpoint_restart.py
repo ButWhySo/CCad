@@ -29,8 +29,10 @@ TOOL_CATALOG = [{
 
 class FakeModel:
     def bind_tools(self, tools):
-        self.tool_name = next(tool.name for tool in tools
-                              if tool.name == "ccad_ui_route_track")
+        names = [tool.get("function", {}).get("name") for tool in tools
+                 if isinstance(tool, dict)]
+        assert "ccad_ui_route_track" in names, tools
+        self.tool_name = "ccad_ui_route_track"
         return self
 
     def invoke(self, messages, config=None):

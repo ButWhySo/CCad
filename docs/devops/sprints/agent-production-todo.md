@@ -1,5 +1,13 @@
 # CCad Agent production TODO
 
+### Sprint 1048 — Python CI checkpoint-restart schema parity
+
+- [x] Fix the checkpoint-restart fake model to read provider-safe function declarations, matching `bind_native_tools()` rather than expecting `StructuredTool` objects.
+- [x] Reproduce the pre-fix failure, then pass the first/resume subprocess pairs for accepted, denied, and canceled calls.
+- [x] Run the complete hosted `agent-python` contract script set locally, Python compilation, Pyright 1.1.414 (0 diagnostics), Qt/MinGW Release build, and full CTest (127/127); no GUI behavior changed.
+- [ ] Push the fix, confirm the exact remote SHA, and verify the resulting hosted CI run is green before pruning merged branches.
+- [ ] Update the final hosted status and evidence reference after GitHub completes.
+
 ### Sprint 1047 — memory and project-entity retrieval ablations
 
 - [x] Expand the versioned corpus to dataset 1.2.0 with separate project-entity and memory-retrieval cases in calibration and held-out splits; preserve distinct identities and hard distractors.
@@ -10,7 +18,7 @@
 - [x] Add pre-implementation contracts for corpus split integrity, channel selection, execution-time channel propagation, and policy exclusion; focused dataset, benchmark, memory-manager, and typed retrieval tests pass.
 - [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release verification, and full CTest (127/127); inspect logs and final nonvisual manifest `artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256 `833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`. The final manifest reuses the earlier full-suite pass because subsequent code change only advanced benchmark metadata; focused benchmark contracts were rerun after that change.
 - [x] Run redacted tracked-repository and staged-diff secret scans; tracked matches are four existing synthetic test sentinels in three test files, while staged additions contain no high-confidence credential patterns.
-- [x] Commit `21f3a8c38608e4ac4ed46bd7e0bed8e1c4df2349`, push branch `sprint-1047-memory-retrieval-ablation`, and confirm the exact remote SHA matches. Hosted CI/main merge remains a separate integration gate.
+- [x] Commit `21f3a8c38608e4ac4ed46bd7e0bed8e1c4df2349`, push branch `sprint-1047-memory-retrieval-ablation`, and confirm the exact remote SHA matches. This slice was later merged to `main`; its hosted run exposed the checkpoint-fixture mismatch tracked in Sprint 1048.
 
 References checked: Google’s [EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) and Nomic’s [official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) define retrieval-specific query/document embedding behavior. Current integration follows the previously recorded task-prompt protocol; this slice measures retrieval relevance and does not change model prompts.
 
