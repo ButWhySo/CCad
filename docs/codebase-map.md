@@ -2672,14 +2672,18 @@ retrieval paths; the CTest and CI `agent-python` gates run it.
 
 Sprint 1045 expands this versioned corpus with distinct component-function and
 design-intent tasks, plus semantically enabled hard engineering negatives. The
-benchmark now applies the case's semantic-use policy to both project and memory
-channel requests and reports semantic-eligible case counts. It still does not
-implement retrieval-mode ablations: channel filtering occurs after the current
-hybrid `ProjectIndex` ranking, so those results cannot be presented as independent
-BM25-only or semantic-only experiments.
-Installed EmbeddingGemma and Nomic calibration/held-out runs each returned
-retrieval candidates for both hard negatives (2/2 per split). Do not claim useful
-semantic gain or select a threshold from this small corpus.
+benchmark applies each case's semantic-use policy to project and memory requests.
+Sprint 1046 makes `ProjectIndex.retrieve(..., channels=...)` execute requested
+exact, lexical, semantic, graph, and spatial channels before ranking; the default
+still enables every channel to preserve existing context behavior. The typed
+`ProjectIndexRetriever` forwards `RetrievalRequest.channels`, so lexical-only
+requests skip embeddings and semantic-only queries rank eligible active-project
+entities without exact/BM25 scores. The evaluation CLI exposes exact, lexical,
+semantic, and hybrid modes and excludes semantic-disallowed cases explicitly.
+The 11-case corpus has five eligible semantic cases per split. On held-out data,
+semantic-only recall@3 is 0.333 for both models versus lexical-only 0.667; semantic
+and hybrid modes both return 2/2 hard negatives. Therefore this evidence supports
+neither semantic promotion nor a threshold choice.
 
 ## Sprint 1043 live provider response and dispatch reporting
 

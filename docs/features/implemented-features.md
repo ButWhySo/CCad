@@ -1,5 +1,19 @@
 # Implemented Features
 
+## Sprint 1046 — execution-level retrieval channel ablations
+
+`ProjectIndex.retrieve` now honors requested exact, lexical, semantic, graph, and
+spatial channels during execution. The typed project adapter forwards the
+request's channels, so evaluation compares actual exact-only, lexical-only,
+semantic-only, and hybrid rankings instead of filtering one hybrid result after
+the fact. Semantic-only mode evaluates eligible active-project entities without
+exact/BM25 scores, while lexical-only requests avoid embedding calls. Cases that
+forbid semantic search are recorded as policy-excluded rather than false
+negatives. Local EmbeddingGemma and Nomic held-out semantic-only recall@3 was
+0.333 for both versus 0.667 for lexical-only; semantic and hybrid each returned
+2/2 hard negatives. The corpus is small and does not justify enabling semantic
+retrieval more broadly or selecting a global similarity threshold.
+
 ## Sprint 1045 — semantic retrieval evaluation corpus expansion
 
 The versioned retrieval corpus adds separate component-function and design-intent
@@ -8,8 +22,9 @@ permit semantic search so model runs measure false-positive retrieval rather tha
 excluding those queries by policy. The benchmark honors each case's semantic-use
 policy for project and memory requests and reports the number of semantic-eligible
 cases. Dataset contracts keep calibration and held-out identities separate. This
-slice expands evaluation coverage only; retrieval-mode ablations and any
-model/task/corpus/version-scoped acceptance threshold remain open.
+slice expands evaluation coverage; Sprint 1046 adds real execution-level mode
+ablations. Further corpus expansion and any model/task/corpus/version-scoped
+acceptance threshold remain open.
 Both installed model digests returned candidates for both hard negatives in each
 split (2/2 false positives); held-out function and design-intent recall also
 varied by model. These results argue against claiming semantic gain or adopting a

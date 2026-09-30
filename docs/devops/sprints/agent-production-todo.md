@@ -1,5 +1,17 @@
 # CCad Agent production TODO
 
+### Sprint 1046 — retrieval channel ablations
+
+- [x] Make `ProjectIndex.retrieve` honor requested exact, lexical, semantic, graph, and spatial channels before ranking; preserve the default all-channel behavior.
+- [x] Pass typed `RetrievalRequest.channels` into the real project-index execution path; test lexical-only avoids embeddings and semantic-only ranks an independently retrieved semantic match.
+- [x] Add benchmark execution modes for exact, lexical, semantic, and hybrid retrieval; exclude semantic-disallowed cases explicitly rather than counting them as misses.
+- [x] Run all four modes on calibration and held-out splits with installed EmbeddingGemma and Nomic; semantic/hybrid still returned 2/2 hard negatives, while held-out semantic-only recall@3 was below lexical-only for both models.
+- [x] Run changed-module Pyright (0 diagnostics) and official Qt/MinGW Release/full CTest (127/127); inspect logs and manifest `artifacts/evidence/sprint-1046-retrieval-mode-ablations.json` SHA-256 `BBBE80736F07302E7C88086C2A2E69EAF8F9A6BD97ED456DDF97817F1F7A374C`.
+- [x] Update codebase map, feature inventory, and progress with model digests, comparisons, and remaining limitations.
+- [x] Run redacted tracked-repository/staged-diff/file scans; the three tracked matches are two legacy `task-workspace` artifact-path false positives and one synthetic test sentinel; staged additions have zero credential-pattern matches.
+- [ ] Commit, push, and verify the exact remote branch SHA.
+- [ ] Continue expanding retrieval corpus and scope threshold evidence by model digest, task, corpus, and evaluation version; do not promote a universal semantic threshold.
+
 ### Sprint 1045 — semantic retrieval corpus expansion
 
 - [x] Add separate source-grounded component-function and design-intent cases to calibration and held-out splits.
@@ -8,8 +20,8 @@
 - [x] Run real installed EmbeddingGemma and Nomic calibration/held-out retrieval; both produced false positives on 2/2 semantic hard negatives per split, so no semantic-gain/model-winner claim is made.
 - [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release, full CTest (127/127), and non-visual evidence manifest `artifacts/evidence/sprint-1045-semantic-corpus.json` SHA-256 `BA42002CC9161CDEB951D724FEF486A1B05FE8C02DE9CBF8975A3DFA29C5160F`; GUI behavior unchanged.
 - [x] Update TODO, codebase map, feature inventory, and progress in this change set.
-- [x] Run redacted staged-diff and staged-file secret scans (zero matches); commit/push verification remains pending.
-- [ ] Continue R7 mode ablations and model/task/corpus/version-scoped threshold evidence in a separate natural sub-slice.
+- [x] Run redacted staged-diff and staged-file secret scans (zero matches); commit/push `d2ddd81` and exact remote SHA `d2ddd811881b02a5c7e8f1944170e76a4e514575`.
+- [x] Continue R7 with real retrieval-mode ablations in Sprint 1046; model/task/corpus/version-scoped threshold evidence remains open.
 
 ### Sprint 1044 — explicit embedding task protocol
 
@@ -7210,7 +7222,7 @@ Sprint 1038's duplicate calibration is useful but deliberately small and conserv
 
 - [ ] Expand the still-small source-grounded calibration and held-out sets across all semantic retrieval classes below; keep memory duplicate classification separate from retrieval relevance. Sprint 1045 adds component-function/design-intent cases; sample remains limited.
 - [x] Evaluate hard negatives with semantic retrieval enabled and score false-positive cost per case/model, not only recall. Sprint 1045 observed 2/2 false-positive hard negatives per split/model.
-- [ ] Compare actual retrieval-mode ablations on eligible cases; a post-filtered hybrid ranking is not a valid ablation.
+- [x] Compare exact-only, lexical-only, semantic-only, and hybrid execution on eligible held-out cases; Sprint 1046 uses pre-ranking channel control and records each mode/model/split separately. Semantic-only held-out recall@3 is below lexical-only for both installed models, and both semantic-bearing modes return 2/2 hard negatives; do not promote semantic retrieval.
 - [ ] Scope any acceptance threshold by model digest, task, corpus, and evaluation version; do not introduce a universal cosine cutoff.
 - [ ] Claim useful semantic gain only when held-out incremental recall and hard-negative false-positive cost both support it.
 

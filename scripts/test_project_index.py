@@ -14,6 +14,7 @@ from context_package import build_context_package
 from context_broker import ContextBroker, extract_context_signals
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
+from retrieval_contracts import RetrievalChannel
 
 
 def project_snapshot():
@@ -382,6 +383,53 @@ class ProjectIndexTests(unittest.TestCase):
         # Tracks and vias remain governed by exact/graph/spatial retrieval; they
         # are not sent to the semantic backend as project-language documents.
         self.assertEqual(backend.document_batches, 1)
+
+    def test_requested_project_channels_control_retrieval_before_ranking(self):
+        class Backend:
+            identity = "contract:project-channel-ablation-v1"
+
+            @staticmethod
+            def _vector(text):
+                return ([1.0, 0.0, 0.0] if
+                        "receptacle" in text.casefold() or "usb_c" in text.casefold()
+                        else [0.0, 1.0, 0.0])
+
+            def __init__(self):
+                self.query_calls = 0
+                self.document_calls = 0
+
+            def embed_query(self, text):
+                self.query_calls += 1
+                return self._vector(text)
+
+            def embed_documents(self, texts):
+                self.document_calls += len(texts)
+                return [self._vector(text) for text in texts]
+
+        snapshot = project_snapshot()
+        backend = Backend()
+        index = ProjectIndex()
+        lexical = index.retrieve(snapshot, "receptacle for a cable", limit=12,
+                                 embedding_backend=backend,
+                                 channels=(RetrievalChannel.LEXICAL,))
+        self.assertEqual(backend.query_calls, 0)
+        self.assertEqual(backend.document_calls, 0)
+        self.assertEqual(lexical["semantic_status"], "not_requested")
+        self.assertEqual(lexical["stats"]["exact_match_count"], 0)
+        self.assertEqual(lexical["search_method"], "requested_channels:lexical")
+        self.assertFalse(any(item.get("semantic_similarity") is not None
+                             for item in lexical["entities"]))
+
+        semantic = index.retrieve(snapshot, "receptacle for a cable", limit=12,
+                                  embedding_backend=backend,
+                                  channels=(RetrievalChannel.SEMANTIC,))
+        connector = next(item for item in semantic["entities"]
+                         if item.get("kind") == "footprint" and item.get("id") == "J2")
+        self.assertEqual(connector["retrieval"], "semantic")
+        self.assertEqual(backend.query_calls, 1)
+        self.assertGreater(backend.document_calls, 0)
+        self.assertFalse(any(item.get("retrieval") in {"exact", "lexical", "hybrid"}
+                             for item in semantic["entities"]))
 
     def test_semantic_project_cache_reuses_unchanged_text_and_refreshes_edits(self):
         class Backend:

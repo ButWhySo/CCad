@@ -125,7 +125,8 @@ class ProjectIndexRetriever:
             active_net=self.active_net or (request.net_ids[0] if request.net_ids else ""),
             selected_objects=tuple(dict.fromkeys(
                 self.selected_objects + request.selected_object_ids)),
-            limit=request.candidate_budget, embedding_backend=self.embedding_backend)
+            limit=request.candidate_budget, embedding_backend=self.embedding_backend,
+            channels=request.channels)
         if not raw.get("available"):
             return RetrievalResult(RetrievalStatus.UNAVAILABLE,
                                    revision=str(raw.get("revision", "")),

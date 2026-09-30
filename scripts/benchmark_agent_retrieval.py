@@ -48,6 +48,29 @@ TASK_CHANNELS = {
                          RetrievalChannel.EXACT),
     "memory": (RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC),
 }
+PROJECT_ABLATION_TASKS = frozenset(("semantic_paraphrase", "component_function",
+                                    "design_intent", "hard_negative"))
+
+
+def project_channels_for_mode(task: str, semantic_allowed: bool,
+                              mode: str) -> tuple[RetrievalChannel, ...]:
+    """Select channels for execution; never filter a completed hybrid result."""
+    if mode == "task_policy":
+        channels = TASK_CHANNELS.get(task, ())
+        if semantic_allowed and RetrievalChannel.SEMANTIC not in channels:
+            channels += (RetrievalChannel.SEMANTIC,)
+        return tuple(channel for channel in channels
+                     if semantic_allowed or channel != RetrievalChannel.SEMANTIC)
+    fixed = {
+        "exact": (RetrievalChannel.EXACT,),
+        "lexical": (RetrievalChannel.LEXICAL,),
+        "semantic": ((RetrievalChannel.SEMANTIC,) if semantic_allowed else ()),
+        "hybrid": (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL,
+                   *((RetrievalChannel.SEMANTIC,) if semantic_allowed else ())),
+    }
+    if mode not in fixed:
+        raise ValueError("project_retrieval_mode_invalid")
+    return fixed[mode]
 
 
 class TimedEmbeddingBackend:
@@ -406,7 +429,8 @@ def _seed_turns(store: ConversationStore) -> dict[str, str]:
 def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                   warmups: int = 3, repetitions: int = 30,
                   local_semantic: bool = False, ollama_url: str = "http://127.0.0.1:11434",
-                  embedding_model: str = "embeddinggemma") -> dict[str, Any]:
+                  embedding_model: str = "embeddinggemma",
+                  project_retrieval_mode: str = "task_policy") -> dict[str, Any]:
     if split not in {"calibration", "held_out"}:
         raise ValueError("benchmark_split_invalid")
     if warmups < 0 or repetitions < 1 or repetitions > 1000:
@@ -470,13 +494,8 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     latencies = []
     for case in cases:
         task = case["task"]
-        channels = TASK_CHANNELS.get(task, ())
-        if case["semantic_search_allowed"]:
-            if RetrievalChannel.SEMANTIC not in channels:
-                channels += (RetrievalChannel.SEMANTIC,)
-        else:
-            channels = tuple(channel for channel in channels
-                             if channel != RetrievalChannel.SEMANTIC)
+        channels = project_channels_for_mode(
+            task, bool(case["semantic_search_allowed"]), project_retrieval_mode)
         memory_channels = ((RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)
                            if case["semantic_search_allowed"] else
                            (RetrievalChannel.LEXICAL,))
@@ -531,6 +550,14 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
             fixture = case["fixture"]
             snapshot = fixture_snapshots[fixture]
             fixture_meta = dataset["fixtures"][fixture]
+            if not channels:
+                result_ids = []
+                source_revision = fixture_meta.get("project_revision", "")
+                retrieval_status = "not_requested_policy"
+                status = "excluded_by_policy"
+                channel_names = []
+                context_chars = context_bytes = 0
+                return
             request = RetrievalRequest(
                 query=case["query"], project_id=fixture, scope="project",
                 requested_revision=fixture_meta.get("project_revision", ""),
@@ -567,6 +594,10 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
             "case_id": case["id"], "task": task, "fixture": case["fixture"],
             "status": status, "retrieval_status": retrieval_status,
             "semantic_search_allowed": case["semantic_search_allowed"],
+            "project_retrieval_mode": (project_retrieval_mode
+                                        if task not in {"memory", "historical_turn_record"}
+                                        else "not_applicable"),
+            "project_mode_comparison_eligible": task in PROJECT_ABLATION_TASKS,
             "semantic_backend_status": semantic_state.get("status", "disabled"),
             "requested_channels": ([channel.value for channel in channels]
                                    if task not in {"memory", "historical_turn_record"}
@@ -595,10 +626,12 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                                         "sample_count_below_100"},
         })
 
+    evaluated = [(case, row) for case, row in zip(cases, reports)
+                 if row["status"] != "excluded_by_policy"]
     false_negative = sum(bool(case["expected_ids"]) and
                          not set(row["result_ids"]).intersection(case["expected_ids"])
-                         for case, row in zip(cases, reports))
-    negatives = [row for row in reports if not row["expected_ids"]]
+                         for case, row in evaluated)
+    negatives = [row for case, row in evaluated if not case["expected_ids"]]
     payload = json.dumps(dataset, sort_keys=True, separators=(",", ":")).encode("utf-8")
     git_commit = ""
     try:
@@ -613,9 +646,10 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     if local_semantic:
         semantic_state = manager.semantic_state()
     return {
-        "schema_version": 1, "benchmark_version": "1.2.0",
+        "schema_version": 1, "benchmark_version": "1.3.0",
         "dataset_id": dataset["dataset_id"], "dataset_version": dataset["dataset_version"],
         "dataset_sha256": hashlib.sha256(payload).hexdigest(), "split": split,
+        "project_retrieval_mode": project_retrieval_mode,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "git_commit": git_commit, "platform": platform.platform(),
         "runtime": {"python": platform.python_version(), "backend": "CCad in-process retrieval",
@@ -625,7 +659,8 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                      "semantic_model_identity": (
                          semantic_state.get("model_identity") if local_semantic else None)},
         "summary": {"case_count": len(reports), "measured_case_count": sum(
-                        row["status"] not in {"unavailable", "failed"} for row in reports),
+                        row["status"] not in {"unavailable", "failed", "excluded_by_policy"}
+                        for row in reports),
                     "semantic_eligible_case_count": sum(
                         bool(row["semantic_search_allowed"]) for row in reports),
                     "false_negative_case_count": false_negative,
@@ -635,7 +670,12 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                     "hard_negative_rejection_rate": round(
                         statistics.fmean(row["metrics"]["hard_negative_rejected"]
                                          for row in negatives), 6) if negatives else None},
-        "quality_by_task": aggregate_metrics(reports), "cases": reports,
+        "quality_by_task": aggregate_metrics([
+            row for row in reports if row["status"] != "excluded_by_policy"]),
+        "project_mode_quality_by_task": aggregate_metrics([
+            row for row in reports if row["project_mode_comparison_eligible"] and
+            row["semantic_search_allowed"]]),
+        "cases": reports,
         "systems": {"project_index_build_ms_by_fixture": {
                         key: round(value, 6) for key, value in build_times.items()},
                     "incremental_update_ms_by_fixture": {
@@ -669,6 +709,10 @@ def main() -> int:
                         help="Use configured local Ollama embeddings; performs local model calls")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--embedding-model", default="embeddinggemma")
+    parser.add_argument("--project-retrieval-mode",
+                        choices=("task_policy", "exact", "lexical", "semantic", "hybrid"),
+                        default="task_policy",
+                        help="Execute selected ProjectIndex channels; case policy can exclude semantics")
     args = parser.parse_args()
     dataset = json.loads(args.dataset.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory(prefix="ccad-retrieval-benchmark-") as temp:
@@ -676,13 +720,15 @@ def main() -> int:
                                 warmups=args.warmups, repetitions=args.repetitions,
                                 local_semantic=args.local_semantic,
                                 ollama_url=args.ollama_url,
-                                embedding_model=args.embedding_model)
+                                embedding_model=args.embedding_model,
+                                project_retrieval_mode=args.project_retrieval_mode)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
                            encoding="utf-8")
     print(json.dumps({"status": "written", "output": str(args.output),
                       "dataset_version": report["dataset_version"],
                       "split": report["split"], "case_count": report["summary"]["case_count"],
+                      "project_retrieval_mode": report["project_retrieval_mode"],
                       "false_negative_case_count":
                           report["summary"]["false_negative_case_count"]},
                      separators=(",", ":")))

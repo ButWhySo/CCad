@@ -1783,8 +1783,14 @@ class ProjectIndex:
 
     def retrieve(self, snapshot: Any, query: str, *, active_layer: str = "",
                  active_net: str = "", selected_objects=(), limit: int = 10,
-                 embedding_backend=None) -> dict:
+                 embedding_backend=None, channels=None) -> dict:
         self.set_embedding_backend(embedding_backend)
+        allowed_channels = {"exact", "lexical", "semantic", "graph", "spatial"}
+        requested_channels = (allowed_channels if channels is None else
+                              {str(getattr(channel, "value", channel))
+                               for channel in channels})
+        if not requested_channels.issubset(allowed_channels):
+            raise ValueError("retrieval_channels_invalid")
         if isinstance(snapshot, str):
             try:
                 snapshot = json.loads(snapshot)
@@ -1814,16 +1820,21 @@ class ProjectIndex:
         limit = max(1, min(self.max_entities, int(limit)))
         extras = [active_layer, active_net]
         extras.extend(list(selected_objects or ())[:32])
-        exact_ids = self._exact(query, extras)
-        lexical = self._bm25(query, limit * 2)
+        exact_ids = (self._exact(query, extras)
+                     if requested_channels.intersection({"exact", "graph"}) else set())
+        lexical = (self._bm25(query, limit * 2)
+                   if "lexical" in requested_channels else [])
         lexical_ids = {uid for uid, _score in lexical}
         seeds = exact_ids
-        related = self._relationship_neighbors(seeds)
+        related = (self._relationship_neighbors(seeds)
+                   if "graph" in requested_channels else defaultdict(set))
 
-        query_box = _query_bounds(query)
-        points = [] if query_box else _coordinates(query)
-        nearby = bool(re.search(r"\b(near|around|nearby|within|radius|close\s+to|beside)\b",
-                                query, re.IGNORECASE))
+        spatial_enabled = "spatial" in requested_channels
+        query_box = _query_bounds(query) if spatial_enabled else None
+        points = ([] if query_box else _coordinates(query)) if spatial_enabled else []
+        nearby = spatial_enabled and bool(re.search(
+            r"\b(near|around|nearby|within|radius|close\s+to|beside)\b",
+            query, re.IGNORECASE))
         coordinate_domain = self._coordinate_domain(query, active_layer, exact_ids,
                                                     self._docs)
         if nearby and not points:
@@ -1842,13 +1853,13 @@ class ProjectIndex:
         spatial_scores: dict[str, float] = {}
         near_component_distances: dict[str, float] = {}
         anchor_ids = exact_ids if nearby and not _coordinates(query) else set()
-        if query_box:
+        if spatial_enabled and query_box:
             spatial_scores.update({uid: distance for uid, distance in
                                    self._spatial_box(query_box)
                                    if self._docs[uid]["fields"]["kind"] in
                                    (_BOARD_GEOMETRY_KINDS if coordinate_domain == "board"
                                     else _SCHEMATIC_GEOMETRY_KINDS)})
-        else:
+        elif spatial_enabled:
             for point in points[:4]:
                 for uid, distance in self._spatial(point, radius)[:limit * 2]:
                     kind = self._docs[uid]["fields"]["kind"]
@@ -1858,7 +1869,7 @@ class ProjectIndex:
                     if uid not in anchor_ids:
                         spatial_scores[uid] = min(spatial_scores.get(uid, math.inf), distance)
 
-        if nearby and coordinate_domain == "board":
+        if spatial_enabled and nearby and coordinate_domain == "board":
             for anchor_uid in sorted(exact_ids):
                 anchor = self._docs.get(anchor_uid, {})
                 if anchor.get("fields", {}).get("kind") != "footprint":
@@ -1882,7 +1893,7 @@ class ProjectIndex:
         region_seeds = [uid for uid in sorted(exact_ids)
                         if self._docs.get(uid, {}).get("fields", {}).get("kind") ==
                         "placement_region"]
-        if coordinate_domain == "board" and region_intent:
+        if spatial_enabled and coordinate_domain == "board" and region_intent:
             for region_uid in region_seeds:
                 bounds = self._docs[region_uid]["fields"].get("bounds_mm")
                 if not bounds:
@@ -1908,9 +1919,10 @@ class ProjectIndex:
                 uid in region_seeds)
         }
         scores: dict[str, tuple[float, str, str, float]] = {}
-        for uid in exact_ids:
-            scores[uid] = (1400.0 if uid in geometry_anchor_ids else 1000.0,
-                           "exact", "", 0.0)
+        if "exact" in requested_channels:
+            for uid in exact_ids:
+                scores[uid] = (1400.0 if uid in geometry_anchor_ids else 1000.0,
+                               "exact", "", 0.0)
         for rank, (uid, score) in enumerate(lexical):
             candidate = (500.0 + score - rank * 0.001, "lexical", "", 0.0)
             if uid not in scores or candidate[0] > scores[uid][0]:
@@ -1941,7 +1953,10 @@ class ProjectIndex:
             if uid not in scores:
                 scores[uid] = (50.0 - distance, "spatial", "", distance)
 
-        semantic = self._semantic_ranking(query, lexical_ids)
+        semantic = (self._semantic_ranking(query, lexical_ids)
+                    if "semantic" in requested_channels else [])
+        semantic_status = (self._semantic_status if "semantic" in requested_channels
+                           else "not_requested")
         semantic_similarity = dict(semantic)
         if semantic:
             lexical_rank = {uid: rank for rank, (uid, _score) in enumerate(lexical, 1)}
@@ -2035,9 +2050,12 @@ class ProjectIndex:
                 "spatial_semantics": "axis_aligned_bounds_intersection_or_distance_only",
                 "geometry_relationship_semantics":
                     "pcb_coordinates_only; near_component_measures_anchor_position_to_footprint_bounds; region_member_means_axis_aligned_bounds_intersection",
-                "semantic_status": self._semantic_status,
+                "semantic_status": semantic_status,
                 "explicit_reference_semantics":
                     "serialized object references and declared schematic page membership only",
-                "search_method": ("exact_alias_bm25_semantic_rrf_relationship_spatial_geometry_diagnostics"
-                                  if semantic else
-                                  "exact_alias_bm25_relationship_spatial_geometry_diagnostics")}
+                "search_method": (
+                    "requested_channels:" + ",".join(sorted(requested_channels))
+                    if channels is not None else
+                    ("exact_alias_bm25_semantic_rrf_relationship_spatial_geometry_diagnostics"
+                     if semantic else
+                     "exact_alias_bm25_relationship_spatial_geometry_diagnostics"))}
