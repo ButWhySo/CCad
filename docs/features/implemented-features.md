@@ -1,5 +1,20 @@
 # Implemented Features
 
+## Sprint 1045 — semantic retrieval evaluation corpus expansion
+
+The versioned retrieval corpus adds separate component-function and design-intent
+cases on real typed project entities. Engineering hard negatives now explicitly
+permit semantic search so model runs measure false-positive retrieval rather than
+excluding those queries by policy. The benchmark honors each case's semantic-use
+policy for project and memory requests and reports the number of semantic-eligible
+cases. Dataset contracts keep calibration and held-out identities separate. This
+slice expands evaluation coverage only; retrieval-mode ablations and any
+model/task/corpus/version-scoped acceptance threshold remain open.
+Both installed model digests returned candidates for both hard negatives in each
+split (2/2 false positives); held-out function and design-intent recall also
+varied by model. These results argue against claiming semantic gain or adopting a
+universal similarity cutoff.
+
 ## Sprint 1043 — versioned retrieval evaluation corpus (active slice)
 
 `scripts/fixtures/agent_retrieval_dataset_v1.json` defines separate calibration

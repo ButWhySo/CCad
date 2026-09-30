@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = ROOT / "scripts" / "fixtures" / "agent_retrieval_dataset_v1.json"
 TASKS = {
     "exact_cad", "lexical_engineering", "semantic_paraphrase", "hard_negative",
-    "graph_relationship", "spatial_geometry", "memory", "historical_turn_record",
+    "component_function", "design_intent", "graph_relationship", "spatial_geometry",
+    "memory", "historical_turn_record",
 }
 SPLITS = {"calibration", "held_out"}
 
@@ -76,10 +77,22 @@ class RetrievalDatasetTests(unittest.TestCase):
                      if case["task"] == "hard_negative"]
         self.assertTrue(negatives)
         self.assertTrue(all(not case["expected_ids"] and
-                            not case["semantic_search_allowed"] for case in negatives))
+                            case["semantic_search_allowed"] for case in negatives))
         semantic = [case for case in self.dataset["cases"]
-                    if case["task"] == "semantic_paraphrase"]
-        self.assertTrue(all(case["semantic_search_allowed"] for case in semantic))
+                    if case["semantic_search_allowed"]]
+        for split in SPLITS:
+            self.assertTrue(any(case["split"] == split and
+                                case["task"] == "component_function" for case in semantic))
+            self.assertTrue(any(case["split"] == split and
+                                case["task"] == "design_intent" for case in semantic))
+            self.assertTrue(any(case["split"] == split and
+                                case["task"] == "hard_negative" for case in semantic))
+
+    def test_engineering_negatives_cover_distinct_false_inference_pairs(self):
+        queries = " ".join(case["query"].casefold() for case in self.dataset["cases"]
+                           if case["task"] == "hard_negative")
+        for phrase in ("impedance", "differential", "switching", "clock", "gpio"):
+            self.assertIn(phrase, queries)
 
 
 if __name__ == "__main__":

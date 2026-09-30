@@ -2670,6 +2670,17 @@ that build/test evidence does not close the model-backed turn requirement.
 `scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
 retrieval paths; the CTest and CI `agent-python` gates run it.
 
+Sprint 1045 expands this versioned corpus with distinct component-function and
+design-intent tasks, plus semantically enabled hard engineering negatives. The
+benchmark now applies the case's semantic-use policy to both project and memory
+channel requests and reports semantic-eligible case counts. It still does not
+implement retrieval-mode ablations: channel filtering occurs after the current
+hybrid `ProjectIndex` ranking, so those results cannot be presented as independent
+BM25-only or semantic-only experiments.
+Installed EmbeddingGemma and Nomic calibration/held-out runs each returned
+retrieval candidates for both hard negatives (2/2 per split). Do not claim useful
+semantic gain or select a threshold from this small corpus.
+
 ## Sprint 1043 live provider response and dispatch reporting
 
 `router_node()` emits content-free `provider_request_state` events at provider

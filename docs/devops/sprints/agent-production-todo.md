@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1045 — semantic retrieval corpus expansion
+
+- [x] Add separate source-grounded component-function and design-intent cases to calibration and held-out splits.
+- [x] Run semantically eligible hard engineering negatives through the real semantic channel; preserve explicit semantic-use policy in reports.
+- [x] Add split integrity, expected-identity, hard-negative, and requested-channel contracts before code changes.
+- [x] Run real installed EmbeddingGemma and Nomic calibration/held-out retrieval; both produced false positives on 2/2 semantic hard negatives per split, so no semantic-gain/model-winner claim is made.
+- [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release, full CTest (127/127), and non-visual evidence manifest `artifacts/evidence/sprint-1045-semantic-corpus.json` SHA-256 `BA42002CC9161CDEB951D724FEF486A1B05FE8C02DE9CBF8975A3DFA29C5160F`; GUI behavior unchanged.
+- [x] Update TODO, codebase map, feature inventory, and progress in this change set.
+- [x] Run redacted staged-diff and staged-file secret scans (zero matches); commit/push verification remains pending.
+- [ ] Continue R7 mode ablations and model/task/corpus/version-scoped threshold evidence in a separate natural sub-slice.
+
 ### Sprint 1044 — explicit embedding task protocol
 
 - [x] Apply official model-specific retrieval query/document prompts; isolate similarity prompts from retrieval.
@@ -7196,6 +7207,12 @@ References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/
 Determine whether embeddings are actually improving CCad retrieval.
 
 Sprint 1038's duplicate calibration is useful but deliberately small and conservative. Do not extrapolate it to general retrieval.
+
+- [ ] Expand the still-small source-grounded calibration and held-out sets across all semantic retrieval classes below; keep memory duplicate classification separate from retrieval relevance. Sprint 1045 adds component-function/design-intent cases; sample remains limited.
+- [x] Evaluate hard negatives with semantic retrieval enabled and score false-positive cost per case/model, not only recall. Sprint 1045 observed 2/2 false-positive hard negatives per split/model.
+- [ ] Compare actual retrieval-mode ablations on eligible cases; a post-filtered hybrid ranking is not a valid ablation.
+- [ ] Scope any acceptance threshold by model digest, task, corpus, and evaluation version; do not introduce a universal cosine cutoff.
+- [ ] Claim useful semantic gain only when held-out incremental recall and hard-negative false-positive cost both support it.
 
 ### Create separate benchmark sets for
 

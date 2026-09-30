@@ -39,6 +39,8 @@ TASK_CHANNELS = {
     "exact_cad": (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL),
     "lexical_engineering": (RetrievalChannel.LEXICAL, RetrievalChannel.EXACT),
     "semantic_paraphrase": (RetrievalChannel.SEMANTIC, RetrievalChannel.LEXICAL),
+    "component_function": (RetrievalChannel.SEMANTIC, RetrievalChannel.LEXICAL),
+    "design_intent": (RetrievalChannel.SEMANTIC, RetrievalChannel.LEXICAL),
     "hard_negative": (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL),
     "graph_relationship": (RetrievalChannel.GRAPH, RetrievalChannel.EXACT,
                            RetrievalChannel.LEXICAL),
@@ -469,6 +471,15 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     for case in cases:
         task = case["task"]
         channels = TASK_CHANNELS.get(task, ())
+        if case["semantic_search_allowed"]:
+            if RetrievalChannel.SEMANTIC not in channels:
+                channels += (RetrievalChannel.SEMANTIC,)
+        else:
+            channels = tuple(channel for channel in channels
+                             if channel != RetrievalChannel.SEMANTIC)
+        memory_channels = ((RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)
+                           if case["semantic_search_allowed"] else
+                           (RetrievalChannel.LEXICAL,))
         timings = []
         result_ids: list[str] = []
         source_revision = ""
@@ -488,7 +499,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                     query=case["query"], project_id="retrieval-benchmark",
                     thread_id="retrieval-benchmark-thread", requested_revision="memory-fixture-v1",
                     scope="memory", top_k=10, candidate_budget=32,
-                    channels=(RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC))
+                    channels=memory_channels)
                 result = MemoryManagerRetriever(manager).retrieve(request)
                 result_ids = [memory_aliases.get(hit.canonical_id,
                                                  f"unmapped:{hit.canonical_id}")
@@ -559,10 +570,9 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
             "semantic_backend_status": semantic_state.get("status", "disabled"),
             "requested_channels": ([channel.value for channel in channels]
                                    if task not in {"memory", "historical_turn_record"}
-                                   else ([RetrievalChannel.LEXICAL.value,
-                                          RetrievalChannel.SEMANTIC.value]
-                                         if task == "memory" else
-                                         ["historical_turn_lexical"])),
+                                    else ([channel.value for channel in memory_channels]
+                                          if task == "memory" else
+                                          ["historical_turn_lexical"])),
             "channels_available_on_hits": channel_names,
             "source_revision": source_revision,
             "expected_ids": list(case["expected_ids"]), "result_ids": result_ids,
@@ -603,7 +613,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     if local_semantic:
         semantic_state = manager.semantic_state()
     return {
-        "schema_version": 1, "benchmark_version": "1.1.0",
+        "schema_version": 1, "benchmark_version": "1.2.0",
         "dataset_id": dataset["dataset_id"], "dataset_version": dataset["dataset_version"],
         "dataset_sha256": hashlib.sha256(payload).hexdigest(), "split": split,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -616,6 +626,8 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                          semantic_state.get("model_identity") if local_semantic else None)},
         "summary": {"case_count": len(reports), "measured_case_count": sum(
                         row["status"] not in {"unavailable", "failed"} for row in reports),
+                    "semantic_eligible_case_count": sum(
+                        bool(row["semantic_search_allowed"]) for row in reports),
                     "false_negative_case_count": false_negative,
                     "hard_negative_case_count": len(negatives),
                     "false_positive_case_count": sum(row["metrics"]["false_positive"]

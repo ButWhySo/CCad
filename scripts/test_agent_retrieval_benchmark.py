@@ -56,7 +56,7 @@ class RetrievalMetricsTests(unittest.TestCase):
             report = run_benchmark(corpus, split="held_out", work_dir=Path(temp),
                                    warmups=0, repetitions=2)
         self.assertEqual(report["dataset_version"], corpus["dataset_version"])
-        self.assertEqual(report["benchmark_version"], "1.1.0")
+        self.assertEqual(report["benchmark_version"], "1.2.0")
         self.assertEqual(report["split"], "held_out")
         self.assertGreater(report["summary"]["case_count"], 0)
         history = next(row for row in report["cases"]
@@ -67,6 +67,18 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertTrue(any(row["task"] == "memory" for row in report["cases"]))
         self.assertTrue(all(row["status"] in {"measured", "unavailable"}
                             for row in report["cases"]))
+        semantic_allowed = [row for row in report["cases"]
+                            if row["semantic_search_allowed"]]
+        self.assertTrue(semantic_allowed)
+        self.assertTrue(all("semantic" in row["requested_channels"]
+                            for row in semantic_allowed))
+        self.assertEqual(report["summary"]["semantic_eligible_case_count"],
+                         len(semantic_allowed))
+        semantic_disallowed = [row for row in report["cases"]
+                               if not row["semantic_search_allowed"] and
+                               row["task"] != "historical_turn_record"]
+        self.assertTrue(all("semantic" not in row["requested_channels"]
+                            for row in semantic_disallowed))
         self.assertFalse(any(identity.startswith("unmapped:")
                              for row in report["cases"] for identity in row["result_ids"]))
         project_cases = [row for row in report["cases"]
