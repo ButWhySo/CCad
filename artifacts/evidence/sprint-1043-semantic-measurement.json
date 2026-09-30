@@ -1,0 +1,65 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1043-semantic-measurement",
+    "feature":  "Measure production semantic retrieval quality and actual local embedding latency against calibration and held-out fixtures",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T15:05:10.5358230Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.76 log=artifacts/evidence/sprint-1043-semantic-measurement/preflight.log",
+                      "finished_utc":  "2026-09-29T15:05:11.3795823Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=3.74 log=artifacts/evidence/sprint-1043-semantic-measurement/build.log",
+                      "finished_utc":  "2026-09-29T15:05:15.1397052Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=244.18 log=artifacts/evidence/sprint-1043-semantic-measurement/ctest.log",
+                      "finished_utc":  "2026-09-29T15:09:19.3205324Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/calibration-embeddinggemma.json",
+                                         "sha256":  "67E5F0E9B7C701B18E2B5F484EB9BE8E38E5A88BAAD846565BFC791FF7FE8C63"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/calibration-nomic-embed-text.json",
+                                         "sha256":  "CC41DAD66C74AE3F4119B2212439C69786992BF451FA165452739D27D40281EC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/ctest.log",
+                                         "sha256":  "17067B8114E67E817C233C42D563E38CF3E81030878F9503E9C5098A7950C5BE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/held-out-embeddinggemma.json",
+                                         "sha256":  "46A41C267D63E12BC4D5E751736926BED28DCDE4D75F5642560E94E488829379"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/held-out-nomic-embed-text.json",
+                                         "sha256":  "61D70E469558AB54322DE19031416A1533EE885CD76B87F626C73DFFF3F63CF5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-semantic-measurement/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T15:09:19.5490535Z"
+}

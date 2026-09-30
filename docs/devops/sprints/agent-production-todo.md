@@ -1,5 +1,14 @@
 # CCad Agent production TODO
 
+### Sprint 1051 — integration of editor context and transcript provenance
+
+- [x] Merge Sprint 1039 transcript/approval provenance and Sprint 1038 editor-aware context with current `main`, preserving the newer typed retrieval-channel, provider, and approval-expiry behavior.
+- [x] Preserve the safe active-editor retrieval domain through the typed project-retrieval adapter; add a contract proving schematic context reports `search_domain=schematic`.
+- [x] Align checkpoint replay coverage with the actual `(content, artifact)` tool-result contract while preserving once-only broker event emission.
+- [x] Pass changed-module Pyright (0 diagnostics), focused transcript/retrieval/context contracts, Qt/MinGW Release, and full CTest (126/126); inspect the official mapped UI report and all four retained screenshots. Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json`, SHA-256 `3874F8674AEC91B14D6C9BD334C1B012B8AECAE5418743F77F8C460E3CC7CC3F`.
+- [x] Verify exact native schematic selection (`U1`) and editor switching with the app-owned GUI map; no provider request was made. Captured stderr is empty. Settings/category controls were mapped and clicked, but the captured Settings checkpoint displays the Agent panel rather than the dialog, so Settings visual proof is not claimed.
+- [ ] Push the verified integration branch, open/update the PR, verify hosted CI on its exact head SHA, merge to `main`, then delete the merged branch/worktree only after confirming no user evidence or dirty files are lost.
+
 ### Sprint 1039 — Transcript transaction provenance (Tier 1)
 
 - [x] Attach authoritative transaction/revision metadata to exact transcript tool-call/result events; derived event metadata excludes arguments and result text.
@@ -25,7 +34,180 @@ Evidence: `artifacts/evidence/sprint-1039-transcript-event-provenance.json`, SHA
 - [x] Record evidence: Qt/MinGW Release build, full CTest 120/120, 14 successful GUI-map interactions, four inspected screenshots, stdout reviewed, stderr empty. Manifest `artifacts/evidence/sprint-1038-agent-context-editor-r8.json`, SHA-256 `2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`.
 
 Scope note: the final capture returns to the PCB tab on a schematic-only test fixture, so the empty PCB canvas is expected. This verifies editor switching, not PCB design content. Context remains limited to data available from typed project sources; unsupported object classes and absent domain data are reported unavailable, not invented.
+### Sprint 1050 — deterministic approval expiry and one-use replay boundary
 
+- [x] Add an injected monotonic clock so the broker's five-minute approval deadline is deterministic in contract tests; expired approval returns `approval_expired` exactly at the deadline and never invokes the executor.
+- [x] Reject expired-token replay/reissue, preserve separate expired, consumed, and unknown outcomes, and verify valid fresh grants execute once; existing contracts cover exact method/arguments/call ID/revision binding, stale-plan rejection, and cancellation.
+- [x] Use clangd 19.1.7 with the configured Qt/MinGW compilation database; the changed test translation unit reports zero diagnostics. clangd parsed the implementation but its optional ExtractFunction probe emitted internal break/continue errors; official MinGW compilation is authoritative.
+- [x] Run the official nonvisual Qt/MinGW Release build and full CTest (128/128); inspect logs and manifest `artifacts/evidence/sprint-1050-approval-expiry.json`, SHA-256 `7A4ADA67A3B25C8B657285E53E2D676A03E8B434EA988A9A8F094025B1A142C3`.
+- [x] Update the codebase map, feature inventory, progress, and this TODO; no GUI behavior changed.
+- [x] Run redacted tracked-repository and staged-diff scans; both report no high-confidence credential patterns.
+- [x] Commit `a1ef20d05469fab4c3796f5e3ef64fd0348fbd1a`; push and fast-forward merge to `main`; hosted CI run `36677881521` passed all five jobs on the exact SHA. The merged Sprint 1050 branch was removed after verification.
+
+### Sprint 1049 — R7 expanded retrieval calibration
+
+- [x] Add balanced source-described positives and semantic hard negatives for each retrieval task in calibration and held-out splits; advance fixture revisions and dataset to 1.3.0.
+- [x] Preserve actual semantic candidate IDs/scores in benchmark 1.5.0 reports and add calibration-only, model/task/corpus/evaluation/surface-scoped cutoff analysis that does not alter production settings.
+- [x] Run 32 real local reports across EmbeddingGemma/Nomic, two splits, exact/lexical/semantic/hybrid/full project modes, and lexical/semantic/hybrid memory modes; analyze calibration and held-out outcomes without claiming an unsupported gain.
+- [x] Pass dataset, benchmark, threshold-analysis, Python compilation, and changed-module Pyright checks before the full build.
+- [x] Run the official Qt/MinGW Release build and full CTest gate (128/128); no GUI behavior changed, so use the official nonvisual verifier and inspect its logs/manifest `artifacts/evidence/sprint-1049-r7-retrieval-evaluation.json`, SHA-256 `A3F16839F979CF70AFD9B8CA73A040FA9E03A62D4C979ABF5069082A284FF99D`.
+- [x] Update codebase map, feature inventory, retrieval capability matrix, progress, and this TODO with verified build/test evidence.
+- [x] Run redacted repository and staged-diff secret scans; staged additions have zero credential-pattern matches. The tracked scan finds three existing synthetic test tokens and two path-name false positives; stage this slice's source, tests, docs, and required hash manifest only, excluding workspace-only benchmark reports and all pre-existing user changes.
+- [x] Commit `77a04d1c11f04d67cec7538df1cfa05f3e24118b`, push and fast-forward merge to `main`; hosted CI run `36673762055` passed on that exact SHA, then remove the merged local/remote Sprint 1049 branch.
+
+### Sprint 1048 — Python CI checkpoint-restart schema parity
+
+- [x] Fix the checkpoint-restart fake model to read provider-safe function declarations, matching `bind_native_tools()` rather than expecting `StructuredTool` objects.
+- [x] Reproduce the pre-fix failure, then pass the first/resume subprocess pairs for accepted, denied, and canceled calls.
+- [x] Run the complete hosted `agent-python` contract script set locally, Python compilation, Pyright 1.1.414 (0 diagnostics), Qt/MinGW Release build, and full CTest (127/127); no GUI behavior changed.
+- [x] Push and fast-forward merge the fix to `main`; confirm remote SHA `5860e066cde6d65acc827588a238b4e1d66b494b` and hosted CI run `36666758062` passes all five jobs.
+- [x] Update progress and feature records with the CI result and manifest `artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2.json` (SHA-256 `B890AD40E7A44D82497B61348F4C88440FDAAAAC017F27DA52C81B2A6466A74C`).
+- [x] Delete merged local and remote branches for Sprints 1043, 1046, 1047, and 1048; preserve active Sprint 1039 and its separate worktree.
+
+### Sprint 1047 — memory and project-entity retrieval ablations
+
+- [x] Expand the versioned corpus to dataset 1.2.0 with separate project-entity and memory-retrieval cases in calibration and held-out splits; preserve distinct identities and hard distractors.
+- [x] Pass selected lexical/semantic channels into the memory manager before ranking; default retrieval remains hybrid, while lexical-only avoids embedding calls and semantic-only does not compute lexical scores.
+- [x] Add memory lexical, semantic, and hybrid modes plus a complete deterministic+semantic project mode; policy-disallowed semantic cases are excluded, not scored as misses.
+- [x] Execute 32 real local-model runs across two splits, two installed models, five project modes, and three memory modes; pin EmbeddingGemma digest `85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1` and Nomic digest `0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f` in reports.
+- [x] Keep semantic retrieval disabled as a default/promotion decision: project-entity cases are only one per split and lexical already retrieves them; memory cases are only one calibration and two held-out, and semantic-only does not consistently outrank lexical. Broader corpus, hard-negative, and model/task-scoped acceptance work remains open.
+- [x] Add pre-implementation contracts for corpus split integrity, channel selection, execution-time channel propagation, and policy exclusion; focused dataset, benchmark, memory-manager, and typed retrieval tests pass.
+- [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release verification, and full CTest (127/127); inspect logs and final nonvisual manifest `artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256 `833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`. The final manifest reuses the earlier full-suite pass because subsequent code change only advanced benchmark metadata; focused benchmark contracts were rerun after that change.
+- [x] Run redacted tracked-repository and staged-diff secret scans; tracked matches are four existing synthetic test sentinels in three test files, while staged additions contain no high-confidence credential patterns.
+- [x] Commit `21f3a8c38608e4ac4ed46bd7e0bed8e1c4df2349`, push branch `sprint-1047-memory-retrieval-ablation`, and confirm the exact remote SHA matches. This slice was merged to `main`; its hosted run exposed the checkpoint-fixture mismatch, fixed and verified by Sprint 1048.
+
+References checked: Google’s [EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) and Nomic’s [official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) define retrieval-specific query/document embedding behavior. Current integration follows the previously recorded task-prompt protocol; this slice measures retrieval relevance and does not change model prompts.
+
+### Sprint 1046 — retrieval channel ablations
+
+- [x] Make `ProjectIndex.retrieve` honor requested exact, lexical, semantic, graph, and spatial channels before ranking; preserve the default all-channel behavior.
+- [x] Pass typed `RetrievalRequest.channels` into the real project-index execution path; test lexical-only avoids embeddings and semantic-only ranks an independently retrieved semantic match.
+- [x] Add benchmark execution modes for exact, lexical, semantic, and hybrid retrieval; exclude semantic-disallowed cases explicitly rather than counting them as misses.
+- [x] Run all four modes on calibration and held-out splits with installed EmbeddingGemma and Nomic; semantic/hybrid still returned 2/2 hard negatives, while held-out semantic-only recall@3 was below lexical-only for both models.
+- [x] Run changed-module Pyright (0 diagnostics) and official Qt/MinGW Release/full CTest (127/127); inspect logs and manifest `artifacts/evidence/sprint-1046-retrieval-mode-ablations.json` SHA-256 `BBBE80736F07302E7C88086C2A2E69EAF8F9A6BD97ED456DDF97817F1F7A374C`.
+- [x] Update codebase map, feature inventory, and progress with model digests, comparisons, and remaining limitations.
+- [x] Run redacted tracked-repository/staged-diff/file scans; the three tracked matches are two legacy `task-workspace` artifact-path false positives and one synthetic test sentinel; staged additions have zero credential-pattern matches.
+- [x] Commit, push, and verify the exact remote branch SHA; later merged to `main` and the served branch was pruned after hosted CI.
+- [x] Continue expanding retrieval corpus and scope threshold evidence by model digest, task, corpus, and evaluation version; Sprint 1049 added scoped offline calibration profiles and broader hard-negative coverage, without promoting a universal semantic threshold.
+
+### Sprint 1045 — semantic retrieval corpus expansion
+
+- [x] Add separate source-grounded component-function and design-intent cases to calibration and held-out splits.
+- [x] Run semantically eligible hard engineering negatives through the real semantic channel; preserve explicit semantic-use policy in reports.
+- [x] Add split integrity, expected-identity, hard-negative, and requested-channel contracts before code changes.
+- [x] Run real installed EmbeddingGemma and Nomic calibration/held-out retrieval; both produced false positives on 2/2 semantic hard negatives per split, so no semantic-gain/model-winner claim is made.
+- [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release, full CTest (127/127), and non-visual evidence manifest `artifacts/evidence/sprint-1045-semantic-corpus.json` SHA-256 `BA42002CC9161CDEB951D724FEF486A1B05FE8C02DE9CBF8975A3DFA29C5160F`; GUI behavior unchanged.
+- [x] Update TODO, codebase map, feature inventory, and progress in this change set.
+- [x] Run redacted staged-diff and staged-file secret scans (zero matches); commit/push `d2ddd81` and exact remote SHA `d2ddd811881b02a5c7e8f1944170e76a4e514575`.
+- [x] Continue R7 with real retrieval-mode ablations in Sprint 1046; model/task/corpus/version-scoped threshold evidence remains open.
+
+### Sprint 1044 — explicit embedding task protocol
+
+- [x] Apply official model-specific retrieval query/document prompts; isolate similarity prompts from retrieval.
+- [x] Report backend, model digest, observed dimension, task mode, and normalization; invalidate stale process vectors on identity/dimension changes.
+- [x] Preserve lexical fallback, restrict lazy vector rebuilds to authorized retrieval candidates, and never install/download models implicitly.
+- [x] Cover exact prompt formats, model/digest changes, dimension drift, lexical fallback, and no-download behavior with protocol contracts.
+- [x] Re-run calibration and held-out retrieval against installed local EmbeddingGemma and Nomic; record identity and measured outcomes without model-winner claims.
+- [x] Pass changed-module Pyright, focused Agent contracts, Qt/MinGW Release, and full CTest (127/127); non-visual manifest `artifacts/evidence/sprint-1044-embedding-task-protocol.json` SHA-256 `1EF8A5BE78F9E66D898DB2C9DBA8DC9C84E980799DA079C1385E464DFFF5A4B2`.
+- [x] Update codebase map, feature inventory, progress, and retrieval backlog in this slice.
+- [x] Run redacted tracked-repository and staged-addition secret scans; three tracked files contain known synthetic test fixtures, staged additions have zero credential-pattern matches. Stage only verified code, docs, tests, and evidence manifest.
+- [x] Commit `862793b6f7a1ec3e413820b8857a34d1c5849638` and push; `git ls-remote` confirms the feature branch points to that exact tested SHA.
+- [ ] Verify hosted CI on the exact pushed SHA when a PR/manual workflow event exists; branch-only pushes do not trigger CI.
+
+### Sprint 1043 live provider turn follow-up
+
+- [x] Add response-contract checks: empty text/empty text blocks are invalid, while text, structured content, and native tool-call-only responses are accepted. Focused contracts pass 14/14; changed-module Pyright reports zero diagnostics.
+- [x] Reject an empty successful provider response as categorized `empty_response`; surface that a response arrived but carried no answer/tool call instead of persisting a blank completed assistant turn.
+- [x] Publish safe provider dispatch-start/response-received lifecycle metadata and expose dispatch-start in GUI workspace state; update the live-turn harness to record that event rather than infer request dispatch from successful tool execution.
+- [x] Run Qt/MinGW Release, full CTest, and the official mapped local-Qwen live-turn scenario; require a named native method, accepted broker result, and count-bearing final answer. Sprint r16 passed: Release build, CTest 127/127, one `project.object_counts` call, one accepted broker result, completed run state, and visible count-bearing final. Manifest `artifacts/evidence/sprint-1043-live-tool-turn-r16.json`; four distinct GUI checkpoints and captured logs inspected.
+- [ ] Live-turn r8: Qt/MinGW Release and full CTest passed 127/127; all four distinct mapped GUI screenshots were inspected. The GUI truthfully recorded `provider_dispatch_started=true`, and local Ollama logged HTTP 200, but Qwen returned no answer or tool call. The new `empty_response` handling surfaced a categorized failure and no native tool/broker result occurred. The harness now stops on this explicit empty-response text; the end-to-end native-tool requirement remains open. Manifest `artifacts/evidence/sprint-1043-live-tool-turn-r8.json`.
+- [ ] Live-turn r9: rebuilt final code and reran full CTest (127/127); the corrected app-owned harness stopped on the categorized empty response and preserved its seven mapped UI interactions plus four inspected visual checkpoints. Dispatch began, but Qwen again returned no answer/tool call; no broker result or count-bearing final was produced. Do not mark model-backed orchestration complete. Manifest `artifacts/evidence/sprint-1043-live-tool-turn-r9.json`.
+- [ ] Live-turn r10: Release build and full CTest passed 127/127. The app-owned GUI used a concise exact-method prompt; the model still returned `empty_response`, with zero native calls and accepted broker results. The screenshot confirms honest failure reporting. Manifest `artifacts/evidence/sprint-1043-live-tool-turn-r10.json`.
+- [ ] Recognize the narrowly defined natural-language request for footprint, track, and via counts as `project.object_counts`; focused selection/schema contracts pass 20/20. This improves intent-based schema selection but does not prove or fix live model execution; r11 remains failed and further adapter/model diagnosis is required.
+- [ ] Live-turn r11: rebuilt after natural-language intent selection; Qt/MinGW Release and full CTest passed 127/127, focused contracts and Pyright passed. The mapped run still returned `empty_response` with zero tool calls, accepted results, or final counts. Four distinct visual states were retained; model-backed tool execution remains unresolved. Manifest `artifacts/evidence/sprint-1043-live-tool-turn-r11.json`.
+- [x] Correct narrowed-tool instructions so a restricted method does not conflict with full-catalog `project.state` guidance; explicitly bind zero-argument tools to `{}` and select `project.object_counts` for the tested plain-language count request.
+- [x] Report read-only broker calls as awaiting a result, not approval; make backend running/completed/pending state authoritative in AgentPanel workspace state, and emit each replayed checkpoint call once per stable call ID.
+- [x] Live-turn r16 proves one local-Qwen `project.object_counts` call, one authoritative broker result, `run_state=completed`, and a visible answer with footprint, track, and via counts. Focused contracts pass 28/28, approval-state contract passes, and Pyright reports zero diagnostics in changed Python files. This verifies only this read-only flow, not all providers, tools, mutation approvals, or the whole orchestration surface. Evidence: `artifacts/evidence/sprint-1043-live-tool-turn-r16.json`.
+
+### Sprint 1043 — retrieval benchmark corpus (active)
+
+- [x] Add versioned, task-separated calibration and held-out datasets with source/project revisions, expected identities, rationale, hard distractors, board-scale/repeated-class coverage, and explicit semantic-use policy; Pyright is clean and Qt/MinGW Release plus full CTest pass 125/125. Manifest `artifacts/evidence/sprint-1043-retrieval-corpus.json` (SHA-256 `2F2033BD8B66312E8AE032BC8793B5BA83542B0E3F353A25C41B440644A52B90`).
+- [x] Execute calibration and held-out cases through real `ProjectIndex`, `MemoryManager`, and `ConversationStore` retrieval; report ranked quality and bounded-context measurements without synthetic retrieval hits.
+- [x] Measure in-memory index build/update, query percentiles, process peak RSS, temporary-store disk use, and versioned execution reports; retain missing measurements as explicit `not measured` statuses.
+- [x] Measure held-out semantic retrieval and query/document embedding latency with installed local `embeddinggemma` and `nomic-embed-text`; reports distinguish model/channel and offline lexical-only results.
+- [x] Measure real semantic-service failure and recovery through production retrieval: Ollama's missing-model response is classified, lexical fallback returns a truthful partial result, and reconfiguration restores semantic results; calibration/held-out reports record failure and recovery latency.
+- [x] Measure a follow-up Agent tool call in an end-to-end model-backed context turn using locally installed `qwen2.5:3b`; r16 proves activation, the named `project.object_counts` request, accepted broker result, and count-bearing final response. This narrow read-only sample does not establish general tool/provider reliability.
+- [ ] Sprint 1043 live-turn attempt r7: Qt/MinGW Release and full CTest passed 127/127, focused tool-selection/runtime tests passed 9/9, Pyright reported zero diagnostics, and clangd reported zero errors. The mapped UI exercised the board/schematic/Agent tabs, chat input/submit, and Settings open/close; its report records provider initialized but `provider_request_sent=false`, zero `project.object_counts` calls, zero accepted broker results, and no count summary. All four distinct screenshots were inspected. Do not close the live-turn requirement until the report proves the named call, authoritative broker result, and final response. The visual attempt failed its acceptance check; a separate official non-visual build/CTest manifest passes as recorded below.
+- [x] Implement conservative explicit-method schema narrowing and preserve declared context requirements; provider activation publishes redacted readiness. Focused contracts pass 9/9, Pyright reports zero diagnostics, clangd reports zero errors, and official Qt/MinGW Release plus full CTest pass 127/127. Non-visual manifest `artifacts/evidence/sprint-1043-provider-tool-schema-r1.json` (SHA-256 `577E80E79842AA730BD6DDACEB6C4AA9BF974FBE919D4665F553024FACBDFDFE`). This does not complete phase/intent/workflow selection or prove a model-backed tool result.
+- [x] Run Qt/MinGW Release, full CTest (126/126), and changed-script Pyright after real failure/recovery instrumentation; official non-visual manifest `artifacts/evidence/sprint-1043-semantic-recovery.json` SHA-256 `DFADF456236ECFA471FA15966ED740E16CC97FFBDD599A7D9CC7C422D5555AC6`.
+- [x] Run redacted repository/staged-diff secret scans; three existing credential-shaped matches are synthetic test values, and staged additions have zero matches.
+- [x] Commit and push verified slice as `0812739`; `git ls-remote` confirms exact branch head `0812739d842f664eda088e756eb63bb583c5f240`.
+- [x] Commit and push measured semantic-retrieval follow-up as `8bf986e`; `git ls-remote` confirms exact branch head `8bf986e236f7a2deb40a9b8f4921a1f04ffbe14f`.
+- [x] Commit and push measured semantic failure/recovery slice as `8121c1e`; `git ls-remote` confirms exact branch head `8121c1e02cde6f24118680ca3fdacbe1f00b11d7`.
+- [ ] Inspect hosted CI for exact pushed SHA after a pull-request event; branch-only pushes do not trigger this repository's configured workflow.
+
+### Sprint 1042 — provider error contract test scope
+
+- [x] Fix the provider error-classification source contract to inspect only `provider_error_user_message`, so unrelated malformed-tool safety messages elsewhere in the orchestrator do not fail the test.
+- [x] Remove OpenTelemetry exporter private-field assertions; the actual local OTLP receiver contract remains authoritative for Langfuse v4 endpoint, auth, and ingestion headers.
+- [x] Align the Pyright CI-configuration contract with the checked-in source-plus-benchmark include list and both configured execution environments.
+- [x] Reproduce every `agent-python` workflow test locally with the project virtual environment, including isolated checkpoint accept, deny, and cancel restarts.
+- [x] Pass provider-error classification, runtime observability, and local Langfuse v4 ingestion tests; telemetry-module Pyright reports zero diagnostics.
+- [x] Run the official Qt/MinGW Release and full CTest verifier (124/124); final combined-fix evidence is `artifacts/evidence/sprint-1042-ci-contracts-final.json` (SHA-256 `3AE77DBFD402C70835532730A3EEABA7EA6A9B90D93D36F2216ED63C4190CF9F`).
+- [x] Run the staged-diff credential scan; no credential-pattern matches were found.
+- [x] Verify hosted CI run #576 is green on exact code commit `9f4e418f99f9365c03705c8c0135305f7fd05d44` (all five jobs passed).
+
+### Sprint 1041 — retrieval architecture boundary
+
+- [x] Compare embedded CCad retrieval, SQLite FTS5, Typesense, exact cosine, and USearch ANN across capability, license, deployment/Windows, process/startup, memory/disk, update/indexing, packaging, failures, privacy, synchronization, testing, rollback, and maintenance; keep backend adoption benchmark-gated.
+- [x] Record authoritative project-model rules, channel separation, backend-independent boundary, and the reversible current-backend decision in `docs/decisions/ADR-agent-retrieval-architecture.md`.
+- [x] Add bounded typed `RetrievalRequest`, canonical `RetrievalHit` / `RetrievalResult`, channel and truthful status contracts.
+- [x] Adapt the real ProjectIndex and MemoryManager; enforce project/thread identity, support typed filters and requested field projection, and carry source revision/provenance.
+- [x] Route initial and refreshed ContextBroker retrieval through canonical results while preserving the provider-facing project-context schema.
+- [x] Add focused CTest registration and prove request bounds, canonical identities, field projection, scope mismatch, disabled memory status, and existing context payload compatibility; run changed-module Pyright and related retrieval suites.
+- [x] Run the official Qt/MinGW Release and complete CTest verifier; inspect logs and record passing evidence `artifacts/evidence/sprint-1041-retrieval-contracts-r2.json` (124/124; SHA-256 `A51AA31EAA0AA10BBF079BC579E53512B355FC3A549D74593C5E95AC49BA7BC3`).
+- [x] Run redacted tracked-repository and staged-addition secret scans; four existing pattern-bearing files were inspected and contain test-only redaction sentinels, and staged additions contain zero credential-pattern matches; stage only verified source, tests, docs, and evidence.
+- [ ] Commit and push the verified slice; confirm the remote branch points to the exact tested commit.
+
+### Sprint 1040 - safe memory writes with semantic retrieval enabled
+
+- [x] Remove uncalibrated semantic-similarity rejection from add/update; keep normalized exact and lexical duplicate protection.
+- [x] Prove writes succeed for semantic matches and when embedding retrieval is unavailable; preserve secret rejection and semantic retrieval fallback contracts.
+- [x] Update handover and feature descriptions to state semantic embeddings are retrieval-only.
+- [x] Run changed-module Pyright and focused semantic, memory lifecycle, and memory-command contracts.
+- [x] Run official Qt/MinGW Release and full CTest verifier (123/123); inspect logs and record passing evidence manifest.
+- [x] Run redacted tracked-repository and staged-addition secret scans; zero high-confidence credential-pattern matches. Stage only verified files.
+- [x] Commit and push the verified source, tests, docs, and manifest; hosted CI status remains a separate check for the pushed SHA.
+
+### Sprint 1038 - semantic memory duplicate calibration (historical)
+
+- [x] Prototype same-tier semantic duplicate rejection on add/update, then remove the uncalibrated write-time gate in Sprint 1040 after measured false rejections; semantic embeddings remain retrieval-only.
+- [x] Keep normalized exact and lexical duplicate checks independent of semantic retrieval enablement or readiness; semantic retrieval itself retains its tested safe fallback.
+- [x] Cover semantic add/update, namespace isolation, pre-embedding secret rejection, disabled mode, unavailable backend, and cache behavior in offline contracts.
+- [x] Use documented sentence-similarity prompts for EmbeddingGemma and Nomic clustering prompts for duplicate checks; local Ollama contracts verify exact query/document inputs.
+- [x] Expand and calibrate 71 labeled duplicate plus 71 hard-negative pairs against both current model digests; hash the corpus and report threshold errors in `scripts/benchmark_semantic_memory_duplicates.py`.
+- [x] Resolve the measured precision/recall conflict without blocking legitimate writes: semantic similarity is retrieval-only; exact and lexical duplicate guards remain. Tested model thresholds do not justify automatic semantic rejection.
+- [ ] Recalibrate every newly introduced model digest before changing the cutoff or claiming broad paraphrase recall.
+- [x] Run changed-module Pyright and focused memory/semantic contracts.
+- [x] Run the official nonvisual Qt/MinGW Release and full CTest gate after correcting the Nomic prompt and expanding the calibration corpus; inspect preflight/build/CTest logs and record fresh manifest `artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration.json` (123/123).
+- [x] Update progress, feature inventory, codebase map, and this TODO with the measured Nomic prompt/calibration results and correct the already-pushed baseline commit reference.
+- [x] Run redacted tracked-repository and staged-addition scans for this follow-up; five tracked pattern hits were reviewed as an environment-variable name or deliberate test sentinels, and staged additions had zero matches. Stage only verified source, tests, docs, and manifest.
+- [x] Complete official Qt/MinGW Release + full CTest nonvisual gate (123/123); inspect preflight/build/CTest logs and calibration manifest `artifacts/evidence/sprint-1038-nomic-memory-dedupe-recalibration.json` (pass; logs retained workspace-only).
+- [x] Update codebase map, feature inventory, progress, and this TODO in the same slice, including measured prompt/corpus results.
+- [x] Run redacted tracked-repository and staged-diff secret scans; staged additions have zero credential-pattern matches. Existing tracked hits were reviewed as test sentinels or `solder-mask`/artifact-name false positives; commit and push only verified source, tests, docs, benchmark, and manifest on the feature branch.
+
+References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) prescribes `task: sentence similarity | query:`; [Nomic Embed Text v1.5 model card](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5) specifies `clustering:` for similarity grouping and semantic duplicate removal. Dataset v2 SHA-256 is recorded in `docs/devops/progress.md`; this CCad-specific corpus is not a general-language benchmark.
+
+### Sprint 1037 — one-use approvals, truthful tool IDs, and project undo/redo
+
+- [x] Bind each broker grant to exact method, arguments, provider call ID, and live design revision; consume once, expire, and revoke on cancel/reject. Sprint 1050 adds deterministic exact-deadline expiry and prevents expired-token reissue.
+- [x] Use parsed typed `dry_run` only; reject malformed provider calls and legacy text tools without synthetic IDs or execution; focused broker/Python contracts pass.
+- [x] Persist project Undo/Redo restoration atomically and verify board state after keyboard shortcuts and native actions on a disposable project.
+- [x] Pass approval replay/staleness/cancellation and dry-run contracts, provider-ID runtime contract, GUI Undo/Redo test, and Pyright (0 diagnostics in changed orchestrator module). Sprint 1050 adds a deterministic five-minute expiry/replay contract.
+- [x] Pass Qt/MinGW Release build and full CTest (123/123) in the inspected `sprint-1037-agent-safety-r4` verifier run.
+- [x] Pass the mapped GUI sequence; inspect four distinct before/staged/undo/redo screenshots and stdout/stderr in `sprint-1037-agent-safety-r4`.
+- [x] Update handover/features/progress and check only verified items; redacted tracked-repository and staged-diff scans report no high-confidence credential patterns in Sprint 1050.
+- [x] Commit and push scoped source, tests, docs, and manifest as `a1ef20d05469fab4c3796f5e3ef64fd0348fbd1a`; exact-SHA hosted CI passed in run `36677881521`.
 ### Sprint 1036 follow-up — Langfuse v4 metadata attribute contract
 
 - [x] Reproduce the reported Langfuse v4 metadata type warning with the real SDK and local OTLP receiver; normalize redacted scalar observation metadata to strings capped at 200 characters and omit structured values. Local ingestion contract passes.
@@ -969,6 +1151,8 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Keep read-only, calculation, screenshot, and dry-run calls immediate.
 - [ ] Gate every persistent, destructive, external, CLI, Python-write, export, or process action before execution.
 - [ ] Bind approval to immutable typed action plan and project/context revision; expire stale approvals.
+  - [ ] Bind broker grant to exact registered method, exact serialized argument JSON, model call ID, and current project/context revision; consume once and expire. Replay, substitution, staleness, and cancellation contracts pass; deterministic expiry coverage remains open.
+  - [x] Verify Qt supplies the live design-context revision at proposal and approval time; reject malformed calls without synthetic IDs.
 - [ ] Support approve, reject, revise, cancel, undo, and post-action verification through transaction/audit path.
 - [ ] Block command injection, unrestricted filesystem access, secret exposure, and unbounded subprocess/network execution.
 - [x] Remove fabricated runner success when no executor exists; report `task_executor_unavailable` with zero tool/project action.
@@ -1477,11 +1661,11 @@ Do not mark a parent feature complete because its widget exists. A feature is co
 - [x] Report enabled state, loaded runtime count, and persistent count truthfully where practical.
 - [x] Ensure disabling LTM does not delete ordinary chat transcript/checkpoint state; verified across Agent-process restart.
 - [x] Ensure disabling episodic memory does not erase project/conversation state; verified with isolated project bytes and durable transcript.
-- [ ] Implement per-tier ranking/retrieval and not one shared flat store presented as three different systems.
+- [x] Implement per-tier ranking/retrieval and not one shared flat store presented as three different systems; memory candidates are scored and diversified within each enabled tier, then interleaved with a bounded round-robin merge. Regression proves adding unrelated LTM records does not change STM lexical scores. Sprint 1039 Release build and full CTest 123/123 passed; evidence manifest `artifacts/evidence/sprint-1039-memory-tier-ranking.json` (SHA-256 `4C6E165230EA297EDDB34EF91C5AFF221598E4E63258C66174B2483B9299528E`).
 - [ ] Reject/redact legacy secret-bearing records before memory persistence and display; writes are rejected, legacy values are excluded from runtime/UI, but remaining redaction evidence is pending.
 - [x] Implement expiry policy with timezone-aware ISO-8601 values and load/retrieval cleanup.
 - [ ] Implement semantic compaction policy for durable memory records; current retention cap is 64 records per tier namespace. Conversation `/cc` compaction is implemented separately in Sprint 970.
-- [ ] Implement semantic near-duplicate handling; exact duplicates and high lexical-overlap duplicates are handled, but semantic similarity remains unimplemented.
+- [x] Keep semantic embeddings retrieval-only; memory add/update enforce normalized exact and lexical duplicate checks without coupling writes to embedding availability. Real-model paraphrase retrieval calibration remains open.
 - [x] Implement per-scope deletion.
 - [x] Implement complete reset across durable namespaces.
 - [x] Add IPC/runtime state event for memory tier enable/disable instead of waiting only for application restart; enable, disable, loaded/persistent counts, and reset outcomes are contract-tested.
@@ -3776,7 +3960,7 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 - [ ] Validate authorized namespace/scope.
 - [ ] Prevent specialist Agents from directly writing global user preferences.
 - [ ] Detect exact duplicate.
-- [ ] Detect semantic near-duplicate.
+- [x] Use the MemoryManager's exact/lexical duplicate guard for writes; semantic similarity remains retrieval-only. Automatic extraction, provenance, and contradiction handling remain separate open work.
 - [ ] Detect contradiction.
 - [ ] Preserve contradictory evidence.
 - [ ] Require explicit supersession for correction.
@@ -3824,22 +4008,22 @@ Borrow the useful Codex pattern without coupling to Codex internals.
 
 ### Semantic
 
-- [ ] Add pluggable embedding backend.
-- [ ] Support explicit readiness state.
-- [ ] Never silently perform paid embedding calls.
-- [ ] Never silently download a large model.
+- [ ] Use a backend-independent semantic retriever contract (canonical owner: R2); the existing Ollama client is one concrete backend, not proof of a pluggable architecture.
+- [x] Support explicit readiness state (Sprint 991; `MemoryManager.semantic_state()` reports configured/readiness/failure safely).
+- [x] Never silently perform paid embedding calls (Sprint 991; opt-in loopback-only backend).
+- [x] Never silently download a large model (Sprint 991; readiness checks installed model and does not install it).
 - [ ] Persist embedding model/version.
-- [ ] Invalidate/rebuild incompatible embeddings after model change.
-- [ ] Keep lexical-only fallback fully functional.
+- [x] Invalidate incompatible process-cache embeddings after model/backend change (Sprint 991; no durable vector index exists to rebuild).
+- [x] Keep lexical-only fallback fully functional (Sprint 991 contracts).
 
 ### Ranking
 
 - [x] Hard-filter scope/authorization first.
 - [x] Filter inactive/deleted/expired memory.
 - [x] Retrieve bounded BM25 candidates and stop below the minimum lexical-match floor.
-- [ ] Retrieve semantic candidates.
+- [x] Retrieve semantic candidates for opt-in local memory retrieval (Sprint 991); real-model relevance benchmarking remains open.
 - [x] Fuse title/content/tag lexical rankings with weighted reciprocal-rank fusion (Sprint 990).
-- [ ] Add bounded user-controlled importance weighting; do not infer importance from memory text.
+- [x] Add bounded user-controlled importance weighting; do not infer importance from memory text (Sprint 1003).
 - [x] Add bounded recency/usage weighting only after relevance filtering (Sprint 1002); expose content-free weights in package provenance.
 - [x] Apply bounded deterministic MMR selection to reduce duplicate memory context (Sprint 990).
 - [ ] Optional cross-encoder rerank only when actually installed/operational.
@@ -4361,14 +4545,15 @@ Complete together:
 
 Complete together:
 
-- [x] BM25 lexical retrieval (Sprint 989) and fielded lexical RRF/MMR memory ranking (Sprint 990; semantic candidates remain open).
-- [ ] embedding abstraction.
-- [ ] semantic candidate retrieval.
-- [x] deterministic fielded lexical ranking fusion for memory records (Sprint 990; semantic fusion remains open).
+- [x] BM25 lexical retrieval (Sprint 989), fielded lexical RRF/MMR ranking (Sprint 990), and opt-in semantic memory candidates (Sprint 991).
+- [x] Reuse the bounded opt-in local embedding backend and readiness contract (Sprint 991).
+- [x] Semantic candidate retrieval (Sprint 991).
+- [x] Deterministic lexical field fusion plus semantic candidate ranking/diversification (Sprint 991).
 - [x] bounded memory diversity reranking (Sprint 990; history diversity remains open).
 - [x] Bounded same-project thread-summary retrieval (Sprint 989).
-- [ ] benchmarks/tests.
-- [ ] safe fallback.
+- [x] Offline retrieval, fallback, cache, and lifecycle contracts.
+- [ ] Real-model retrieval/duplicate-threshold benchmarks; no local embedding model was installed for this slice.
+- [x] Preserve exact/lexical retrieval when semantic mode is off, unavailable, or fails.
 
 ## Group M5 â€” Memory Explorer
 
@@ -5047,13 +5232,13 @@ Prefer embeddings for:
 
 ### Embedding lifecycle
 
-- [ ] Use pluggable embedding backend.
-- [ ] Persist embedding model/version.
-- [ ] Cache embeddings.
-- [ ] Update only changed semantic entities.
-- [ ] Never mix incompatible embedding dimensions/models silently.
-- [ ] Keep full lexical/exact/graph fallback if semantic backend is unavailable.
-- [ ] Never claim semantic project retrieval when embeddings are unavailable.
+- [ ] Implement backend-independent semantic retriever contract (canonical owner: R2; Ollama is the only current project embedding client).
+- [ ] Persist embedding model/version for durable vectors (current project vectors are process-only; no durable vector index exists).
+- [x] Cache embeddings in bounded process-local caches (Sprint 1000).
+- [x] Update/invalidate vectors only for changed eligible semantic entities (Sprint 1000).
+- [x] Reject incompatible model identity/dimensions and fall back rather than mixing vectors (Sprint 1000).
+- [x] Keep exact/lexical/graph/spatial fallback when semantic backend is unavailable (Sprint 1000).
+- [x] Report semantic state truthfully when embeddings are unavailable (Sprint 1000).
 
 ---
 
@@ -5063,17 +5248,17 @@ Prefer embeddings for:
 
 For each root query:
 
-- [ ] resolve exact references first.
-- [ ] expand relevant graph relationships.
-- [ ] add relevant spatial PCB neighborhood.
-- [ ] run BM25/FTS search.
-- [ ] run semantic search when available.
-- [ ] merge/fuse result rankings.
-- [ ] deduplicate same object appearing through several retrieval channels.
-- [ ] apply project-revision/staleness checks.
-- [ ] rank authoritative current project objects above stale derived summaries.
-- [ ] bound final project-context result by object count and token budget.
-- [ ] preserve retrieval reason/provenance for every included project object.
+- [x] Resolve supported exact references before other retrieval channels (Sprint 980; `ProjectIndex.retrieve`).
+- [x] Expand supported relevant one-hop graph relationships (Sprints 981/984/985/986/995/1016/1018).
+- [x] Add relevant typed PCB/schematic spatial neighborhood for coordinate, region, and proximity intent (Sprints 986/997).
+- [x] Run deterministic BM25 project retrieval (Sprint 980); FTS5 is not implemented or implied.
+- [x] Run opt-in semantic retrieval when ready, preserving deterministic fallback (Sprint 1000).
+- [x] Merge supported exact, lexical, graph, spatial, and semantic results deterministically (Sprints 980/1000; current fusion remains implementation-specific).
+- [x] Deduplicate a typed entity reached through multiple channels by canonical project-index identity (Sprint 980).
+- [ ] Validate every derived channel against one requested/current revision and reject stale races (canonical owner: R10; current snapshot synchronization is not a shared revision-stamp contract).
+- [ ] Compare current authoritative entities against stale derived summaries (no common derived-state stamp; canonical owner: R10).
+- [ ] Bound final context by complete request token budget (project results have entity/character bounds; full-channel allocation remains open in Context budgeting).
+- [x] Preserve bounded retrieval channel/rank/relation and source identity metadata on supported project results (Sprints 980/1000; unsupported fields remain open below).
 
 ### Retrieval rationale metadata
 
@@ -5404,7 +5589,7 @@ Complete together:
 - [x] Fuse semantic candidates with BM25 while preserving exact-match guards and graph/spatial provenance (Sprint 1000).
 - [x] Re-embed changed entity text; clear process-only vectors when the backend is disabled or changes (Sprint 1000).
 - [x] Preserve exact/lexical retrieval when semantic retrieval is disabled, unavailable, or fails (Sprint 1000).
-- [ ] retrieval benchmarks.
+- [ ] Retrieval evaluation is owned by R3/R7; do not duplicate benchmark checklists here.
 - [x] Contract tests and implementation/handover docs for the bounded retrieval slice (Sprint 1000); real-model benchmark and remaining schema/summary work stay open.
 
 ## Group C5 â€” Per-Agent context projection and artifact compression
@@ -5793,7 +5978,7 @@ The model should see the tools relevant to the current task rather than the enti
   - board/schematic state;
   - previous tool result;
   - current failure/stall class.
-- [ ] Bind only the relevant subset of tool schemas.
+- [ ] Bind only the relevant subset of tool schemas. Implemented conservative narrowing for methods explicitly named in the latest user turn, with complete-catalog fallback and catalog-declared context retention; broad intent/workflow/node/failure-aware selection and its quality benchmark remain open. Focused contracts are in `scripts/test_agent_provider_tool_selection.py`.
 - [ ] Keep a lightweight capability-search/discovery operation available when the required tool is not currently loaded.
 - [ ] Treat skills as domain usage knowledge, not enforcement.
 - [ ] Keep semantic examples in tool definitions and relevant skills.
@@ -6473,3 +6658,1479 @@ Required final measurements:
 - [ ] Tool calls, tokens, latency, cost, fallback rate, policy interventions, placement metrics, routing metrics, and user corrections are captured.
 - [ ] Baseline-versus-new-harness results exist on held-out boards.
 - [ ] Any claimed improvement is supported by those results rather than intuition.
+
+
+# Retrieval architecture hardening, benchmarking, and backend decision program
+
+This section extends the existing ContextBroker, TurnRecord, MemoryManager, project index, BM25, semantic retrieval, `project.inspect`, revision-aware derived-state, Langfuse, and evaluation work.
+
+Do **not** create a second retrieval architecture beside the existing one.
+
+The objective is to make CCad retrieval:
+
+- correct for CAD;
+- revision-aware;
+- measurable;
+- backend-independent;
+- local-first by default;
+- resilient when embeddings are unavailable;
+- efficient enough for large realistic projects;
+- maintainable without unnecessary services;
+- capable of adopting a better search implementation later without rewriting ContextBroker or Agent logic.
+
+Existing verified direction that must be preserved:
+
+- exact identity retrieval exists for supported typed project entities;
+- deterministic BM25 lexical retrieval exists;
+- memory/history retrieval already uses BM25 and field-level rank fusion;
+- graph/connectivity retrieval exists for a growing set of authoritative relationships;
+- PCB spatial retrieval exists;
+- semantic retrieval is optional and augments deterministic retrieval rather than replacing it;
+- lexical/exact retrieval remains available if the embedding backend fails;
+- process-local semantic vector caching already exists for bounded project retrieval.
+
+Do not regress those properties while experimenting with search backends.
+
+---
+
+## R0. Reconcile the retrieval backlog before implementing anything
+
+### Goal
+
+Establish one truthful description of what CCad retrieval already does, what is genuinely missing, and which older unchecked TODO entries have been superseded by later sprints.
+
+### Tasks
+
+- [x] Audit every retrieval-related TODO section and map its canonical owner in `docs/devops/retrieval-capability-matrix.md`:
+  - memory retrieval;
+  - conversation-history retrieval;
+  - TurnRecord search;
+  - project exact retrieval;
+  - project lexical/BM25 retrieval;
+  - project graph retrieval;
+  - project spatial retrieval;
+  - semantic project retrieval;
+  - semantic memory retrieval;
+  - Memory Explorer/search;
+  - ContextBroker;
+  - HN-derived `project.inspect`;
+  - revisioned derived-state work.
+
+- [x] Mark stale or partial duplicates as completed-by-sprint, superseded, or still genuinely open in the matrix and legacy checklist crosswalk:
+  - `completed by Sprint N`;
+  - `partially completed by Sprint N`;
+  - `superseded by <canonical task>`;
+  - or genuinely open.
+
+- [x] Replace the stale generic embedding-backend item with the actual open backend-independent contract work in R2; Ollama-specific implementation is not mislabeled as pluggable.
+
+- [x] Produce one retrieval capability matrix at `docs/devops/retrieval-capability-matrix.md`:
+
+```text
+Capability
+Current implementation
+Authoritative source
+Persistence
+Revision-aware?
+Backend
+Fallback
+Tests
+Benchmark status
+Known gaps
+Canonical TODO owner
+```
+
+- [x] Update the repository's canonical map/handover (`docs/codebase-map.md`), `docs/devops/progress.md`, feature inventory, and this consolidated TODO so current behavior is distinguishable from open retrieval work.
+
+### Done when
+
+A fresh agent can determine the complete current retrieval architecture without reading historical sprints chronologically.
+
+---
+
+## R1. Write the Retrieval Architecture ADR before changing backends
+
+### Goal
+
+Record the architecture separately from any particular library.
+
+Create an ADR (Architecture Decision Record) such as:
+
+```text
+docs/decisions/ADR-agent-retrieval-architecture.md
+```
+
+### Required architecture
+
+CCad retrieval must remain logically decomposed into:
+
+```text
+RetrievalPlanner
+    │
+    ├── ExactRetriever
+    ├── GraphRetriever
+    ├── SpatialRetriever
+    ├── LexicalRetriever
+    └── SemanticRetriever
+            │
+            ▼
+       candidate fusion
+            │
+       scope/security filter
+            │
+      ranking/diversity
+            │
+       revision validation
+            │
+        token budgeting
+            │
+        ContextBroker
+```
+
+### Required rules
+
+- [x] No external search product becomes the source of truth.
+
+- [x] The authoritative C++ project/schematic/PCB model remains canonical.
+
+- [x] Exact CAD identity must never depend on embeddings.
+
+- [x] Electrical connectivity must never be reconstructed purely from text similarity.
+
+- [x] Geometry/nearness must never be reconstructed purely from embeddings.
+
+- [x] Semantic retrieval is supplementary.
+
+- [x] Retrieval architecture and retrieval backend are separate concepts.
+
+- [x] ContextBroker consumes canonical retrieval results, not backend-native objects.
+
+- [x] A future switch from custom BM25 to FTS5 must not require rewriting Agent orchestration.
+
+- [x] A future switch from exact cosine search to an ANN index must not require rewriting ContextBroker.
+
+### Options that must be explicitly compared
+
+At minimum:
+
+1. current in-process CCad retrieval implementation;
+2. SQLite FTS5 for lexical/durable textual search;
+3. dedicated search server such as Typesense;
+4. current exact vector scan;
+5. native/embedded ANN candidate such as USearch if vector scale later warrants it.
+
+### Build-vs-reuse fields
+
+For each option record:
+
+- capability solved;
+- license;
+- runtime/deployment requirements;
+- Windows support;
+- process model;
+- startup behavior;
+- memory use;
+- disk use;
+- indexing/update behavior;
+- incremental-update support;
+- packaging cost;
+- failure modes;
+- privacy implications;
+- synchronization burden;
+- testing burden;
+- rollback complexity;
+- long-term maintenance burden.
+
+### Done when
+
+The backend decision can be understood independently of chat history and independently of whichever implementation happens to exist today.
+
+---
+
+## R2. Introduce backend-independent retrieval contracts
+
+### Goal
+
+Prevent ContextBroker and the Agent from depending directly on BM25 implementation details, Ollama response shapes, FTS5 scores, Typesense responses, or future vector-index APIs.
+
+### Add canonical retriever interfaces
+
+Conceptually:
+
+```text
+ExactRetriever
+LexicalRetriever
+SemanticRetriever
+GraphRetriever
+SpatialRetriever
+```
+
+Each must operate on typed requests and return canonical hits.
+
+### Define `RetrievalRequest`
+
+Include at minimum:
+
+```text
+RetrievalRequest
+  query
+  project_id?
+  thread_id?
+  requested_revision?
+  scope
+  entity_types[]
+  fields[]
+  bbox?
+  net_ids[]
+  layer_ids[]
+  top_k
+  candidate_budget
+  token_budget?
+  channels[]
+  include_provenance
+```
+
+### Define `RetrievalHit`
+
+Include at minimum:
+
+```text
+RetrievalHit
+  canonical_id
+  source_type
+  source_scope
+  source_revision
+  channel
+  channel_rank
+  channel_score?
+  normalized_features?
+  matched_terms[]
+  semantic_similarity?
+  relationship_path?
+  spatial_distance?
+  provenance
+  content_handle
+  text_preview?
+```
+
+### Important scoring rule
+
+- [x] Do not directly compare raw BM25 numbers with cosine similarity.
+
+These scores have unrelated scales.
+
+Use ranking/fusion features such as:
+
+- rank;
+- reciprocal rank;
+- exact-match flag;
+- field-match evidence;
+- graph path evidence;
+- spatial relevance;
+- semantic similarity;
+- source priority.
+
+### Add canonical retrieval status
+
+```text
+ready
+partial
+disabled
+unavailable
+stale
+failed
+```
+
+### Done when
+
+Changing a lexical or vector backend does not alter provider-facing ContextBroker contracts.
+
+- [x] Focused contract verifies canonical typed hits and preservation of the existing provider-facing project payload; the official full CTest gate remains a separate Sprint 1041 delivery requirement.
+
+---
+
+## R3. Build a real retrieval benchmark before choosing a new backend
+
+### Goal
+
+Replace “this seems better” with repeatable measurements.
+
+Create a reusable benchmark harness, for example:
+
+```text
+scripts/benchmark_agent_retrieval.py
+```
+
+Do not hard-code one model/backend.
+
+### Build labeled datasets for distinct tasks
+
+Do not use one dataset for everything.
+
+Create separate sets for:
+
+#### A. Exact CAD retrieval
+
+Examples:
+
+```text
+"U17"
+"+3V3"
+"SPI_CLK"
+"J2 pin 5"
+```
+
+Expected exact entity IDs.
+
+#### B. Lexical engineering retrieval
+
+Examples where important vocabulary overlaps.
+
+#### C. Semantic/paraphrase retrieval
+
+Examples such as:
+
+```text
+query:
+"parts that stabilize the MCU supply"
+
+relevant source:
+"decoupling capacitors for VDD pins"
+```
+
+#### D. Hard negatives
+
+Queries with superficially related wording but incorrect engineering meaning.
+
+#### E. Graph retrieval
+
+Expected electrical/structural relationships.
+
+#### F. Spatial retrieval
+
+Expected nearby objects/regions.
+
+#### G. Memory retrieval
+
+Preferences, corrections, previous engineering decisions and project-specific facts.
+
+#### H. Historical TurnRecord retrieval
+
+Questions requiring an older relevant discussion without importing entire transcripts.
+
+### Dataset requirements
+
+- [x] Separate training/calibration and held-out evaluation sets in the versioned task-specific corpus; contract prevents duplicate query/answer leakage across splits.
+- [x] Record dataset version and stable fixture source/project revisions.
+- [x] Record why each expected result is relevant.
+- [x] Include difficult, explicitly labelled distractors and no-answer hard negatives.
+- [x] Include paraphrased engineering terminology in its own semantic task set.
+- [x] Include different board sizes and repeated component classes.
+- [x] Include exact, graph, spatial, and hard-negative queries explicitly marked as not requiring semantic search.
+
+### Retrieval quality metrics
+
+Measure at minimum:
+
+```text
+Recall@1
+Recall@3
+Recall@5
+MRR
+nDCG@k
+precision@k where meaningful
+false-positive rate
+hard-negative rejection
+```
+
+Also measure whole-context usefulness:
+
+```text
+relevant facts included
+irrelevant facts included
+context bytes
+estimated/actual tokens
+number of retrieval channels used
+number of follow-up tool calls required
+```
+
+### Systems metrics
+
+Measure:
+
+```text
+index build time
+incremental update time
+p50 query latency
+p95 query latency
+p99 where sample size permits
+startup time
+RAM
+disk size
+embedding latency
+backend failure recovery
+```
+
+### Done when
+
+Any future claim that backend A is better than backend B points to a versioned benchmark result.
+
+---
+
+## R4. Benchmark the current custom BM25 against SQLite FTS5
+
+### Goal
+
+Determine whether CCad should continue owning lexical-ranking implementation or reuse SQLite's mature FTS5 full-text engine where appropriate.
+
+Do not migrate first.
+
+Benchmark first.
+
+### Candidate scopes
+
+Evaluate independently for:
+
+1. Memory records.
+2. TurnRecords/history.
+3. Project typed textual entities.
+4. Future datasheet/document corpus.
+
+Do not assume the same answer for all four.
+
+### FTS5 prototype requirements
+
+- [ ] Keep it behind `LexicalRetriever`.
+- [ ] Run in shadow mode first.
+- [ ] Never alter user-visible retrieval ordering during shadow evaluation.
+- [ ] Index equivalent fields:
+  - title;
+  - content;
+  - tags;
+  - entity labels;
+  - relevant metadata.
+- [ ] Reproduce current scope/security filtering.
+- [ ] Reproduce deterministic bounds.
+- [ ] Test incremental add/update/delete.
+- [ ] Test database corruption/unavailability behavior.
+- [ ] Measure migration/startup cost.
+
+### Compare against current implementation
+
+Evaluate:
+
+```text
+quality
+latency
+memory
+disk
+code complexity
+number of maintained custom ranking lines
+test burden
+incremental-update complexity
+debuggability
+packaging
+failure recovery
+```
+
+### Migration decision rule
+
+Do **not** switch merely because FTS5 exists.
+
+Migrate a corpus only if evidence shows one of:
+
+- better retrieval quality;
+- materially lower maintenance burden with non-inferior quality;
+- materially better large-corpus performance;
+- substantially simpler persistence/recovery;
+- a concrete feature needed by CCad that current BM25 lacks.
+
+### Likely first candidate
+
+Memory/history is the preferred first corpus for FTS5 evaluation because it is durable and text-oriented.
+
+Keep live CAD project indexing separate until independently benchmarked.
+
+### Done when
+
+There is a measured corpus-by-corpus decision:
+
+```text
+memory lexical backend = ...
+history lexical backend = ...
+live project lexical backend = ...
+knowledge corpus lexical backend = ...
+```
+
+---
+
+## R5. Keep Typesense experimental unless it proves a concrete advantage
+
+### Goal
+
+Avoid introducing a permanent daemon/service merely because it combines lexical and vector search.
+
+### Do not production-integrate Typesense yet
+
+Instead create, only if useful for the benchmark, a disposable adapter/spike.
+
+### Measure actual costs
+
+Include:
+
+- extra process lifecycle;
+- service startup;
+- Windows/WSL implications;
+- packaging;
+- port allocation;
+- IPC/HTTP overhead;
+- synchronization from authoritative C++ state;
+- stale-index recovery;
+- crash recovery;
+- offline behavior;
+- installer size;
+- update migration;
+- security surface;
+- licensing obligations.
+
+### Test actual benefit
+
+Typesense must demonstrate meaningful improvement in at least one CCad-relevant requirement such as:
+
+- large external knowledge corpus;
+- multi-user/shared index;
+- significantly faster large-scale lexical/vector retrieval;
+- materially simpler implementation;
+- materially better filtering/search quality.
+
+### Do not use Typesense to duplicate
+
+- project graph;
+- PCB spatial index;
+- canonical revision tracking;
+- exact native identity;
+- C++ project state.
+
+### Done when
+
+Typesense has either:
+
+```text
+REJECTED
+reason: no measurable benefit over embedded stack
+```
+
+or:
+
+```text
+APPROVED FOR <specific corpus>
+reason: benchmarked benefit X
+```
+
+It must never silently become the universal CCad retrieval engine.
+
+---
+
+## R6. Correct and separate embedding task semantics
+
+### Goal
+
+Prevent one generic `embed(text)` path from incorrectly treating retrieval, duplicate detection and similarity as the same task.
+
+### Introduce explicit semantic operations
+
+Conceptually:
+
+```text
+embed_retrieval_query()
+embed_retrieval_document()
+embed_similarity_item()
+```
+
+or equivalent explicit task enum.
+
+### EmbeddingGemma requirements
+
+- [x] Use the model's retrieval-query formatting for retrieval queries.
+- [x] Use the model's document formatting for indexed retrieval documents.
+- [x] Use sentence-similarity formatting only for symmetric similarity tasks such as near-duplicate comparison.
+- [x] Add protocol tests asserting exact prompt/task formatting.
+- [x] Never reuse the semantic-duplicate threshold as a retrieval threshold.
+
+### Model identity
+
+Report the runtime identity and bind process cache keys to its model digest and embedding protocol; persist the identity with vectors only if durable vector storage is introduced:
+
+- [x] Report backend, model, digest, learned vector dimension, task mode, and normalization; include model digest and protocol/normalization version in process-cache identity.
+
+```text
+provider/backend
+model name
+model digest/version
+embedding dimension
+task mode
+normalization behavior
+```
+
+### Model change behavior
+
+When model/digest changes:
+
+- [x] Invalidate incompatible cached vectors on model digest/configuration changes and dimension drift.
+- [x] Report backend readiness separately from process-cache state; these vectors are lazy and process-only, so do not invent an asynchronous rebuild state.
+- [x] Preserve lexical retrieval when semantic readiness or vector validation fails.
+- [x] Embed only authorized candidates supplied by the active project or enabled memory scope; do not bulk-rebuild unrelated corpora.
+- [x] Never silently download/install a model; verify only through the installed-model catalog.
+
+### Done when
+
+A retrieval embedding can never accidentally use duplicate-classification semantics.
+
+References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) documents `task: search result | query:` and `title: none | text:` for retrieval, with sentence similarity reserved for similarity tasks; [Nomic's official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) defines distinct `search_query`, `search_document`, and `clustering` task types.
+
+---
+
+## R7. Expand semantic evaluation substantially
+
+### Goal
+
+Determine whether embeddings are actually improving CCad retrieval.
+
+Sprint 1038's duplicate calibration is useful but deliberately small and conservative. Do not extrapolate it to general retrieval.
+
+- [x] Expand the still-small source-grounded calibration and held-out sets across all semantic retrieval classes below; keep memory duplicate classification separate from retrieval relevance. Sprint 1049 adds four positive and three hard-negative examples per semantic class and split, with distinct fixture revisions and source-grounded entity descriptions.
+- [x] Evaluate hard negatives with semantic retrieval enabled and score false-positive cost per case/model, not only recall. Sprint 1049 has 14 project hard negatives and 3 memory negatives in each split; scoped design-intent semantic retrieval returns all 3 held-out hard negatives versus 2/3 lexical on both models.
+- [x] Compare exact-only, lexical-only, semantic-only, and hybrid execution for ProjectIndex cases; Sprint 1049 also compares the full deterministic+semantic ProjectIndex stack and lexical/semantic/hybrid memory modes on dataset 1.3.0, reporting every mode/model/split separately. Project semantic modes show no calibration-set recall gain; memory semantic Recall@3 is below lexical/hybrid for both models, so no semantic promotion is supported.
+- [x] Add separate memory-retrieval and project-entity cases to both calibration and held-out corpus splits; Sprint 1047 reports are small-sample coverage checks, not generalized quality claims.
+- [x] Scope any acceptance threshold by model digest, task, corpus, and evaluation version; do not introduce a universal cosine cutoff. Sprint 1049 adds offline calibration profiles keyed by model digest, task, dataset ID/version/SHA, benchmark version, evaluation version, and retrieval surface; profiles affect no production setting and inherit candidate-generation limits from the current retriever.
+- [ ] Claim useful semantic gain only when held-out incremental recall and hard-negative false-positive cost both support it.
+
+### Create separate benchmark sets for
+
+```text
+memory duplicate detection
+memory retrieval
+project entity retrieval
+engineering paraphrases
+component-function descriptions
+design-intent retrieval
+hard engineering negatives
+```
+
+### Compare models
+
+At minimum where available:
+
+```text
+EmbeddingGemma
+current Nomic model
+```
+
+Allow future models through the same harness.
+
+### Compare retrieval modes
+
+For every dataset:
+
+```text
+BM25 only
+semantic only
+BM25 + semantic
+exact + BM25
+exact + BM25 + semantic
+full deterministic + semantic stack
+```
+
+### Measure false positives aggressively
+
+For CAD, a confidently irrelevant component can be more harmful than missing a weakly relevant one.
+
+Include hard examples such as:
+
+```text
+decoupling capacitor
+vs
+bulk reservoir capacitor
+
+clock net
+vs
+switching regulator clock
+
+USB differential pair
+vs
+generic GPIO pair
+
+power-input pin association
+vs
+actual decoupling intent
+```
+
+### Threshold rule
+
+No universal cosine threshold.
+
+Thresholds must be scoped to:
+
+```text
+model digest
+task
+corpus
+evaluation version
+```
+
+### Done when
+
+Semantic retrieval has evidence of useful incremental recall over lexical/exact retrieval without unacceptable false-positive cost.
+
+---
+
+## R8. Keep exact vector search until scale proves it insufficient
+
+### Goal
+
+Avoid premature ANN (Approximate Nearest Neighbor) infrastructure.
+
+### Baseline
+
+Use exact cosine search over the bounded eligible semantic candidate set.
+
+Benefits:
+
+- deterministic;
+- exact;
+- simple;
+- easy to invalidate;
+- no ANN recall loss;
+- easy to debug.
+
+### Benchmark scaling
+
+Synthetic and real tests should include increasing vector counts:
+
+```text
+100
+1,000
+10,000
+50,000
+100,000+
+```
+
+where realistic for the relevant corpus.
+
+Measure:
+
+```text
+p50/p95 latency
+RAM
+update cost
+startup
+full rebuild
+```
+
+### Define a measured ANN trigger
+
+Do not invent the threshold beforehand.
+
+An ANN backend becomes justified when exact search materially violates a documented CCad latency/memory requirement on realistic corpora.
+
+### If triggered
+
+Benchmark at minimum:
+
+```text
+exact baseline
+USearch candidate
+current mature embedded alternative(s)
+```
+
+Compare:
+
+```text
+Recall@k versus exact ground truth
+latency
+RAM
+index build
+incremental updates
+deletion
+Windows support
+C++ integration
+license
+persistence
+crash recovery
+```
+
+### Backend abstraction
+
+ANN must remain behind `SemanticRetriever`.
+
+### Done when
+
+CCad either has evidence that exact search remains sufficient or has evidence supporting a specific ANN implementation.
+
+---
+
+## R9. Separate live CAD retrieval from engineering knowledge retrieval
+
+### Goal
+
+Prevent very different corpora from being forced into one storage/index design.
+
+Create a conceptual boundary:
+
+```text
+ProjectKnowledge
+```
+
+versus:
+
+```text
+ExternalEngineeringKnowledge
+```
+
+### Live project knowledge includes
+
+- components;
+- pins;
+- pads;
+- nets;
+- tracks;
+- vias;
+- zones;
+- schematic relationships;
+- DRC/ERC;
+- board rules;
+- placement;
+- routing;
+- current proposal/artifacts where authorized.
+
+Properties:
+
+```text
+small/medium corpus
+rapid mutations
+strict revisions
+structured relationships
+geometry
+authoritative IDs
+```
+
+### External engineering knowledge includes
+
+- datasheets;
+- application notes;
+- fab rules;
+- design guides;
+- verified reference circuits;
+- component library documentation;
+- standards where licensed/available;
+- user-added documents.
+
+Properties:
+
+```text
+document-heavy
+much larger corpus
+slow-changing
+chunked text
+metadata/filter heavy
+potentially persistent vectors
+```
+
+### Requirement
+
+Do not automatically choose the same lexical/vector backend for both.
+
+Run the build-vs-reuse gate independently.
+
+### Done when
+
+CCad can evolve its external knowledge system without disturbing live project retrieval correctness.
+
+---
+
+## R10. Complete H3 revision-aware derived retrieval before optimizing search further
+
+### Goal
+
+Ensure every retrieval result is about the board the user is actually looking at.
+
+The common derived-state work is higher priority than switching search engines.
+
+The existing H3 direction should become the canonical contract. The current TODO already requires exact, graph, spatial, BM25, vector, solver, screenshot and context outputs to carry revision state.
+
+### Implement common stamp
+
+```text
+DerivedStateStamp
+  source_project_revision
+  source_pcb_revision
+  source_schematic_revision
+  built_revision
+  status
+```
+
+Apply it to:
+
+- [ ] exact indexes;
+- [ ] lexical index;
+- [ ] semantic index;
+- [ ] graph index;
+- [ ] spatial index;
+- [ ] routing metrics;
+- [ ] placement metrics;
+- [ ] solver diagnostics;
+- [ ] screenshots;
+- [ ] ContextBroker packages;
+- [ ] `project.inspect` snapshots.
+
+### Mutation behavior
+
+After a successful authoritative mutation:
+
+```text
+transaction commit
+    ↓
+revision increment
+    ↓
+affected-domain calculation
+    ↓
+targeted invalidation
+    ↓
+incremental rebuild
+    ↓
+ready publication
+```
+
+### Prohibit
+
+- guessed sleep delays;
+- stale best-effort retrieval presented as current;
+- mixing data from two revisions;
+- silently using old vectors during rebuild.
+
+### Query behavior
+
+A query requiring revision `R` must do one of:
+
+```text
+serve R
+refresh to R
+return state_not_ready
+return state_stale
+```
+
+### Add race tests
+
+- [ ] retrieve → user edits board → agent acts;
+- [ ] tool mutation → immediate retrieval;
+- [ ] undo → immediate retrieval;
+- [ ] rebuild fails;
+- [ ] rebuild cancelled;
+- [ ] embedding backend disappears during rebuild;
+- [ ] one index refreshes while another remains stale.
+
+### Done when
+
+No tested path can unknowingly combine current authoritative project state with stale derived retrieval state.
+
+---
+
+## R11. Make `project.inspect` the default high-level project interrogation path
+
+### Goal
+
+Reduce unnecessary low-level querying without creating another source of truth.
+
+`project.inspect` must be a façade over existing authoritative retrieval systems.
+
+Do not duplicate parsers/indexes.
+
+### Input
+
+Support at minimum:
+
+```text
+scope
+object IDs/refdes
+nets
+layers
+bbox
+object types
+requested sections
+max objects
+max bytes
+max tokens
+revision requirement
+```
+
+### Output
+
+Return:
+
+```text
+AgentProjectSnapshot
+  snapshot_id
+  project_revision
+  pcb_revision
+  schematic_revision
+  derived_state_revision
+  scope
+  selection
+  summaries
+  components
+  nets
+  relevant objects
+  rules
+  graph relationships
+  spatial context
+  placement summary
+  routing summary
+  DRC/ERC
+  relevant artifacts
+  omissions
+  provenance
+  digest
+```
+
+### Retrieval planner behavior
+
+Internally use whichever channels are appropriate:
+
+```text
+exact
+graph
+spatial
+BM25
+semantic
+```
+
+Do not invoke semantic retrieval by default when exact structured retrieval fully answers the query.
+
+### Large-project behavior
+
+Return:
+
+```text
+summary
+relevant bounded windows
+counts
+omission metadata
+follow-up handles
+```
+
+Never dump entire large designs.
+
+### Benchmark
+
+Compare:
+
+```text
+old repeated-query workflow
+vs
+project.inspect
+```
+
+Measure:
+
+```text
+tool calls
+latency
+provider tokens
+retrieval bytes
+correct facts
+stale-state failures
+follow-up calls
+```
+
+### Done when
+
+Typical engineering questions can be answered from one coherent revision-bound snapshot plus targeted follow-ups.
+
+---
+
+## R12. Add query planning instead of blindly invoking every retriever
+
+### Goal
+
+Avoid waste and noise.
+
+Introduce deterministic retrieval planning rules.
+
+Examples:
+
+```text
+"Where is U7?"
+→ exact + spatial
+
+"What connects to U7 pin 4?"
+→ exact + graph
+
+"Find net USB_D+"
+→ exact
+
+"What did I previously say about connector placement?"
+→ memory BM25 + semantic if enabled
+
+"What circuitry protects the USB port?"
+→ exact/graph + lexical + semantic
+
+"What objects are around this via?"
+→ spatial
+
+"What was the reason we changed this routing?"
+→ TurnRecord/history retrieval
+```
+
+### Requirements
+
+- [ ] Prefer cheapest authoritative channel capable of answering.
+- [ ] Do not call semantic search for obvious exact-ID queries.
+- [ ] Do not call graph traversal for purely textual memory queries.
+- [ ] Do not call all channels merely because they exist.
+- [ ] Permit explicit diagnostic mode that reports planned/rejected channels.
+
+### Telemetry
+
+Record:
+
+```text
+query class
+channels considered
+channels selected
+channels skipped
+reason
+candidate counts
+final included counts
+latency per channel
+```
+
+### Done when
+
+The retrieval stack is hybrid because it selects the correct tools, not because it executes every search algorithm for every question.
+
+---
+
+## R13. Define fusion centrally
+
+### Goal
+
+Prevent memory retrieval, project retrieval and future knowledge retrieval from accumulating unrelated ad-hoc scoring rules.
+
+### Central fusion must support
+
+- exact-match priority;
+- weighted reciprocal-rank fusion;
+- field-level lexical ranks;
+- semantic rank;
+- graph evidence;
+- spatial evidence;
+- user-authored memory importance where already supported;
+- recency/usage only where semantically appropriate;
+- deterministic diversity/MMR where appropriate.
+
+### Rules
+
+- [ ] Scope/security filtering occurs before ranking.
+- [ ] Exact identity cannot be outranked by fuzzy semantic similarity for exact-ID intent.
+- [ ] User/project authorization cannot be overridden by relevance.
+- [ ] Stale results cannot win because they have a higher score.
+- [ ] Semantic similarity cannot manufacture graph relationships.
+- [ ] Ranking explanations must remain content-safe.
+
+### Add `FusionTrace`
+
+Content-free debugging metadata:
+
+```text
+candidate id hash
+channel ranks
+exact-match flag
+graph evidence flag
+spatial evidence
+semantic score
+lexical rank
+fusion rank
+selected/rejected reason
+```
+
+### Done when
+
+A retrieval result can be explained without exposing secrets or relying on backend-specific score semantics.
+
+---
+
+## R14. Build retrieval observability into Langfuse
+
+### Goal
+
+Make bad retrieval diagnosable.
+
+For each retrieval operation capture safe metadata:
+
+```text
+retrieval request ID
+project/thread scope
+requested revision
+channels
+backend identities
+model digest if semantic
+candidate counts
+selected counts
+truncation
+latency
+cache hit/miss
+fallback reason
+state freshness
+final context tokens
+```
+
+Do not emit:
+
+- memory contents;
+- secret values;
+- raw private project text unless explicitly allowed;
+- embedding vectors.
+
+### Add separate observations
+
+```text
+retrieval.plan
+retrieval.exact
+retrieval.lexical
+retrieval.semantic
+retrieval.graph
+retrieval.spatial
+retrieval.fusion
+context.package
+```
+
+All under the same root Agent turn.
+
+### Done when
+
+A poor Agent answer can be traced back to whether retrieval missed the evidence, fusion discarded it, budgeting removed it, or the model ignored correctly retrieved evidence.
+
+---
+
+## R15. Add failure and degradation contracts
+
+### Goal
+
+Make degraded search truthful and safe.
+
+Test:
+
+- [ ] embedding service unavailable;
+- [ ] model missing;
+- [ ] wrong model dimension;
+- [ ] embedding timeout;
+- [ ] lexical backend unavailable;
+- [ ] corrupted persistent lexical index;
+- [ ] index rebuilding;
+- [ ] graph unavailable;
+- [ ] spatial index stale;
+- [ ] project switched mid-query;
+- [ ] model configuration changes mid-turn;
+- [ ] ANN backend unavailable if later introduced;
+- [ ] FTS database locked;
+- [ ] cancellation during multi-channel retrieval.
+
+### Required behavior
+
+Semantic failure:
+
+```text
+fall back to exact/lexical/graph/spatial
++ report semantic unavailable
+```
+
+Lexical failure:
+
+```text
+preserve exact/graph/spatial
++ report lexical unavailable
+```
+
+Revision mismatch:
+
+```text
+refresh or state_stale
+```
+
+Do not silently produce a normal-looking incomplete result.
+
+### Done when
+
+Every degraded state has an explicit tested result and never creates fake retrieval confidence.
+
+---
+
+## R16. Establish migration and rollback discipline
+
+### Goal
+
+Any backend experiment must be reversible.
+
+If migrating a corpus:
+
+- [ ] keep old backend readable during shadow period;
+- [ ] dual-index only temporarily and explicitly;
+- [ ] compare result equivalence;
+- [ ] provide migration script;
+- [ ] provide rollback script;
+- [ ] version the index schema;
+- [ ] preserve authoritative source records;
+- [ ] never make a derived search database the only copy of memory/project state.
+
+### Backend rollback requirement
+
+Switching backend must not require rebuilding authoritative user data from inaccessible derived storage.
+
+### Done when
+
+A failed FTS/vector/backend migration can be rolled back without losing conversation, memory or project information.
+
+---
+
+## R17. Define performance expectations from evidence, not guesses
+
+### Goal
+
+Avoid arbitrary thresholds.
+
+First measure realistic workloads:
+
+```text
+small board
+medium board
+large board
+large conversation history
+large memory store
+future external document corpus
+```
+
+Record baselines.
+
+Only after baselines establish explicit requirements for:
+
+```text
+acceptable p50
+acceptable p95
+startup budget
+incremental-index budget
+RAM budget
+disk budget
+context-token budget
+```
+
+### Important
+
+Do not optimize synthetic 100k-vector cases if realistic CCad live-project retrieval contains only hundreds or low thousands of semantic entities.
+
+Conversely, do not assume external knowledge will remain small.
+
+### Done when
+
+Optimization work points to a violated measured requirement.
+
+---
+
+## R18. Retrieval-specific Definition of Done
+
+Do not call the retrieval architecture complete until all are demonstrated.
+
+- [ ] Exact IDs resolve without semantic search.
+- [ ] Net/component/pin relationships use authoritative graph state.
+- [ ] Nearby PCB objects use the spatial index.
+- [ ] Textually matching memories/project entities use lexical retrieval.
+- [ ] Genuine paraphrases can be recovered through optional semantic retrieval.
+- [ ] Semantic failure leaves deterministic retrieval operational.
+- [ ] Embedding task formatting is correct for retrieval versus similarity.
+- [ ] Every result identifies its source revision.
+- [ ] No stale derived result is silently mixed into current state.
+- [ ] `project.inspect` can answer representative project-understanding questions through one bounded revision-consistent call.
+- [ ] Result fusion is deterministic and explainable.
+- [ ] Retrieval remains inside model/context budget.
+- [ ] Memory/project authorization gates occur before relevance scoring.
+- [ ] Search backends can be swapped behind stable interfaces.
+- [ ] Backend choice has benchmark evidence.
+- [ ] Typesense has not been introduced without a measured reason.
+- [ ] FTS5 has been objectively evaluated against current lexical retrieval.
+- [ ] ANN has not been introduced without a measured scaling need.
+- [x] Real-model semantic retrieval has a held-out benchmark for installed local `embeddinggemma` and `nomic-embed-text`; per-model reports are manifest-bound workspace evidence, with no backend winner claimed.
+- [ ] Langfuse can explain retrieval planning, fallback, fusion and budgeting.
+- [ ] Failure, cancellation, revision-race and backend-unavailable tests pass.
+- [ ] `MAP.md`, `DECISIONS.md`, `PROGRESS.md`, `HANDOVER.md`, `RUNBOOK.md`, feature inventory and consolidated TODO reflect the final architecture.
+
+---
+
+# Expected likely architecture unless benchmarks disprove it
+
+Do **not** treat this as already proven.
+
+Treat it as the hypothesis the benchmark should test.
+
+```text
+                  Authoritative CCad project model
+                              │
+              ┌───────────────┼────────────────┐
+              │               │                │
+          exact index    relationship graph  spatial index
+              │               │                │
+              └───────────────┼────────────────┘
+                              │
+                         RetrievalPlanner
+                              │
+                 ┌────────────┴────────────┐
+                 │                         │
+          LexicalRetriever          SemanticRetriever
+                 │                         │
+         current BM25 /            Ollama embedding
+         possibly FTS5                  backend
+                                           │
+                                EmbeddingGemma/Nomic/...
+                                           │
+                                exact cosine initially
+                                           │
+                               ANN only if benchmark
+                                    requires it
+                 │                         │
+                 └────────────┬────────────┘
+                              │
+                      deterministic fusion
+                              │
+                   revision/scope validation
+                              │
+                     diversity + budgeting
+                              │
+                        ContextBroker
+                              │
+                             LLM
+```
+
+Potential corpus-specific implementation:
+
+```text
+Live CAD project
+  exact     = native
+  graph     = native
+  spatial   = native
+  lexical   = current index unless FTS5 benchmark wins
+  semantic  = bounded optional embeddings
+  vector    = exact cosine initially
+
+Memory / TurnRecords
+  exact scope filter
+  lexical   = current BM25, strongly evaluate FTS5
+  semantic  = optional embeddings
+  fusion    = existing RRF/MMR principles
+
+External engineering knowledge
+  separate corpus and benchmark
+  lexical/vector backend selected independently
+  may eventually justify a dedicated search engine
+```
+
+The goal is not to maximize the number of search technologies inside CCad.
+
+The goal is to use the **smallest retrieval architecture that remains correct, fast, inspectable, local-first, revision-safe, and replaceable as CCad grows**.

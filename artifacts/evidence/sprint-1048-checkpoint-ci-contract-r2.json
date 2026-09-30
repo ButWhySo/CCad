@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1048-checkpoint-ci-contract-r2",
+    "feature":  "Fix CI checkpoint restart fixture for provider-safe tool declarations",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T03:39:16.4400481Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.95 log=artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2/preflight.log",
+                      "finished_utc":  "2026-09-30T03:39:17.4891144Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=652.31 log=artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2/build.log",
+                      "finished_utc":  "2026-09-30T03:50:09.8251056Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=189.05 log=artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2/ctest.log",
+                      "finished_utc":  "2026-09-30T03:53:18.8792572Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2/build.log",
+                                         "sha256":  "5630A1835D258BF990DB7B881119781C4E1772E103179F9244FBDABAA18A7513"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2/ctest.log",
+                                         "sha256":  "47336B410744B75F0D27F38BE4B1BBE52C6A5743AF7E54E91D30C03FD987E7E4"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T03:53:18.9993038Z"
+}

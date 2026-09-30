@@ -51,6 +51,15 @@ def _safe_retrieval_metadata(item: dict, *, include_bm25: bool) -> dict:
     persistence = item.get("usage_persistence")
     if persistence in {"durable", "process", "process_only", "unavailable"}:
         safe["usage_persistence"] = persistence
+    tier_rank = item.get("tier_rank")
+    if isinstance(tier_rank, int) and not isinstance(tier_rank, bool) and 1 <= tier_rank <= 32:
+        safe["tier_rank"] = tier_rank
+    candidate_count = item.get("tier_candidate_count")
+    if (isinstance(candidate_count, int) and not isinstance(candidate_count, bool)
+            and 0 <= candidate_count <= 4096):
+        safe["tier_candidate_count"] = candidate_count
+    if item.get("tier_merge_policy") == "round_robin":
+        safe["tier_merge_policy"] = "round_robin"
     return safe
 
 
@@ -372,7 +381,9 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                           memory_summary_entry_ids: Iterable[str] = (),
                           memory_manifest: dict | None = None,
                           turn_context: dict | None = None,
-                          project_retrieval: dict | None = None) -> dict:
+                          project_retrieval: dict | None = None,
+                          memory_retrieval_status: dict | None = None,
+                          project_retrieval_status: dict | None = None) -> dict:
     """Return actual provider content plus non-content metadata for one turn."""
     limit = min(131072, max(1024, int(char_limit)))
     project, native_revision = _project_payload(raw_context)
@@ -382,6 +393,25 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                    if isinstance(value, str) and value}
     manifest = _memory_manifest(memory_manifest)
     project_matches = _project_retrieval_payload(project_retrieval)
+    retrieval_status = {}
+    for key, value in (("memory_retrieval_status", memory_retrieval_status),
+                       ("project_retrieval_status", project_retrieval_status)):
+        if not isinstance(value, dict):
+            continue
+        status = value.get("status")
+        if status not in {"ready", "partial", "disabled", "unavailable", "stale", "failed"}:
+            continue
+        safe = {"status": status,
+                "reason": _safe_text(value.get("reason"), 96),
+                "revision": _safe_text(value.get("revision"), 256),
+                "hit_count": max(0, int(value.get("hit_count", 0) or 0))}
+        channels = value.get("channels")
+        if isinstance(channels, dict):
+            safe["channels"] = {
+                str(channel)[:24]: state for channel, state in channels.items()
+                if str(channel) in {"exact", "lexical", "semantic", "graph", "spatial"}
+                and state in {"ready", "partial", "disabled", "unavailable", "stale", "failed"}}
+        retrieval_status[key] = safe
     turn_context = turn_context if isinstance(turn_context, dict) else {}
     prior_turns = _turn_payload(turn_records)
     recap = _recap_payload(thread_recap)
@@ -607,6 +637,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
             "memory_tier_counts": memory_tier_counts,
             "memory_tier_chars": memory_tier_chars,
             "memory_retrieval": included_retrieval,
+            **retrieval_status,
             "memory_exposure_channel_counts": {
                 channel: sum(channel in item.get("inclusion_channels", ())
                              for item in included_retrieval)

@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1037-agent-safety-r4",
+    "feature":  "one-use broker approvals, truthful tool-call identity, and inspectable Undo/Redo board-state proof",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint1037-agent-safety.json",
+    "target_sequence":  "sprint1037-undo-redo-sprint-1037-agent-safety-r4",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-29T05:50:10.3786639Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=2.1 log=artifacts/evidence/sprint-1037-agent-safety-r4/preflight.log",
+                      "finished_utc":  "2026-09-29T05:50:12.6012437Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=112.09 log=artifacts/evidence/sprint-1037-agent-safety-r4/build.log",
+                      "finished_utc":  "2026-09-29T05:52:04.7045865Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=173.54 log=artifacts/evidence/sprint-1037-agent-safety-r4/ctest.log",
+                      "finished_utc":  "2026-09-29T05:54:58.2405936Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=13.59 log=artifacts/evidence/sprint-1037-agent-safety-r4/ui_harness.log",
+                      "finished_utc":  "2026-09-29T05:55:11.8320716Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=8; screenshots=4",
+                      "finished_utc":  "2026-09-29T05:55:12.1500721Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-29T05:55:12.1840720Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/build.log",
+                                         "sha256":  "E1CC1DD76F4C907CEB1DF00A5A1A3021D74BF09CA0E329341563C96C4DE2F9F1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/ctest.log",
+                                         "sha256":  "153B5A4727C74BA43DE945517EBD621230B3B9B2F541DA45A29AB5D6FDF65B67"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4.stdout.log",
+                                         "sha256":  "3ABCC8B9035E6D6A8F78079458645ECEFA38D2D70288DFEDD59D35D85B321777"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4-before.png",
+                                         "sha256":  "402DA63C0F1EF388DFE1A8CE1FDEBCA568CB2A760D653CAA6707D9E7DF29CF0A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4-redo.png",
+                                         "sha256":  "5F2D58895752E41D0371D3CC89985DDFD680F45D0C87D3478CDBA945C0CAAB9F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4-staged.png",
+                                         "sha256":  "048F144C852D6813E933D19E3C0F8CBB3AA818EA7D2652F60859043BF39B11D2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4-target-sequence.json",
+                                         "sha256":  "FA894D3FFE59E20B7E8A242EE47D3A9B7A5F8FCD2F38D52AE86DDBF7E004D0D1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/sprint1037-undo-redo-sprint-1037-agent-safety-r4-undo.png",
+                                         "sha256":  "0940340545B8A9C8CB1378B2F1278DE0D9A046FB9F7EFAC36E68BCA8F74188F8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1037-agent-safety-r4/ui_harness.log",
+                                         "sha256":  "F33ACEE53D2E2E2E6A26F662ACA57368A4F2200F93CD92B828FB1F142AD44894"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T05:55:12.2440690Z"
+}

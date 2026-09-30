@@ -49,6 +49,8 @@ Owns the `ccad agent orchestrate` and `ccad agent plan` CLI wrapper, providing t
 
 Sprint 207 addendum: `src/ccad_gui/agent_panel.cpp` added the fifth reference-inspired Agent pane contract with compact header action bar, evidence thumbnails, approval preview, and UI-map target proof.
 
+Sprint 1048 note: `scripts/test_agent_checkpoint_restart.py` fakes the provider boundary and must consume provider-safe OpenAI function declaration dictionaries (`declaration["function"]["name"]`), as passed by `orchestrator.bind_native_tools()`. The restart matrix uses independent process invocations for first interruption and accepted/denied/canceled resume. Do not change production binding back to LangChain object instances to accommodate test doubles.
+
 ## Sprint 1022 CI / CTest / CD diagnosis
 
 The reported red CTest run `36234661589` failed in the Linux core, Linux GUI, and Windows core lanes because `agent_project_index` depended on an ignored local demo-board file that clean runners do not have. Sprint 1015 already repaired this with self-contained typed fixtures. Later hosted run `36261448041` passes all five jobs on merged `main` SHA `bab8aed149015a6c763dfec861c86b7d69326d86`. The official nonvisual verifier confirms the unchanged Qt/MinGW Release build and all 120 CTests; manifest `artifacts/evidence/sprint-1022-ci-ct-cd-health.json` (SHA-256 `150D8C7DD2E41A417A8B76295BBF7E7300FABF1A196CA51DB07095E63CD28A43`). `.github/workflows/ci.yml` is the only configured workflow; CD has no workflow or deployment target and is unconfigured, not failing.
@@ -2081,7 +2083,17 @@ filters, not retrieval filters. Capture is explicit via Manage Memories or
 `/memory`; ordinary chat is not auto-saved. Secret-like new records are rejected
 and unsafe legacy records are hidden from runtime/UI. Expiry, exact normalized
 deduplication, lexical near-duplicate checks, and a 64-record per-namespace cap
-are enforced. Semantic compaction and semantic duplicate detection remain open.
+are enforced. Durable-memory semantic compaction remains open. The repeatable
+real-Ollama benchmark `scripts/benchmark_semantic_memory_duplicates.py` uses
+dataset v2 with 71 labeled duplicate and 71 hard-negative pairs and documented
+model prompts: sentence similarity for EmbeddingGemma and `clustering:` for
+Nomic Embed Text. At cutoff 0.91, EmbeddingGemma caught 7/71 duplicates with
+4/71 false rejections, while Nomic caught 14/71 with 11/71 false rejections.
+No tested zero-false-positive threshold caught duplicates, so embeddings are
+retrieval-only and never block writes. Exact and lexical duplicate guards remain,
+and semantic service availability does not gate add/update. Contracts:
+`scripts/test_semantic_retrieval.py` and
+`scripts/test_memory_manager.py`.
 
 `memory_commands.py`, Settings RPC, and the Manage Memories dialog use the same
 manager for list/add/update/delete/reset. Disabling a tier unloads runtime
@@ -2156,8 +2168,9 @@ and mapped `ui.type_text` input follow the same path. Coverage is in
 `scripts/test_memory_task_scopes.py`, `scripts/test_memory_manager.py`,
 `scripts/test_memory_command_contract.py`, and `tests/test_gui_agent_panel.cpp`.
 Qt Release plus full CTest passed 99/99; mapped GUI screenshots/logs were
-inspected, including a >20-second run. Semantic duplicate detection and
-semantic compaction remain open.
+inspected, including a >20-second run. Sprint 1038 adds opt-in semantic
+duplicate detection; threshold calibration with a real embedding model and
+durable-memory semantic compaction remain open.
 
 ### Sprint 969 local context preview
 
@@ -2357,6 +2370,8 @@ Contracts: `scripts/test_lexical_retrieval.py` verifies stable RRF merging, dete
 `semantic_retrieval.py` is a stdlib-only, loopback-only Ollama `/api/tags` and `/api/embed` client. It validates installed model digest, bounded requests, returned model identity, vector shape/finiteness and unit normalization; it never follows proxy settings or downloads a model. `MemoryManager` combines semantic candidates with the existing title/content/tag RRF channels, applies cosine-aware MMR when vectors exist, and falls back to lexical MMR when the service or response fails. The bounded process-only embedding caches are keyed by model digest, tier, opaque namespace, record ID and content fingerprint, and are cleared on memory disable/change, expiry, task end, compaction and model identity changes. `AgentSettingsDialog` persists opt-in semantic settings under `memory.semantic`; its Personalisation page is scrollable and reports runtime status returned by `agent.memory_state`. The Qt target harness uses an isolated profile and the `sprint991-semantic-memory` UI-map sequence. Contracts: `scripts/test_semantic_retrieval.py`, `scripts/test_memory_manager.py`, `scripts/test_lexical_retrieval.py`, and `scripts/test_agent_orchestrator_method_catalog.py`; GUI contract: `testSemanticMemorySettingsUseOptInLocalBackend`.
 
 This does not embed conversation history or typed PCB/schematic project entities. The local Ollama service/model are optional runtime prerequisites; unavailable readiness is shown truthfully and never disables exact/lexical memory retrieval.
+
+Sprint 1044 gives `OllamaEmbeddingBackend` explicit retrieval-query, retrieval-document, and symmetric-similarity formatting. EmbeddingGemma uses its retrieval query/document task templates; Nomic uses separate `search_query:` and `search_document:` prefixes; only similarity calls use sentence-similarity/clustering instructions. Cache identity includes the model digest and embedding protocol/normalization version. Runtime memory state additionally reports provider, model, digest, observed dimension, task mode, and normalization. Dimension drift invalidates process caches and preserves lexical fallback. Vectors remain process-local and are rebuilt lazily only for currently authorized retrieval candidates; the backend never downloads models.
 
 # Sprint 1002 bounded memory recency and usage ranking
 
@@ -2595,6 +2610,17 @@ scope `active_thread`, and reports only the message count. In the GUI,
 states that disabling it does not remove ordinary transcript history.
 `control:stmCb` remains Working Memory / task scratch.
 
+Sprint 1037 approval binding stores one broker grant for the exact tool name,
+argument JSON, call ID, and current project/context revision; grants expire
+after five minutes, are consumed before executor dispatch, and reject replay,
+plan substitution, duplicate pending calls, or revision drift. `AgentPanel`
+gets the current revision from `ReviewWindow` using serialized project state,
+active layer/net, and selected-object IDs, not the UI-map epoch. The same slice
+adds atomic snapshot restore for GUI Undo/Redo, but this is not the missing
+kernel transaction/audit undo dispatcher; keep that TODO open. Provider tool
+calls now require a real ID and well-formed arguments; raw `<TOOL>` text and
+missing result IDs fail without broker dispatch or synthetic correlation IDs.
+
 The initial screenshot batch showed the Windows lock screen and was rejected.
 An unlocked rerun of the app-owned `sprint1027-working-memory` sequence completed
 10 mapped interactions; all five distinct captures visibly confirm the
@@ -2625,3 +2651,195 @@ map recorded 14 successful interactions and four inspected screenshots. The
 evidence manifest is
 `artifacts/evidence/sprint-1038-agent-context-editor-r8.json` (SHA-256
 `2FAE6F84E7C5A4F645AF1BB360B2259EB4447A40DCC9F7D6237F40669EF84FDD`).
+## Retrieval capability matrix (Sprint 1039 reconciliation)
+
+The complete channel-by-channel matrix—including authority, persistence, revision, backend, fallback, contract tests, benchmark status, and canonical TODO owner—is maintained in [retrieval-capability-matrix.md](devops/retrieval-capability-matrix.md). Current retrieval is functional but incomplete; C++ typed project state remains authoritative, and R0-R18 in the active sprint TODO owns remaining work.
+
+## Canonical retrieval contracts (Sprint 1041)
+
+`src/ccad_agent/retrieval_contracts.py` owns immutable request/result records,
+channel names, readiness status, and the retriever protocol. `retrieval_adapters.py`
+maps the current `ProjectIndex` and `MemoryManager` into canonical hits. The
+adapter enforces project/thread scope, bounds and normalizes filters, projects
+requested project fields, records source revision and provenance, and reports
+backend status without exporting raw BM25/cosine scores as comparable values.
+`ContextBroker.prepare()` and `refresh_memory()` consume these adapter results;
+project context is converted back through `to_context_payload()` so existing
+provider-facing JSON stays stable, while canonical readiness and channel states
+remain in safe non-content package metadata. The architecture and backend comparison live
+in [ADR-agent-retrieval-architecture.md](decisions/ADR-agent-retrieval-architecture.md).
+This boundary does not yet provide central planning/fusion or cross-index stale
+revision validation; those remain open in R10/R12/R13.
+
+## Sprint 1043 active slice — retrieval evaluation corpus
+
+`scripts/fixtures/agent_retrieval_dataset_v1.json` owns the versioned labeled
+calibration/held-out corpus for R3. `scripts/benchmark_agent_retrieval.py`
+executes the real `ProjectIndex`, `MemoryManagerRetriever`, and
+`ConversationStore.search_turn_records` paths against typed board fixtures and
+temporary stores. Reports retain source revisions, actual channels, stable
+entity aliases, Recall/Precision/MRR/nDCG, hard-negative outcomes, context
+bytes/character-based token estimates, index build/update and query timings,
+process peak RSS, and temporary-store disk sizes. Exact, lexical, graph,
+spatial, memory, and historical-turn results are measured offline. Optional
+loopback Ollama mode measures real `embeddinggemma` and `nomic-embed-text`
+semantic hits, query/document embedding latency, semantic-backend missing-model
+fallback, and recovery after reconfiguration. Semantic cases disclose when the
+backend was disabled and lexical evidence ran instead. The small fixture result
+does not select a winning model. Product startup, broader retrieval failure
+recovery, and model follow-up tool calls remain unmeasured and block R3
+closure/backend superiority claims. The orchestrator's `provider_tools_for_messages`
+narrows schemas only when the latest user turn explicitly names a native method;
+the `ToolNode` remains bound to the full catalog. `provider_context_for_tools`
+keeps context whenever any selected catalog entry declares requirements. This
+is a conservative initial narrowing rule, not the complete phase/intent-aware
+capability resolver in TODO section H6. The r7 real-Qwen UI attempt proved
+provider initialization and mapped UI responsiveness, but did not record a
+provider request, native call, accepted result, or count-bearing answer.
+The isolated backend contracts and Qt/MinGW Release/full CTest pass 127/127
+under non-visual manifest `artifacts/evidence/sprint-1043-provider-tool-schema-r1.json`
+(SHA-256 `577E80E79842AA730BD6DDACEB6C4AA9BF974FBE919D4665F553024FACBDFDFE`);
+that build/test evidence does not close the model-backed turn requirement.
+`scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
+retrieval paths; the CTest and CI `agent-python` gates run it.
+
+Sprint 1049 advances the source-revisioned fixture set to dataset 1.3.0 and
+benchmark 1.5.0. Calibration and held-out splits each contain four positive
+examples and three hard negatives for semantic paraphrase, component function,
+design intent, project entity, and memory retrieval; project and memory
+duplicate classification remain separate tasks. Benchmark reports retain the
+actual semantic candidate IDs/scores. `scripts/analyze_agent_retrieval_thresholds.py`
+fits only on calibration rows and scopes experimental cutoffs by model digest,
+task, corpus identity/version/SHA, benchmark/evaluation version, and retrieval
+surface. It cannot modify production configuration and reports that candidate
+generation inherits the current retriever's filter. Thirty-two local runs compare
+exact, lexical, semantic, hybrid, and full project retrieval plus lexical,
+semantic, and hybrid memory retrieval across EmbeddingGemma
+(`85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1`) and Nomic
+(`0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f`), both
+project/memory surfaces and both splits. Neither model has calibration-set
+incremental recall over lexical retrieval in the scoped profiles. Held-out
+design-intent semantic recall is 0.8 versus 0.6 lexical for both, but semantic
+retrieval returns 3/3 scoped hard negatives versus lexical's 2/3; calibration
+does not support that tradeoff. Memory semantic Recall@3 is 0.375 versus
+lexical/hybrid at 0.625, and all modes return 3/3 memory hard negatives. Thus
+no threshold or semantic promotion is justified. The
+full JSON reports are workspace-only under
+`artifacts/evidence/sprint-1049-r7-retrieval-evaluation/`.
+
+Sprint 1045 expands this versioned corpus with distinct component-function and
+design-intent tasks, plus semantically enabled hard engineering negatives. The
+benchmark applies each case's semantic-use policy to project and memory requests.
+Sprint 1046 makes `ProjectIndex.retrieve(..., channels=...)` execute requested
+exact, lexical, semantic, graph, and spatial channels before ranking; the default
+still enables every channel to preserve existing context behavior. The typed
+`ProjectIndexRetriever` forwards `RetrievalRequest.channels`, so lexical-only
+requests skip embeddings and semantic-only queries rank eligible active-project
+entities without exact/BM25 scores. The evaluation CLI exposes exact, lexical,
+semantic, and hybrid modes and excludes semantic-disallowed cases explicitly.
+The 11-case corpus has five eligible semantic cases per split. On held-out data,
+semantic-only recall@3 is 0.333 for both models versus lexical-only 0.667; semantic
+and hybrid modes both return 2/2 hard negatives. Therefore this evidence supports
+neither semantic promotion nor a threshold choice.
+
+Sprint 1047 expands the versioned retrieval dataset to 1.2.0 with distinct
+`project_entity` and `memory_retrieval` tasks in calibration and held-out splits.
+`MemoryManager.retrieve` and `retrieve_with_metadata` now accept explicit lexical
+and/or semantic channels and execute only those requested before ranking; callers
+that omit channels retain the prior hybrid behavior. `MemoryManagerRetriever`
+passes typed request channels through and ignores unrelated project channels while
+rejecting requests with no supported memory channel. The benchmark now exposes
+memory lexical, semantic, and hybrid modes, and a ProjectIndex `full` mode that
+executes exact, lexical, semantic, graph, and spatial retrieval together. The
+32 local reports live under `artifacts/evidence/sprint-1047-memory-retrieval-ablation/`
+and identify the installed model digests. The new project-entity cases number one
+per split, and semantic-only did not demonstrate a general advantage; the tiny
+memory sample also fails to show a consistent semantic ranking improvement.
+These are scope-limited measurements, not a semantic-default or threshold decision.
+Dataset, benchmark, memory-manager, and typed retrieval contracts pass; changed-module
+Pyright has zero diagnostics. Official Qt/MinGW Release verification and
+full CTest pass 127/127. Final nonvisual manifest:
+`artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256
+`833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`.
+
+## Sprint 1043 live provider response and dispatch reporting
+
+`router_node()` emits content-free `provider_request_state` events at provider
+dispatch start and response receipt, including provider/model, schema count,
+and character/count metadata only. `provider_response_has_payload()` preserves
+native tool-call-only responses and rejects empty text/empty text blocks;
+`ProviderEmptyResponseError` is classified as `empty_response` and its user
+message states that the provider responded without answer or tool content.
+This prevents a blank assistant message from being recorded as a completed
+turn. `AgentPanel` resets and tracks dispatch-start per submitted message and
+exposes `provider_dispatch_started` in workspace state. The Sprint 1043 live
+turn harness reads that event rather than inferring dispatch from broker
+success. Dispatch-start is not proof of transport receipt; only successful
+tool/result/final-answer evidence closes the local-model integration gate.
+Contracts are in `scripts/test_agent_provider_tool_selection.py`; the official
+Qt/MinGW Release and full CTest passed 127/127 in r9. The mapped run exercised
+seven UI interactions and four inspected checkpoints. Ollama logged HTTP 200
+in r8, but Qwen still produced neither text nor a native tool call in r9, so
+no broker action ran. The local-model tool-call acceptance gate remains open.
+
+The r10 official run also passed Release build and full CTest (127/127), then
+failed the required model-backed interaction with a visible categorized
+`empty_response`; its report records dispatch start but zero native calls,
+accepted broker results, or count-bearing answer. The harness prompt now uses a
+normal-language board-count request. `provider_tools_for_messages()` narrowly
+recognizes that request only when it asks for counts of footprints, tracks, and
+vias, selecting the authoritative `project.object_counts` schema. Two focused
+tests cover positive and negative selection. These latest changes have only
+The r11 rebuilt run passed Qt/MinGW Release and full CTest (127/127) but again
+returned `empty_response` with zero tool calls and broker results. That failure
+was later resolved for the narrow read-only count flow in r16, documented
+below; it remains useful as the historical boundary for the earlier intent
+selection attempt.
+
+The r16 live local-Qwen run closed this narrowly scoped read-only count flow:
+the provider initialized, the model requested `project.object_counts` once,
+the C++ broker accepted one result, AgentPanel workspace state reached
+`completed`, and the final answer visibly reported footprint, track, and via
+counts. The four meaningful GUI screenshots and stdout/stderr were inspected;
+stderr was empty. This slice fixed conflicting broad `project.state` guidance
+when only a narrowed method was bound, explicit `{}` for a zero-argument tool,
+duplicate checkpoint call events, and C++ workspace state not following
+result-resume telemetry. Focused tool-selection/runtime tests pass 28/28,
+approval-state contract passes, and Qt/MinGW Release plus full CTest pass
+127/127. Evidence: `artifacts/evidence/sprint-1043-live-tool-turn-r16.json`
+(SHA-256 `82AF2FD53ACDE4F6CCF47D19BE6F06332B1C5F731F749E535E6516600AD04C74`).
+Other providers, mutation approvals, and the complete tool catalog remain
+unverified. clangd's optional ExtractFunction action reported internal
+break/continue errors and its check did not complete; the compiler build is
+the authoritative C++ result.
+
+## Sprint 1050 — broker approval-expiry contract
+
+`ToolBroker` in `src/ccad_core/agent_orchestrator.hpp/.cpp` receives a
+monotonic `Now` function, defaulting to `Clock::now()`. Mutating-tool approval
+records remain bound to tool name, serialized arguments, model tool-call ID,
+and project revision; expiry is five minutes. During broker approval handling,
+expired pending tokens are removed before new requests or approvals are
+processed. Expired, consumed, and unknown tokens have distinct safe error
+codes, and expired tokens cannot be reissued as new pending grants. The
+deterministic contract is in `tests/test_agent_orchestrator.cpp` and proves no
+executor dispatch at expiry plus one-use behavior for a fresh grant. No GUI
+behavior changed. Verification: Qt/MinGW Release, CTest 128/128, manifest
+`artifacts/evidence/sprint-1050-approval-expiry.json`.
+
+## Sprint 1051 integration — editor context and transcript audit metadata
+
+`ProjectIndexRetriever` in `src/ccad_agent/retrieval_adapters.py` must keep the
+safe `search_domain` field from the underlying `ProjectIndex` result in its
+backend-independent metadata. The context broker publishes that metadata to
+the bounded context package, allowing active-editor scoping to remain truthful
+after retrieval-adapter conversion. `dispatch_checkpointed_tool()` returns
+the LangChain content/artifact pair; replay contracts must model that pair,
+while `dispatch_client_tool()` exposes only content to ordinary callers. Exact
+proposal, approval, decision, and transaction provenance remains in the
+private audit artifact described under Sprint 1039 in the production TODO.
+Integration verification: Qt/MinGW Release, CTest 126/126, changed-module
+Pyright with zero diagnostics, 14 mapped UI interactions, four inspected
+screenshots, and empty captured stderr. The Settings dialog itself was not
+visible in its checkpoint image; no visual claim is made for that dialog.
+Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json`.

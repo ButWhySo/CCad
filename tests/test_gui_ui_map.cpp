@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include <fstream>
+#include <sstream>
 
 #include "ccad_cli/app.hpp"
 #include "ccad_core/geometry.hpp"
@@ -25,6 +26,13 @@ bool writeProject(const QString& path, const ccad::Project& project) {
   std::ofstream out(path.toStdString(), std::ios::binary);
   out << ccad::dumpProjectJson(project);
   return static_cast<bool>(out);
+}
+
+ccad::Project readProject(const QString& path) {
+  std::ifstream input(path.toStdString(), std::ios::binary);
+  std::ostringstream contents;
+  contents << input.rdbuf();
+  return ccad::loadProjectJson(contents.str());
 }
 
 ccad::Project emptyProject() {
@@ -259,6 +267,13 @@ int main(int argc, char** argv) {
     }
     return QJsonObject{};
   }();
+  const QJsonObject native_counts = [&]() {
+    for (const QJsonValue& value : registry_methods) {
+      const QJsonObject entry = value.toObject();
+      if (entry.value("method").toString() == "project.object_counts") return entry;
+    }
+    return QJsonObject{};
+  }();
   const QJsonObject cli_track = [&]() {
     for (const QJsonValue& value : registry_methods) {
       const QJsonObject entry = value.toObject();
@@ -273,6 +288,8 @@ int main(int argc, char** argv) {
       cli_descriptor_count == 0 ||
       native_drc.value("callable").toBool() != true ||
       native_drc.value("surface").toString() != "native_gui_broker" ||
+      native_counts.value("inputSchema").toObject()
+              .value("additionalProperties").toBool(true) ||
       cli_track.value("callable").toBool(true) ||
       cli_track.value("side_effect").toString() != "project_mutation" ||
       cli_track.value("inputSchema").toObject().value("properties").toObject()
@@ -373,10 +390,28 @@ int main(int argc, char** argv) {
       !add_graphic.contains("\"graphic_count\":1")) {
     return 9;
   }
+  auto* undo_action = window.findChild<QAction*>("action:undo");
+  auto* redo_action = window.findChild<QAction*>("action:redo");
+  if (undo_action == nullptr || redo_action == nullptr || !undo_action->isEnabled() ||
+      redo_action->isEnabled()) {
+    return 23;
+  }
+  undo_action->trigger();
+  if (!undo_action->isEnabled() || !redo_action->isEnabled() ||
+      readProject(board_path).boards.front().graphics.size() != 0) {
+    return 24;
+  }
+  redo_action->trigger();
+  if (!undo_action->isEnabled() || redo_action->isEnabled() ||
+      readProject(board_path).boards.front().graphics.size() != 1) {
+    return 25;
+  }
   const QString add_text = window.runAgentUiQueryJson(
       "ui.place_text", "{\"x_mm\":2,\"y_mm\":8,\"text\":\"AGENT\"}");
   if (!add_text.contains("\"performed\":true") ||
-      !add_text.contains("\"text_count\":1")) {
+      !add_text.contains("\"text_count\":1") || redo_action->isEnabled() ||
+      readProject(board_path).boards.front().graphics.size() != 1 ||
+      readProject(board_path).boards.front().texts.size() != 1) {
     return 15;
   }
   const QString outside_graphic = window.runAgentUiQueryJson(

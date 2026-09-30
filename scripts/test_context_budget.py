@@ -92,7 +92,9 @@ class ContextBudgetTests(unittest.TestCase):
                                "namespace_hash": "ab12", "kind_weight": 1.08,
                                "importance_weight": 1.1,
                                "recency_weight": 1.12, "usage_weight": 1.04,
-                               "usage_persistence": "process", "raw_content": "must not leak"}],
+                               "usage_persistence": "process", "raw_content": "must not leak",
+                               "tier_rank": 2, "tier_candidate_count": 5,
+                               "tier_merge_policy": "round_robin"}],
             memory_runtime={"stm": {"enabled": True, "runtime_entries": 1,
                                      "persistent_entries": 1, "loaded_into_process": True,
                                      "namespace_hash": "ab12"}})
@@ -113,6 +115,9 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertEqual(meta["memory_retrieval"][0]["recency_weight"], 1.12)
         self.assertEqual(meta["memory_retrieval"][0]["usage_weight"], 1.04)
         self.assertEqual(meta["memory_retrieval"][0]["usage_persistence"], "process")
+        self.assertEqual(meta["memory_retrieval"][0]["tier_rank"], 2)
+        self.assertEqual(meta["memory_retrieval"][0]["tier_candidate_count"], 5)
+        self.assertEqual(meta["memory_retrieval"][0]["tier_merge_policy"], "round_robin")
         self.assertNotIn("raw_content", meta["memory_retrieval"][0])
         self.assertIn("Keep vias clear", package["content"])
 
@@ -124,6 +129,8 @@ class ContextBudgetTests(unittest.TestCase):
                                "recency_weight": 99, "usage_weight": "secret-value",
                                "kind_weight": 1.08, "importance_weight": 1.1,
                                "usage_persistence": "arbitrary",
+                               "tier_rank": True, "tier_candidate_count": 999999,
+                               "tier_merge_policy": "untrusted",
                                "raw_content": "private memory text"}])
         provenance = package["metadata"]["memory_retrieval"][0]
         self.assertEqual(provenance["kind_weight"], 1.08)
@@ -131,6 +138,9 @@ class ContextBudgetTests(unittest.TestCase):
         self.assertNotIn("recency_weight", provenance)
         self.assertNotIn("usage_weight", provenance)
         self.assertNotIn("usage_persistence", provenance)
+        self.assertNotIn("tier_rank", provenance)
+        self.assertNotIn("tier_candidate_count", provenance)
+        self.assertNotIn("tier_merge_policy", provenance)
         self.assertNotIn("raw_content", provenance)
 
     def test_provider_context_reports_hashed_memory_origin_channels_only(self):
@@ -329,6 +339,74 @@ class ContextBudgetTests(unittest.TestCase):
             self.assertNotIn("thread-7", json.dumps(provenance))
             self.assertNotIn("run-42", json.dumps(provenance))
             self.assertEqual(manager.state("ltm")["persistent_entries"], 1)
+
+    def test_memory_ranking_is_independent_per_tier_and_fairly_interleaved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = MemoryManager(
+                MemoryStore(Path(directory) / "memory.json"),
+                task_id="task-current", thread_id="thread-current",
+                project_id="project-current", user_id="user-current")
+            manager.configure({"stm": True, "ltm": True, "episodic": True})
+            for index, body in enumerate((
+                    "USB power route constraint task-alpha preserve access.",
+                    "USB power net requirement task-beta inspect pads.",
+                    "USB power objective task-gamma keep current geometry.")):
+                manager.add(body, tier="stm", title=f"task-{index}")
+            for index, body in enumerate((
+                    "USB power rule conversation-alpha maintain connector clearance.",
+                    "USB power preference conversation-beta retain F.Cu routing.")):
+                manager.add(body, tier="ltm", title=f"thread-{index}")
+            for index, body in enumerate((
+                    "USB power lesson episode-alpha verify return path.",
+                    "USB power experience episode-beta preserve test access.")):
+                manager.add(body, tier="episodic", title=f"episode-{index}")
+
+            entries, provenance = manager.retrieve_with_metadata("USB power", limit=7)
+
+            self.assertEqual([item["tier"] for item in provenance], [
+                "working_memory", "ltm", "episodic",
+                "working_memory", "ltm", "episodic", "working_memory"])
+            self.assertEqual([item["tier_rank"] for item in provenance],
+                             [1, 1, 1, 2, 2, 2, 3])
+            self.assertEqual([item["tier_candidate_count"] for item in provenance],
+                             [3, 2, 2, 3, 2, 2, 3])
+            self.assertTrue(all(item["ranking_method"] ==
+                                "tiered_fielded_bm25_rrf_mmr"
+                                for item in provenance))
+            self.assertEqual([item["rank"] for item in provenance],
+                             list(range(1, len(entries) + 1)))
+            stm_score = next(item["bm25_score"] for item in provenance
+                             if item["tier"] == "working_memory")
+            unrelated_terms = (
+                "thermal airflow insulation enclosure dissipate heat",
+                "mechanical mounting vibration tolerance bracket",
+                "assembly reflow solder profile humidity control",
+                "silkscreen polarity marker connector orientation",
+                "battery charging current chemistry protection",
+                "voltage regulator startup load transient response",
+                "crystal oscillator frequency trim capacitance",
+                "display interface brightness contrast panel",
+                "sensor calibration offset gain measurement",
+                "manufacturing test fixture operator procedure",
+                "connector strain relief cable retention",
+                "enclosure ingress protection gasket sealing",
+                "thermal via copper pour heatsink resistance",
+                "power sequencing reset supervisor delay",
+                "firmware bootloader recovery programming header",
+                "clock domain synchronization metastability",
+                "analog input filtering anti-alias bandwidth",
+                "switching converter ripple compensation stability",
+                "ground chassis bonding electrostatic discharge",
+                "component derating lifetime reliability margin")
+            for content in unrelated_terms:
+                manager.add(
+                    f"Unrelated engineering record: {content}", tier="ltm")
+            _, after_unrelated_growth = manager.retrieve_with_metadata(
+                "USB power", limit=7)
+            stm_score_after_growth = next(
+                item["bm25_score"] for item in after_unrelated_growth
+                if item["tier"] == "working_memory")
+            self.assertEqual(stm_score_after_growth, stm_score)
 
     def test_disabled_memory_tier_is_not_injected(self):
         with tempfile.TemporaryDirectory() as directory:

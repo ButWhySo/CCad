@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1042-otel-exporter-contract",
+    "feature":  "Remove OpenTelemetry exporter private fields from tests",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T12:23:42.9172143Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.93 log=artifacts/evidence/sprint-1042-otel-exporter-contract/preflight.log",
+                      "finished_utc":  "2026-09-29T12:23:43.9400351Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.65 log=artifacts/evidence/sprint-1042-otel-exporter-contract/build.log",
+                      "finished_utc":  "2026-09-29T12:23:44.6002630Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=157.29 log=artifacts/evidence/sprint-1042-otel-exporter-contract/ctest.log",
+                      "finished_utc":  "2026-09-29T12:26:21.8947715Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-otel-exporter-contract/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-otel-exporter-contract/ctest.log",
+                                         "sha256":  "476987996883FF5EF478906B786C0F1529F9D463E14BF4EC6B37689F3D9C8172"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-otel-exporter-contract/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T12:26:21.9877728Z"
+}

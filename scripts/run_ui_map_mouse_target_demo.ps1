@@ -64,6 +64,13 @@ $priorThreadId = $env:CCAD_AGENT_THREAD_ID
 $priorDeferProvider = $env:CCAD_AGENT_DEFER_PROVIDER_INIT
 $priorConversationDb = $env:CCAD_AGENT_CONVERSATION_DB
 $priorAgentPython = $env:CCAD_AGENT_PYTHON
+$runtimeEnvNames = @('CCAD_PROVIDER','CCAD_MODEL','CCAD_OLLAMA_MODEL',
+  'CCAD_OLLAMA_BASE_URL','CCAD_PROVIDER_TIMEOUT_SECONDS',
+  'CCAD_TRACE_EXPORT_ENABLED','CCAD_TRACE_BACKEND')
+$priorRuntimeEnv = @{}
+foreach ($runtimeKey in $runtimeEnvNames) {
+  $priorRuntimeEnv[$runtimeKey] = [Environment]::GetEnvironmentVariable($runtimeKey, 'Process')
+}
 $providerSecretNames = @('OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY',
   'GOOGLE_API_KEY','OPENROUTER_API_KEY','CEREBRAS_API_KEY',
   'CCAD_OPENAI_COMPATIBLE_API_KEY','CCAD_LOCAL_MODEL_API_KEY',
@@ -80,9 +87,10 @@ if ($Name.StartsWith("sprint1038-agent-context-editor") -or
     $Name.StartsWith("sprint985-project-reference-graph") -or
     $Name.StartsWith("sprint986-project-spatial-index") -or
     $Name.StartsWith("sprint987-schematic-metadata") -or
-    $Name.StartsWith("sprint998-functional-block-net-context")) {
+    $Name.StartsWith("sprint998-functional-block-net-context") -or
+    $Name.StartsWith("sprint1043-agent-live-tool-turn")) {
   $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
-    "ccad-sprint" + $(if ($Name.StartsWith("sprint1038")) { "1038-context-editor-" } elseif ($Name.StartsWith("sprint998")) { "998-block-net-" } elseif ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
+    "ccad-sprint" + $(if ($Name.StartsWith("sprint1038")) { "1038-context-editor-" } elseif ($Name.StartsWith("sprint1043")) { "1043-live-tool-" } elseif ($Name.StartsWith("sprint998")) { "998-block-net-" } elseif ($Name.StartsWith("sprint987")) { "987-schematic-metadata-" } elseif ($Name.StartsWith("sprint986")) { "986-project-spatial-" } elseif ($Name.StartsWith("sprint985")) { "985-project-graph-" } elseif ($Name.StartsWith("sprint983")) { "983-typed-geometry-" } else { "982-multilayer-" }) +
     [Guid]::NewGuid().ToString("N") + ".ccad.json")
   Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
   if ($Name.StartsWith("sprint983-project-index-typed-geometry")) {
@@ -262,6 +270,37 @@ if ($Name.StartsWith("sprint969-context")) {
   $env:CCAD_AGENT_LARGE_CONTEXT_TOKENS = "512"
   $env:CCAD_TRACE_DEBUG = "1"
 }
+if ($Name.StartsWith("sprint1043-agent-live-tool-turn")) {
+  $ollamaTags = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSec 5
+  if (-not (@($ollamaTags.models | Where-Object { $_.name -eq "qwen2.5:3b" }).Count -eq 1)) {
+    throw "Required locally installed Ollama model qwen2.5:3b is not available."
+  }
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1043-live-tool-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint1043-live-tool-turn"
+  Remove-Item Env:CCAD_AGENT_DEFER_PROVIDER_INIT -ErrorAction SilentlyContinue
+  $env:CCAD_PROVIDER = "ollama"
+  $env:CCAD_MODEL = "qwen2.5:3b"
+  $env:CCAD_OLLAMA_MODEL = "qwen2.5:3b"
+  $env:CCAD_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1"
+  $env:CCAD_PROVIDER_TIMEOUT_SECONDS = "120"
+  $env:CCAD_OLLAMA_API_KEY = "ollama"
+  $env:CCAD_TRACE_EXPORT_ENABLED = "false"
+  $env:CCAD_TRACE_BACKEND = "none"
+  $liveConfig = [ordered]@{
+    provider = "ollama"
+    model = "qwen2.5:3b"
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($liveConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
 if ($Name.StartsWith("sprint971-memory")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint971-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path $isolatedMemoryProfile | Out-Null
@@ -289,7 +328,8 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
 }
 if ($Name.StartsWith("sprint1038-agent-context-editor") -or
     $Name.StartsWith("sprint1030-conversation-history") -or
-    $Name.StartsWith("sprint1031-agent-markdown")) {
+    $Name.StartsWith("sprint1031-agent-markdown") -or
+    $Name.StartsWith("sprint1037-undo-redo")) {
   $agentPython = $env:CCAD_AGENT_PYTHON
   if (-not $agentPython -or -not (Test-Path -LiteralPath $agentPython)) {
     $agentPython = Join-Path $PSScriptRoot "..\src\ccad_agent\venv\Scripts\python.exe"
@@ -310,7 +350,7 @@ if ($Name.StartsWith("sprint1038-agent-context-editor") -or
   if (@($runtimeModules | Where-Object { -not (Test-Path -LiteralPath $_) }).Count -gt 0) {
     throw "The selected Python interpreter is missing the isolated CCad Agent dependencies."
   }
-  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint1030-history-" + [Guid]::NewGuid().ToString("N"))
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-$Name-" + [Guid]::NewGuid().ToString("N"))
   $configDir = Join-Path $isolatedMemoryProfile "CCad"
   New-Item -ItemType Directory -Path $configDir -Force | Out-Null
   $env:APPDATA = $isolatedMemoryProfile
@@ -336,6 +376,12 @@ if ($Name.StartsWith("sprint1038-agent-context-editor") -or
       throw "Could not prepare persisted assistant Markdown for the mapped rendering test."
     }
   }
+}
+if ($Name.StartsWith("sprint1037-undo-redo")) {
+  $isolatedProjectPath = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1037-undo-redo-" + [Guid]::NewGuid().ToString("N") + ".ccad.json")
+  Copy-Item -LiteralPath $ProjectPath -Destination $isolatedProjectPath
+  $ProjectPath = $isolatedProjectPath
 }
 if ($Name.StartsWith("sprint1001-memory-kind") -or $Name.StartsWith("sprint1003-memory-importance")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-$Name-" + [Guid]::NewGuid().ToString("N"))
@@ -1130,6 +1176,9 @@ if ($Name.StartsWith("sprint974-memory")) {
   foreach ($secretName in $providerSecretNames) {
     [Environment]::SetEnvironmentVariable($secretName, $priorProviderSecrets[$secretName], 'Process')
   }
+  foreach ($runtimeKey in $runtimeEnvNames) {
+    [Environment]::SetEnvironmentVariable($runtimeKey, $priorRuntimeEnv[$runtimeKey], 'Process')
+  }
   if ($isolatedMemoryProfile -and (Test-Path -LiteralPath $isolatedMemoryProfile)) {
     $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
     $profilePath = [IO.Path]::GetFullPath($isolatedMemoryProfile)
@@ -1147,7 +1196,9 @@ if ($Name.StartsWith("sprint974-memory")) {
         [IO.Path]::GetFileName($projectFile) -like "ccad-sprint985-project-graph-*.ccad.json" -or
         [IO.Path]::GetFileName($projectFile) -like "ccad-sprint986-project-spatial-*.ccad.json" -or
         [IO.Path]::GetFileName($projectFile) -like "ccad-sprint987-schematic-metadata-*.ccad.json" -or
-        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint998-block-net-*.ccad.json"
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint998-block-net-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint1037-undo-redo-*.ccad.json" -or
+        [IO.Path]::GetFileName($projectFile) -like "ccad-sprint1043-live-tool-*.ccad.json"
     if (-not $projectFile.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -or
         -not $allowedProjectName) {
       throw "Refusing to remove a project outside the verified temporary targets."
@@ -1162,6 +1213,29 @@ if ($process.ExitCode -ne 0) {
 
 $Report = Join-Path $ScreenshotDir "$Name-target-sequence.json"
 $reportData = Get-Content -Raw $Report | ConvertFrom-Json
+if ($Name.StartsWith("sprint1043-agent-live-tool-turn")) {
+  $toolProof = @($reportData.entries | Where-Object {
+    $_.real_model_provider_initialized -eq $true -and
+    $_.provider_dispatch_started -eq $true -and
+    $_.run_state -in @("completed", "idle") -and
+    $_.object_count_calls -ge 1 -and $_.accepted_broker_results -ge 1 -and
+    $_.count_summary_visible -eq $true
+  })
+  if ($toolProof.Count -ne 1) {
+    throw "Local model did not complete its named native read-only tool call; inspect $Report and $stderrLog."
+  }
+  $expectedScreenshots = @("before", "model-tool-results", "settings-open", "restored-final")
+  foreach ($checkpoint in $expectedScreenshots) {
+    $path = Join-Path $ScreenshotDir "$Name-$checkpoint.png"
+    if (-not (Test-Path -LiteralPath $path)) {
+      throw "Live model GUI proof lacks meaningful checkpoint '$checkpoint'."
+    }
+  }
+  if (@(Get-ChildItem -LiteralPath $ScreenshotDir -Filter "$Name-*.png").Count -ne
+      $expectedScreenshots.Count) {
+    throw "Live model GUI proof retained unexpected or redundant screenshots."
+  }
+}
 if ($Name.StartsWith("sprint972-provider")) {
   $readyEvent = @($reportData.entries | Where-Object {
     $_.provider_local_validation_ready -eq $true

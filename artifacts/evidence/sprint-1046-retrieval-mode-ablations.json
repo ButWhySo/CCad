@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1046-retrieval-mode-ablations",
+    "feature":  "R7 retrieval channels execute before ranking; compare exact, lexical, semantic, and hybrid modes",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T02:15:06.0739448Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.8 log=artifacts/evidence/sprint-1046-retrieval-mode-ablations/preflight.log",
+                      "finished_utc":  "2026-09-30T02:15:06.9479922Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.31 log=artifacts/evidence/sprint-1046-retrieval-mode-ablations/build.log",
+                      "finished_utc":  "2026-09-30T02:15:07.2684995Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=148.55 log=artifacts/evidence/sprint-1046-retrieval-mode-ablations/ctest.log",
+                      "finished_utc":  "2026-09-30T02:17:35.8206627Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1046-retrieval-mode-ablations/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1046-retrieval-mode-ablations/ctest.log",
+                                         "sha256":  "FD7BA77E7F5222BE1507EC3CD180E6CCF495C1351FC5FC26C1D7DFC20D0C056C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1046-retrieval-mode-ablations/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T02:17:36.2507667Z"
+}

@@ -124,6 +124,11 @@ class MemoryManager:
         }
         config_identity = "|".join((config["backend"], config["base_url"], config["model"]))
         old_identity = getattr(self._embedding_backend, "identity", "")
+        config_changed = (bool(self._embedding_config_identity) and
+                          self._embedding_config_identity != config_identity)
+        if config_changed:
+            self._clear_embedding_cache()
+            self._embedding_backend = None
         self.semantic_config = config
         if not config["enabled"]:
             self._embedding_backend = None
@@ -148,9 +153,7 @@ class MemoryManager:
                 backend = OllamaEmbeddingBackend(config["base_url"], config["model"])
                 probe = backend.check_ready()
             new_identity = getattr(backend, "identity", "")
-            if ((old_identity and old_identity != new_identity) or
-                    (self._embedding_config_identity and
-                     self._embedding_config_identity != config_identity)):
+            if old_identity and old_identity != new_identity:
                 self._embedding_cache.clear()
                 self._query_embedding_cache.clear()
             self._embedding_backend = backend
@@ -168,9 +171,23 @@ class MemoryManager:
                                      "cache_entries": 0}
 
     def semantic_state(self):
-        return {**self._semantic_status,
-                "cache_entries": self.embedding_cache_entries,
-                "model_version": str(self._semantic_status.get("model_version", ""))[:128]}
+        state = {**self._semantic_status,
+                 "cache_entries": self.embedding_cache_entries,
+                 "model_version": str(self._semantic_status.get("model_version", ""))[:128]}
+        backend = self._embedding_backend
+        identity = getattr(backend, "model_identity", None)
+        if not isinstance(identity, dict):
+            config = self.semantic_config
+            identity = {
+                "provider": config.get("backend", ""),
+                "model": config.get("model", ""),
+                "digest": state["model_version"],
+                "dimension": None,
+                "task_mode": "explicit_retrieval_and_similarity_v1",
+                "normalization": "l2_unit",
+            }
+        state["model_identity"] = dict(identity)
+        return state
 
     @property
     def semantic_embedding_backend(self):
@@ -196,6 +213,7 @@ class MemoryManager:
                                      "cache_entries": self.embedding_cache_entries}
         except EmbeddingError as error:
             self._embedding_backend = None
+            self._clear_embedding_cache()
             self._semantic_status.update({"ready": False, "status": error.category,
                                           "error": error.category})
         return self.semantic_state()
@@ -298,15 +316,27 @@ class MemoryManager:
             identities["ltm:project"] = self._project_namespace()
         return identities
 
-    def retrieve(self, query: str, *, limit=8):
-        entries, _ = self.retrieve_with_metadata(query, limit=limit)
+    def retrieve(self, query: str, *, limit=8, channels=None):
+        entries, _ = self.retrieve_with_metadata(query, limit=limit, channels=channels)
         return entries
 
-    def retrieve_with_metadata(self, query: str, *, limit=8):
+    def retrieve_with_metadata(self, query: str, *, limit=8, channels=None):
         """Return ranked entries plus content-free provenance for diagnostics."""
+        if channels is None:
+            requested_channels = {"lexical", "semantic"}
+        else:
+            if isinstance(channels, (str, bytes)):
+                raise ValueError("memory_retrieval_channels_invalid")
+            requested_channels = {str(getattr(channel, "value", channel))
+                                  for channel in channels}
+            if (not requested_channels or
+                    not requested_channels.issubset({"lexical", "semantic"})):
+                raise ValueError("memory_retrieval_channels_invalid")
+        lexical_enabled = "lexical" in requested_channels
+        semantic_enabled = "semantic" in requested_channels
         self._prune_expired()
-        candidates = []
-        for tier_index, tier in enumerate(self.TIERS):
+        candidates_by_tier = {tier: [] for tier in self.TIERS}
+        for tier in self.TIERS:
             if not self.enabled[tier] or self.storage_errors.get(tier):
                 continue
             for entry_index, entry in enumerate(self.runtime[tier]):
@@ -317,61 +347,95 @@ class MemoryManager:
                 raw_tags = entry.get("tags", [])
                 tag_values = raw_tags if isinstance(raw_tags, (list, tuple)) else ()
                 tags = " ".join(tag for tag in tag_values if isinstance(tag, str))
-                candidates.append({"tier": tier, "tier_index": tier_index,
-                                   "entry_index": entry_index, "entry": entry,
-                                   "text": f"{title} {content} {tags}",
-                                   "title_text": title, "content_text": content,
-                                   "tags_text": tags,
-                                   "kind": entry.get("kind", "fact"),
-                                   "importance": entry.get("importance", 3),
-                                   "created_at": str(entry.get("created_at", "")),
-                                   "last_used_at": str(entry.get("last_used_at", "")),
-                                   "updated_at": str(entry.get("updated_at", "")),
-                                   "use_count": entry.get("use_count", 0)})
+                candidates_by_tier[tier].append({
+                    "tier": tier, "entry_index": entry_index, "entry": entry,
+                    "text": f"{title} {content} {tags}",
+                    "title_text": title, "content_text": content,
+                    "tags_text": tags, "kind": entry.get("kind", "fact"),
+                    "importance": entry.get("importance", 3),
+                    "created_at": str(entry.get("created_at", "")),
+                    "last_used_at": str(entry.get("last_used_at", "")),
+                    "updated_at": str(entry.get("updated_at", "")),
+                    "use_count": entry.get("use_count", 0)})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
-        lexical = rank_documents(query, candidates,
-                                 min_matches=min(2, query_term_count))
-        eligible = {item["document"]["entry"]["id"] for item in lexical}
-        channels = {}
-        for channel, field in (("title", "title_text"),
-                               ("content", "content_text"),
-                               ("tags", "tags_text")):
-            field_docs = [candidate for candidate in candidates
-                          if candidate["entry"]["id"] in eligible]
-            channels[channel] = rank_documents(query, field_docs,
-                                               text_key=field, min_matches=1)
-        fused = fuse_rankings(channels, weights={"title": 1.2,
-                                                 "content": 1.0,
-                                                 "tags": 0.8})
-        semantic_ranked = self._semantic_rankings(candidates, str(query))
-        semantic_by_id = {item["document"]["entry"]["id"]: item
-                          for item in semantic_ranked}
-        if semantic_ranked:
-            fused = fuse_rankings({**channels, "semantic": semantic_ranked},
-                                  weights={"title": 1.2, "content": 1.0,
-                                           "tags": 0.8, "semantic": 1.0})
-        # Kind only adjusts already-relevant candidates; it cannot introduce a
-        # preference/correction that failed the lexical/semantic eligibility gate.
+        ranked_by_tier = {}
+        candidate_count_by_tier = {}
+        lexical_scores_by_tier = {}
+        semantic_scores_by_tier = {}
         kind_weights = {"fact": 1.0, "preference": 1.08, "correction": 1.16}
         ranked_at = self._now()
-        for item in fused:
-            document = item["document"]
-            kind = document.get("kind", "fact")
-            importance = document.get("importance", 3)
-            item["score"] *= kind_weights.get(kind, 1.0)
-            item["kind_weight"] = kind_weights.get(kind, 1.0)
-            item["importance_weight"] = self._importance_weight(importance)
-            item["recency_weight"] = self._recency_weight(document, ranked_at)
-            item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
-            item["score"] *= (item["importance_weight"] * item["recency_weight"] *
-                               item["usage_weight"])
-        fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
-        lexical_by_id = {item["document"]["entry"]["id"]: item
-                         for item in lexical}
-        diversified = diversify_ranked(fused, limit=max(0, min(32, int(limit))),
-                                       text_key="text", relevance_weight=0.7,
-                                       similarity_fn=self._candidate_similarity)
-        selected = diversified
+        result_limit = max(0, min(32, int(limit)))
+        for tier in self.TIERS:
+            candidates = candidates_by_tier[tier]
+            lexical = (rank_documents(query, candidates,
+                                      min_matches=min(2, query_term_count))
+                       if lexical_enabled else [])
+            eligible_ids = {item["document"]["entry"]["id"] for item in lexical}
+            lexical_channels_by_field = {}
+            if lexical_enabled:
+                for channel, field in (("title", "title_text"),
+                                       ("content", "content_text"),
+                                       ("tags", "tags_text")):
+                    field_docs = [candidate for candidate in candidates
+                                  if candidate["entry"]["id"] in eligible_ids]
+                    lexical_channels_by_field[channel] = rank_documents(
+                        query, field_docs, text_key=field, min_matches=1)
+            fused = (fuse_rankings(lexical_channels_by_field, weights={"title": 1.2,
+                                                                        "content": 1.0,
+                                                                        "tags": 0.8})
+                     if lexical_channels_by_field else [])
+            semantic_ranked = (self._semantic_rankings(candidates, str(query))
+                               if semantic_enabled else [])
+            semantic_by_id = {item["document"]["entry"]["id"]: item
+                              for item in semantic_ranked}
+            if semantic_ranked:
+                fused = fuse_rankings(
+                    {**lexical_channels_by_field, "semantic": semantic_ranked},
+                    weights={"title": 1.2, "content": 1.0,
+                             "tags": 0.8, "semantic": 1.0})
+            # Rank, weight, and diversify within the tier: unrelated memories
+            # in other namespaces cannot perturb this tier's document stats.
+            for item in fused:
+                document = item["document"]
+                kind = document.get("kind", "fact")
+                item["score"] *= kind_weights.get(kind, 1.0)
+                item["kind_weight"] = kind_weights.get(kind, 1.0)
+                item["importance_weight"] = self._importance_weight(
+                    document.get("importance", 3))
+                item["recency_weight"] = self._recency_weight(document, ranked_at)
+                item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
+                item["score"] *= (item["importance_weight"] * item["recency_weight"] *
+                                  item["usage_weight"])
+            fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
+            candidate_count_by_tier[tier] = len(fused)
+            ranked_by_tier[tier] = diversify_ranked(
+                fused, limit=result_limit, text_key="text", relevance_weight=0.7,
+                similarity_fn=self._candidate_similarity)
+            lexical_scores_by_tier[tier] = {
+                item["document"]["entry"]["id"]: item["score"] for item in lexical}
+            semantic_scores_by_tier[tier] = {
+                entry_id: item["score"] for entry_id, item in semantic_by_id.items()}
+
+        # Interleave tier-local rankings so one larger tier cannot crowd every
+        # other enabled tier out of the bounded provider context.
+        selected = []
+        tier_rank = 0
+        while len(selected) < result_limit:
+            appended = False
+            for tier in self.TIERS:
+                ranked = ranked_by_tier[tier]
+                if tier_rank >= len(ranked):
+                    continue
+                item = ranked[tier_rank]
+                item["tier_rank"] = tier_rank + 1
+                item["tier_candidate_count"] = candidate_count_by_tier[tier]
+                selected.append(item)
+                appended = True
+                if len(selected) >= result_limit:
+                    break
+            if not appended:
+                break
+            tier_rank += 1
         durable_ids = [item["document"]["entry"]["id"] for item in selected
                        if item["document"]["tier"] != "working_memory"]
         try:
@@ -407,19 +471,28 @@ class MemoryManager:
             "recency_weight": round(item.get("recency_weight", 1.0), 6),
             "usage_weight": round(item.get("usage_weight", 1.0), 6),
             "usage_persistence": item["document"].get("usage_persistence", "unavailable"),
+            "tier_rank": item["tier_rank"],
+            "tier_candidate_count": item["tier_candidate_count"],
+            "tier_merge_policy": "round_robin",
             "query_overlap_terms": len(item["matched_terms"]),
-            "bm25_score": round(lexical_by_id.get(
-                item["document"]["entry"]["id"], {}).get("score", 0.0), 6),
-            "ranking_method": ("hybrid_bm25_rrf_mmr" if semantic_ranked
-                               else "fielded_bm25_rrf_mmr"),
+            "bm25_score": round(lexical_scores_by_tier[item["document"]["tier"]].get(
+                item["document"]["entry"]["id"], 0.0), 6),
+            "ranking_method": (
+                "tiered_hybrid_bm25_rrf_mmr"
+                if (lexical_enabled and semantic_enabled and
+                    semantic_scores_by_tier[item["document"]["tier"]]) else
+                "tiered_semantic_rrf_mmr"
+                if semantic_enabled and not lexical_enabled else
+                "tiered_fielded_bm25_rrf_mmr"),
             "channel_ranks": item["channel_ranks"],
             "rrf_score": round(item["score"], 8),
             "diversity_score": item["diversity_score"],
             "redundancy_score": item["redundancy_score"],
             "matched_terms": item["matched_terms"],
-            **({"semantic_similarity": round(semantic_by_id[
-                item["document"]["entry"]["id"]]["score"], 6)}
-               if item["document"]["entry"]["id"] in semantic_by_id else {}),
+            **({"semantic_similarity": round(semantic_scores_by_tier[
+                item["document"]["tier"]][item["document"]["entry"]["id"]], 6)}
+               if item["document"]["entry"]["id"] in semantic_scores_by_tier[
+                   item["document"]["tier"]] else {}),
             "namespace_hash": hashlib.sha256(
                 str(item["document"]["entry"].get(
                     "namespace", self.identities[item["document"]["tier"]])).encode()
@@ -521,6 +594,8 @@ class MemoryManager:
                 OverflowError, ArithmeticError) as error:
             category = (error.category if isinstance(error, EmbeddingError)
                         else "embedding_invalid_response")
+            if category == "embedding_dimension_mismatch":
+                self._clear_embedding_cache()
             self._semantic_status.update({"ready": False, "status": category,
                                           "error": category})
             self._embedding_backend = None
@@ -581,9 +656,14 @@ class MemoryManager:
             raise ValueError("memory importance must be an integer from 1 to 5")
         if tier == "working_memory" and not self._retain_working_memory_task:
             raise RuntimeError("Working Memory requires an active task; use /task start")
-        normalized = " ".join(str(content).casefold().split())
         scope = str(scope or {"working_memory": "task", "ltm": "conversation",
                               "episodic": "user"}[tier])
+        namespace = self.namespace_for(tier, scope)
+        importance = 3 if importance is None else importance
+        entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
+                                     tier=tier, kind=kind or "fact", namespace=namespace,
+                                     expires_at=expires_at, importance=importance)
+        normalized = " ".join(entry["content"].casefold().split())
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
@@ -593,23 +673,18 @@ class MemoryManager:
                 return self.update(existing["id"], content, kind=kind,
                                    importance=importance)
             return existing
-        duplicate = self._near_duplicate(content, tier, scope=scope)
+        duplicate = self._near_duplicate(entry["content"], tier, scope=scope)
         if duplicate:
-            entry, similarity = duplicate
+            duplicate_entry, similarity, method = duplicate
             raise ValueError(
-                f"near-duplicate memory exists ({entry['id']}, lexical overlap "
+                f"near-duplicate memory exists ({duplicate_entry['id']}, {method} "
                 f"{similarity:.0%}); update that record or add distinct information")
-        namespace = self.namespace_for(tier, scope)
-        importance = 3 if importance is None else importance
-        entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
-                                     tier=tier, kind=kind or "fact", namespace=namespace,
-                                     expires_at=expires_at, importance=importance)
         entry["project_id"] = self.project_id
         if tier != "working_memory":
-            entry = self.store.add(content, title=title, scope=scope, tags=tags,
-                                   kind=kind or "fact",
-                                   tier=tier, namespace=namespace,
-                                   expires_at=expires_at, importance=importance)
+            entry = self.store.add(entry["content"], title=entry["title"], scope=scope,
+                                   tags=entry["tags"], kind=entry["kind"], tier=tier,
+                                   namespace=namespace, expires_at=expires_at,
+                                   importance=importance)
             self.store.keep_latest(tier, namespace, 64)
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
@@ -624,8 +699,6 @@ class MemoryManager:
 
     def _near_duplicate(self, content: str, tier: str, *, exclude_id="", scope=None):
         words = set(self._word.findall(str(content).casefold()))
-        if len(words) < 5:
-            return None
         best = None
         namespace = self.namespace_for(tier, scope)
         duplicate_scope = "project" if tier == "ltm" and scope == "project" else None
@@ -636,13 +709,14 @@ class MemoryManager:
                 continue
             existing = set(self._word.findall(
                 str(entry.get("content", "")).casefold()))
-            if len(existing) < 5:
+            if len(words) < 5 or len(existing) < 5:
                 continue
             similarity = len(words & existing) / len(words | existing)
             if similarity >= self.NEAR_DUPLICATE_THRESHOLD and (
                     best is None or similarity > best[1]):
                 best = (entry, similarity)
-        return best
+        if best is not None:
+            return (*best, "lexical overlap")
 
     def list(self, *, tier=None, scope=None):
         self._prune_expired()
@@ -720,14 +794,6 @@ class MemoryManager:
                           if item.get("id") == entry_id), None)
             if entry is None:
                 continue
-            target_scope = entry.get("scope") if scope is None else scope
-            duplicate = self._near_duplicate(content, tier, exclude_id=entry_id,
-                                             scope=target_scope)
-            if duplicate:
-                other, similarity = duplicate
-                raise ValueError(
-                    f"near-duplicate memory exists ({other['id']}, lexical overlap "
-                    f"{similarity:.0%}); revise to distinct information")
             target_scope = entry.get("scope", "project") if scope is None else scope
             namespace = self.namespace_for(tier, target_scope)
             fields = {"title": entry.get("title", "") if title is None else title,
@@ -737,8 +803,16 @@ class MemoryManager:
                       "importance": entry.get("importance", 3) if importance is None else importance,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
+            candidate = self.store.normalise(content, **fields)
+            duplicate = self._near_duplicate(candidate["content"], tier,
+                                             exclude_id=entry_id, scope=target_scope)
+            if duplicate:
+                other, similarity, method = duplicate
+                raise ValueError(
+                    f"near-duplicate memory exists ({other['id']}, {method} "
+                    f"{similarity:.0%}); revise to distinct information")
             if tier == "working_memory":
-                replacement = self.store.normalise(content, **fields)
+                replacement = candidate
                 replacement.update(id=entry_id, project_id=self.project_id,
                                    created_at=entry.get("created_at", ""))
                 replacement["updated_at"] = self._now().isoformat()

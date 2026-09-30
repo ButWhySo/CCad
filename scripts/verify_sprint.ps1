@@ -137,7 +137,8 @@ try {
   $reportData = Get-Content -Raw -LiteralPath $report | ConvertFrom-Json
   $entries = @($reportData.entries)
   $actions = @($entries | Where-Object {
-    $_.interaction -in @('ui.click','ui.type_text') -and $_.result.result.performed -eq $true
+    ($_.interaction -in @('ui.click','ui.type_text') -and $_.result.result.performed -eq $true) -or
+    ($_.interaction -eq 'ui.key' -and $_.performed -eq $true)
   })
   if ($actions.Count -lt $plan.minimum_mapped_interactions) {
     throw "Only $($actions.Count) successful mapped interactions; required $($plan.minimum_mapped_interactions)."

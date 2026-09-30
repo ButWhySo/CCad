@@ -27,7 +27,10 @@ with tempfile.TemporaryDirectory() as temp:
     assert ranked_memories[0]["title"] == "routing"
     assert memory_sources[0]["bm25_score"] > 0
     assert memory_sources[0]["matched_terms"] == ["return", "path"]
-    assert memory_sources[0]["ranking_method"] == "fielded_bm25_rrf_mmr"
+    assert memory_sources[0]["ranking_method"] == "tiered_fielded_bm25_rrf_mmr"
+    assert memory_sources[0]["tier_rank"] == 1
+    assert memory_sources[0]["tier_candidate_count"] == 1
+    assert memory_sources[0]["tier_merge_policy"] == "round_robin"
     assert memory_sources[0]["channel_ranks"]["content"] == 1
     assert memory_sources[0]["rrf_score"] > 0
     assert memory_sources[0]["recency_weight"] >= 1.0
@@ -269,5 +272,51 @@ with tempfile.TemporaryDirectory() as temp:
     manager.disable("stm")
     manager.enable("stm")
     assert manager.list(tier="stm") == []
+
+    class RetrievalBackend:
+        identity = "contract:memory-channel-ablation-v1"
+
+        def __init__(self):
+            self.query_calls = 0
+
+        @staticmethod
+        def vector(text):
+            return ([1.0, 0.0, 0.0] if
+                    "cable" in text.casefold() or "receptacle" in text.casefold()
+                    else [0.0, 1.0, 0.0])
+
+        def embed_query(self, text):
+            self.query_calls += 1
+            return self.vector(text)
+
+        def embed_documents(self, texts):
+            return [self.vector(text) for text in texts]
+
+    ablation_manager = MemoryManager(
+        MemoryStore(Path(temp) / "memory-channel-ablation.json"),
+        thread_id="retrieval-thread", project_id="retrieval-project")
+    backend = RetrievalBackend()
+    ablation_manager.set_embedding_backend(backend)
+    ablation_manager.configure({"ltm": True, "semantic": {"enabled": True}})
+    target = ablation_manager.add("USB-C receptacle for wired data", tier="ltm",
+                                  title="External connector")
+    ablation_manager.add("PWM oscillator for converter timing", tier="ltm",
+                         title="Switching clock")
+    lexical_only, lexical_provenance = ablation_manager.retrieve_with_metadata(
+        "cable interface", channels=("lexical",))
+    assert lexical_only == []
+    assert lexical_provenance == []
+    assert backend.query_calls == 0
+    semantic_only, semantic_provenance = ablation_manager.retrieve_with_metadata(
+        "cable interface", channels=("semantic",))
+    assert semantic_only and semantic_only[0]["id"] == target["id"]
+    assert set(semantic_provenance[0]["channel_ranks"]) == {"semantic"}
+    assert backend.query_calls == 1
+    try:
+        ablation_manager.retrieve_with_metadata("cable interface", channels=("exact",))
+    except ValueError as error:
+        assert str(error) == "memory_retrieval_channels_invalid"
+    else:
+        raise AssertionError("unsupported memory retrieval channel was accepted")
 
 print("PASS Working Memory/LTM/project/episodic memory lifecycle; no network")

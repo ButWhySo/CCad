@@ -1,0 +1,177 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1047-memory-retrieval-ablation-final",
+    "feature":  "Selective memory retrieval and project entity ablation evidence",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T02:59:44.4715375Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.72 log=artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/preflight.log",
+                      "finished_utc":  "2026-09-30T02:59:45.2499899Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1047-memory-retrieval-ablation; source timestamps precede test log",
+                      "finished_utc":  "2026-09-30T03:00:11.6002654Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1047-memory-retrieval-ablation; 127/127 passed",
+                      "finished_utc":  "2026-09-30T03:00:11.6002654Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/ctest.log",
+                                         "sha256":  "3C400BC9419798F9D1078F94AB3BA5524EE2AFCD9F781C23E4BB71C8C074B53B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-calibration-embeddinggemma-hybrid.json",
+                                         "sha256":  "3CCFA6DF3362D1CBCF6AE2F21D4814468F8C14AA3D917F5B214BCD04440C9D98"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-calibration-embeddinggemma-lexical.json",
+                                         "sha256":  "1DA7B0874923293EEDA163CA9C70EC6E6BBA939EBB08DBE93EA84871493AD235"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-calibration-embeddinggemma-semantic.json",
+                                         "sha256":  "EE6F3DBF2F63816315AB1951D2A7C27EF892B51D1BE79EB9A6EDB47A164A9734"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-calibration-nomic-hybrid.json",
+                                         "sha256":  "B3C24C262E7A67A312B0890BC2431FFF2D604261F586F2CEC296A31D4DDAE740"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-calibration-nomic-lexical.json",
+                                         "sha256":  "2A116DFF49EB694A4B9DEE0C1CC50C2C27F4FA07C72C8E7722130F1321E6BEFC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-calibration-nomic-semantic.json",
+                                         "sha256":  "9C23C40E57CD372A71790EEE21E510444F08D18910CA8403DF39AB040FBA6502"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-held_out-embeddinggemma-hybrid.json",
+                                         "sha256":  "324ACF7120A74FA641AC205EAFC1915DC6BAB569903320F1771F12F1978906B5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-held_out-embeddinggemma-lexical.json",
+                                         "sha256":  "3DF6DFB0580F8C685D61B4A0A10301B81A337F4547B9C0607AE2A5597D851E2D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-held_out-embeddinggemma-semantic.json",
+                                         "sha256":  "555E4E475F3821C939BEDF560321656B3999251C735F5C43FA88F4CA8E7E78BF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-held_out-nomic-hybrid.json",
+                                         "sha256":  "3F6DCAE596DAFA27AB11292B5DA9FFD03D7C3D12933A9DD3EF047D4605866066"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-held_out-nomic-lexical.json",
+                                         "sha256":  "EF9D355E2CEA16CF1162F1583162BF94F5FD711CEE8813AF32BB18AB5AC9F929"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/memory-held_out-nomic-semantic.json",
+                                         "sha256":  "80550184675F20CE30E001DCD3C79DBFEF2FCED7787F77AE620CFEBDC571D16C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-embeddinggemma-exact.json",
+                                         "sha256":  "A1C516227969029B278A3FDD28FF8086D47DADF0750C60F26837601ABD1B8CD0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-embeddinggemma-full.json",
+                                         "sha256":  "37C31182DEBD14CB43991A833F1113CA2BF81D4A8FF9E4668A2D4149D088CF74"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-embeddinggemma-hybrid.json",
+                                         "sha256":  "F2CCAFEBD1C2887291755E6F066166DAE2054AA1AC18E1CE9F0FD7027F7F681B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-embeddinggemma-lexical.json",
+                                         "sha256":  "3E72620E86BA68E1CB6EFBB31ACAE77E350D04D858CFE0748F3435926D9E9D8A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-embeddinggemma-semantic.json",
+                                         "sha256":  "3D504AFC93C928DA4A2E0A2ED72BECF636710A210DA8E9899208DC17D3B77B24"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-nomic-exact.json",
+                                         "sha256":  "244CE22D34234D9E9EAC07DA3548633D624B400820F05774F673E0C89BF8FD25"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-nomic-full.json",
+                                         "sha256":  "17D3DD908376E1072A86B504A6508FD348CE02E055942866F5C537F563AB236B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-nomic-hybrid.json",
+                                         "sha256":  "1D3FA6CDF75295FA71AEC51430149C50687791CFA77008B24683C4EDF6F310F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-nomic-lexical.json",
+                                         "sha256":  "A61205DFE51E20D4C3A07D9E7A47E0601E15F8850BA0159E1005F8B6973BAA7C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-calibration-nomic-semantic.json",
+                                         "sha256":  "8B112476514407E88B34FF25D2787693B240F9C681F05CD89BA61AADEE938A7C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-embeddinggemma-exact.json",
+                                         "sha256":  "DC8340F72A1727C343C0B3268737F65ADC9D3689945C5C10451A3EF077E8D6B0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-embeddinggemma-full.json",
+                                         "sha256":  "522CF88FF6FB107CC4AF885C8F40B0C6DF6AE06BEA06C538AF5BB3844B59B21A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-embeddinggemma-hybrid.json",
+                                         "sha256":  "0D44F1E64FA3CDFD48153E35CDAC3D0C7670ADE8CF17F060733F4D14A2A1074F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-embeddinggemma-lexical.json",
+                                         "sha256":  "DADD2DFA152563634BB2F15F791ADEFCEF3D9F8AC2A14E02CF1D743B29647CAB"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-embeddinggemma-semantic.json",
+                                         "sha256":  "EC4C4A67E650E873208DEE090AA13896B374A6D438B45BA16C420F8516A9E189"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-nomic-exact.json",
+                                         "sha256":  "F0B756B363C9D09420D7C38F7597B1C1DEA656684EA9F399C4B78235054B912A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-nomic-full.json",
+                                         "sha256":  "A9D9BED7118DC7778035A5DEC2AB1D27BEA62515BBC68FD01496BFE32B32CFE7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-nomic-hybrid.json",
+                                         "sha256":  "653800B3D4F6CC79AD9BC8D76451036F22F86FD4468D4B4626391D7BC9C99444"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-nomic-lexical.json",
+                                         "sha256":  "D9A8A1E2E237665A14C14129B8AEB85F093C7E0D84EE33767933656AAEA8643F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1047-memory-retrieval-ablation-final/project-held_out-nomic-semantic.json",
+                                         "sha256":  "089EB0CF9A1700507A1931CEC66A8F22E7BA56F3E68AB4DE17C541482718F8AB"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T03:00:12.2186893Z"
+}

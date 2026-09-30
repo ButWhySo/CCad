@@ -2,6 +2,7 @@
 #include "board_canvas_view.hpp"
 #include "library_browser_dialog.hpp"
 #include "ui_map_server.hpp"
+#include "ccad_core/serialize.hpp"
 
 #include <QApplication>
 #include <QAbstractButton>
@@ -33,6 +34,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -107,6 +109,14 @@ std::optional<int> extractJsonInt(const QString& json, const QString& key) {
   bool ok = false;
   const int value = json.mid(index, end - index).toInt(&ok);
   return ok ? std::optional<int>(value) : std::nullopt;
+}
+
+ccad::Project readProject(const std::filesystem::path& path) {
+  std::ifstream input(path, std::ios::binary);
+  if (!input) throw std::runtime_error("failed to read project for GUI validation");
+  const std::string contents((std::istreambuf_iterator<char>(input)),
+                             std::istreambuf_iterator<char>());
+  return ccad::loadProjectJson(contents);
 }
 
 }  // namespace
@@ -471,7 +481,158 @@ int main(int argc, char** argv) {
           catalog_startup.contains("\"backend_ready\":true") &&
           catalog_startup.contains("\"native_tool_catalog_installed\":true") &&
           !catalog_startup.contains("\"native_tool_catalog_method_count\":0");
-      if (name.startsWith("sprint968-task") ||
+      if (name.startsWith("sprint1043-agent-live-tool-turn")) {
+        auto* chat = window->findChild<QTextBrowser*>("control:agent_chat_stream");
+        const auto capture = [window, &output_dir, &name](const QString& checkpoint) {
+          const QString path = QString::fromStdString(
+              (output_dir / (name + "-" + checkpoint + ".png").toStdString()).string());
+          if (checkpoint == "settings-open") {
+            auto* dialog = window->findChild<QDialog*>("dialog:agent_settings");
+            return dialog && dialog->grab().save(path) ? path : QString{};
+          }
+          return window->grab().save(path) ? path : QString{};
+        };
+        auto add_interaction = [&entries, window](const QString& method,
+                                                   const QString& payload,
+                                                   const QString& target,
+                                                   const QString& label) {
+          const QString result = window->runAgentUiQueryJson(method, payload);
+          const QJsonObject parsed = QJsonDocument::fromJson(result.toUtf8()).object();
+          const bool performed = parsed.value("ok").toBool() &&
+              parsed.value("result").toObject().value("performed").toBool();
+          entries << QString("{\"target\":%1,\"interaction\":%2,\"label\":%3,\"result\":%4}")
+              .arg(jsonStringLocal(target), jsonStringLocal(method),
+                   jsonStringLocal(label), result.trimmed());
+          QApplication::processEvents();
+          return performed;
+        };
+        bool ok = catalog_startup_verified && !capture("before").isEmpty();
+        QJsonObject live_provider_state;
+        for (int attempt = 0; attempt < 120; ++attempt) {
+          QApplication::processEvents();
+          live_provider_state = QJsonDocument::fromJson(
+              window->runAgentUiQueryJson("agent.workspace_state", "{}")
+                  .toUtf8()).object().value("result").toObject();
+          if (live_provider_state.value("backend_provider_initialized").toBool()) break;
+          QThread::msleep(100);
+        }
+        const bool provider_ready_before_turn =
+            live_provider_state.value("backend_provider_initialized").toBool();
+        entries << QString("{\"provider_ready_before_turn\":%1,\"model_label\":%2}")
+            .arg(provider_ready_before_turn ? "true" : "false",
+                 jsonStringLocal(live_provider_state.value("model_label").toString()));
+        ok = provider_ready_before_turn && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"tab:pcb\"}",
+                             "tab:pcb", "pcb-tab") && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"tab:schematic\"}",
+                             "tab:schematic", "schematic-tab") && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"tab:agent\"}",
+                             "tab:agent", "agent-tab") && ok;
+        const QString prompt = QStringLiteral(
+            "What are the footprint, track, and via counts on this board?");
+        ok = add_interaction("ui.type_text",
+            QString("{\"id\":\"control:agent_chat_input\",\"text\":%1}")
+                .arg(jsonStringLocal(prompt)), "control:agent_chat_input",
+            "model-tool-turn-prompt") && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"action:agent_submit_chat\"}",
+                             "action:agent_submit_chat", "model-tool-turn-submit") && ok;
+
+        QJsonObject final_state;
+        QString final_transcript;
+        QString turn_output;
+        int requested_counts = 0;
+        int accepted_results = 0;
+        for (int attempt = 0; attempt < 3600; ++attempt) {
+          QApplication::processEvents();
+          final_transcript = chat ? chat->toPlainText() : QString{};
+          const qsizetype prompt_position = final_transcript.lastIndexOf(prompt);
+          turn_output = prompt_position >= 0
+              ? final_transcript.mid(prompt_position + prompt.size()).trimmed()
+              : QString{};
+          const QJsonObject response = QJsonDocument::fromJson(
+              window->runAgentUiQueryJson("agent.workspace_state", "{}")
+                  .toUtf8()).object();
+          final_state = response.value("result").toObject();
+          requested_counts = 0;
+          accepted_results = 0;
+          for (const QJsonValue& event_value :
+               final_state.value("activity_events").toArray()) {
+            const QJsonObject event = event_value.toObject();
+            if (event.value("method").toString() == "agent.tool" &&
+                event.value("title").toString() == "Tool requested") {
+              const QString tool = event.value("detail").toString();
+              if (tool == "project.object_counts") ++requested_counts;
+            } else if (event.value("method").toString() == "agent.tool_result_ack" &&
+                       event.value("title").toString() == "Tool result accepted") {
+              ++accepted_results;
+            }
+          }
+          if (final_transcript.contains(
+                  "Provider request stopped before a response was completed") ||
+              final_transcript.contains(
+                  "Provider response was received but contained no answer or tool call")) break;
+          const QString run_state = final_state.value("run_state").toString();
+          if ((run_state == "completed" || run_state == "idle") &&
+              requested_counts > 0 && accepted_results >= 1 &&
+              !final_transcript.isEmpty() &&
+              !final_transcript.contains("Provider request stopped")) break;
+          QThread::msleep(100);
+        }
+        const bool tool_turn_verified = final_state.value("backend_provider_initialized").toBool() &&
+            (final_state.value("run_state").toString() == "completed" ||
+             final_state.value("run_state").toString() == "idle") &&
+            requested_counts > 0 && accepted_results >= 1 &&
+            turn_output.contains("footprint", Qt::CaseInsensitive) &&
+            turn_output.contains("track", Qt::CaseInsensitive) &&
+            turn_output.contains("via", Qt::CaseInsensitive) &&
+            !final_transcript.contains("Provider request stopped");
+        const QString result_screenshot = capture("model-tool-results");
+        const bool provider_dispatch_started =
+            final_state.value("provider_dispatch_started").toBool();
+        entries << QString("{\"real_model_provider_initialized\":%1,\"provider_dispatch_started\":%2,\"run_state\":%3,\"object_count_calls\":%4,\"accepted_broker_results\":%5,\"count_summary_visible\":%6,\"screenshot\":%7}")
+            .arg(final_state.value("backend_provider_initialized").toBool() ? "true" : "false",
+                 provider_dispatch_started ? "true" : "false",
+                 jsonStringLocal(final_state.value("run_state").toString()))
+            .arg(requested_counts).arg(accepted_results)
+            .arg((turn_output.contains("footprint", Qt::CaseInsensitive) &&
+                  turn_output.contains("track", Qt::CaseInsensitive) &&
+                  turn_output.contains("via", Qt::CaseInsensitive))
+                     ? "true" : "false",
+                 jsonStringLocal(result_screenshot));
+        ok = tool_turn_verified && !result_screenshot.isEmpty() && ok;
+
+        ok = add_interaction("ui.click", "{\"id\":\"action:settingsBtn\"}",
+                             "action:settingsBtn", "settings-open") && ok;
+        const QString settings_screenshot = capture("settings-open");
+        ok = !settings_screenshot.isEmpty() && ok;
+        ok = add_interaction("ui.click", "{\"id\":\"action:cancelSettingsButton\"}",
+                             "action:cancelSettingsButton", "settings-close") && ok;
+        const QString restored_screenshot = capture("restored-final");
+        ok = !restored_screenshot.isEmpty() && ok;
+        const QString summary = "Real local Ollama model turn; verify project.object_counts tool request and accepted broker result; read-only; no network provider.";
+        const std::filesystem::path output_path =
+            output_dir / (name + "-target-sequence.json").toStdString();
+        std::ofstream output(output_path, std::ios::binary);
+        const QString report = QString(
+            "{\"schema_version\":1,\"name\":%1,\"interaction_plan\":%2,\"catalog_startup_verified\":%3,\"entries\":[%4]}\n")
+            .arg(jsonStringLocal(name), jsonStringLocal(summary),
+                 catalog_startup_verified ? "true" : "false", entries.join(','));
+        const QByteArray bytes = report.toUtf8();
+        output.write(bytes.constData(), bytes.size());
+        output.close();
+        if (!output || !ok) {
+          std::cerr << "live model/native-tool GUI verification failed: "
+                    << output_path.string() << '\n';
+          std::cerr.flush();
+          QCoreApplication::exit(2);
+          return;
+        }
+        std::cout << "live model/native-tool sequence saved: "
+                  << output_path.string() << '\n';
+        std::cout.flush();
+        QCoreApplication::exit(0);
+        return;
+      } else if (name.startsWith("sprint968-task") ||
           name.startsWith("sprint1038-agent-context-editor") ||
           name.startsWith("sprint969-context") ||
           name.startsWith("sprint970-compaction") ||
@@ -1486,6 +1647,8 @@ int main(int argc, char** argv) {
           name.startsWith("sprint1023-memory-secret-redaction");
       const bool markdown_target_sequence =
           name.startsWith("sprint1031-agent-markdown");
+      const bool undo_redo_target_sequence =
+          name.startsWith("sprint1037-undo-redo");
       const bool conversation_history_target_sequence =
           name.startsWith("sprint1030-conversation-history") ||
           markdown_target_sequence;
@@ -1500,6 +1663,9 @@ int main(int argc, char** argv) {
           name.startsWith("sprint1038-agent-context-editor");
       const QStringList target_ids = editor_context_target_sequence
           ? QStringList{}
+          : undo_redo_target_sequence
+          ? QStringList{"action:undo", "action:redo", "action:grid",
+                        "tab:schematic", "tab:pcb", "action:zoom_in", "action:zoom_out"}
           : conversation_history_target_sequence
           ? QStringList{"tab:pcb", "tab:schematic", "tab:agent",
                         "action:agent_history", "action:agent_new_chat",
@@ -1585,6 +1751,11 @@ int main(int argc, char** argv) {
                                                     "action:primaryButton",
                                                     "action:testProviderBtn"};
       QStringList scoped_click_before_capture_ids = click_before_capture_ids;
+      if (undo_redo_target_sequence) {
+        scoped_click_before_capture_ids << "action:grid"
+                                        << "tab:schematic" << "tab:pcb"
+                                        << "action:zoom_in" << "action:zoom_out";
+      }
       if (conversation_history_target_sequence) {
         scoped_click_before_capture_ids << "tab:pcb" << "tab:schematic" << "tab:agent"
                                         << "action:agent_history" << "action:agent_new_chat"
@@ -1601,7 +1772,7 @@ int main(int argc, char** argv) {
         }
         return nullptr;
       };
-      const auto runPass = [window, &entries, &output_dir, &name, &target_ids,
+      const auto runPass = [window, &entries, &output_dir, &name, &project_path, &target_ids,
                             markdown_target_sequence,
                             memory_target_sequence,
                             memory_kind_target_sequence,
@@ -1609,6 +1780,7 @@ int main(int argc, char** argv) {
                             memory_secret_target_sequence,
                             semantic_memory_target_sequence,
                             conversation_history_target_sequence,
+                            undo_redo_target_sequence,
                             provider_target_sequence,
                             gemini_count_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
@@ -1618,6 +1790,54 @@ int main(int argc, char** argv) {
                             &scoped_click_before_capture_ids,
                             per_target_wait_ms](
                                const QString& pass_name) {
+        std::size_t undo_redo_baseline_graphics = 0;
+        if (undo_redo_target_sequence) {
+          const QString fit_result = window->runAgentUiQueryJson(
+              "ui.click", "{\"id\":\"action:fit\"}");
+          const bool fit_performed = fit_result.contains("\"performed\":true");
+          memory_target_actions_ok = memory_target_actions_ok && fit_performed;
+          entries << QString("{\"pass\":%1,\"id\":\"action:fit\","
+                             "\"interaction\":\"ui.click\",\"result\":%2}")
+              .arg(jsonStringLocal(pass_name), fit_result.trimmed());
+          const ccad::Project before = readProject(project_path);
+          if (before.boards.empty()) {
+            entries << "{\"undo_redo_fixture_ready\":false,\"reason\":\"board_required\"}";
+            memory_target_actions_ok = false;
+            return;
+          }
+          const ccad::Board& board = before.boards.front();
+          undo_redo_baseline_graphics = board.graphics.size();
+          const double x = ccad::toMillimeters(board.outline.origin.x) +
+                           ccad::toMillimeters(board.outline.size.width) * 0.2;
+          const double y = ccad::toMillimeters(board.outline.origin.y) +
+                           ccad::toMillimeters(board.outline.size.height) * 0.2;
+          if (pass_name == "initial") {
+            const auto before_path = output_dir /
+                (name + "-before.png").toStdString();
+            window->grab().save(QString::fromStdString(before_path.string()));
+          }
+          const QString payload = QString("{\"start_x_mm\":%1,\"start_y_mm\":%2,"
+                                          "\"end_x_mm\":%3,\"end_y_mm\":%4}")
+              .arg(x, 0, 'f', 6).arg(y, 0, 'f', 6)
+              .arg(x + 12.0, 0, 'f', 6).arg(y + 12.0, 0, 'f', 6);
+          const QString staged = window->runAgentUiQueryJson("ui.draw_graphic", payload);
+          const ccad::Project after = readProject(project_path);
+          const bool staged_ok = staged.contains("\"performed\":true") &&
+              !after.boards.empty() &&
+              after.boards.front().graphics.size() == undo_redo_baseline_graphics + 1;
+          memory_target_actions_ok = memory_target_actions_ok && staged_ok;
+          entries << QString("{\"pass\":%1,\"undo_redo_fixture_ready\":%2,"
+                             "\"baseline_graphics\":%3,\"staged_graphics\":%4}")
+              .arg(jsonStringLocal(pass_name), staged_ok ? "true" : "false")
+              .arg(undo_redo_baseline_graphics)
+              .arg(after.boards.empty() ? -1 : static_cast<qlonglong>(after.boards.front().graphics.size()));
+          if (!staged_ok) return;
+          if (pass_name == "initial") {
+            const auto staged_path = output_dir /
+                (name + "-staged.png").toStdString();
+            window->grab().save(QString::fromStdString(staged_path.string()));
+          }
+        }
         int target_index = 0;
         for (const QString& id : target_ids) {
           if (trigger_before_capture_ids.contains(id)) {
@@ -1964,6 +2184,33 @@ int main(int argc, char** argv) {
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
+          if (undo_redo_target_sequence &&
+              (id == "action:undo" || id == "action:redo")) {
+            QAction* action = window->findChild<QAction*>(id);
+            const QKeySequence shortcut = action ? action->shortcut() : QKeySequence{};
+            const QString shortcut_text = shortcut.toString(QKeySequence::PortableText);
+            const QString key_result = action && !shortcut_text.isEmpty()
+                ? window->runAgentUiQueryJson("ui.key",
+                    QString("{\"key\":%1}").arg(jsonStringLocal(shortcut_text)))
+                : QString("{\"performed\":false,\"reason\":\"shortcut_missing\"}");
+            const bool key_sent = key_result.contains("\"performed\":true");
+            const ccad::Project current = readProject(project_path);
+            const std::size_t expected = undo_redo_baseline_graphics +
+                (id == "action:redo" ? 1U : 0U);
+            const bool state_matches = !current.boards.empty() &&
+                current.boards.front().graphics.size() == expected;
+            memory_target_actions_ok = memory_target_actions_ok && key_sent && state_matches;
+            entries << QString("{\"interaction\":\"ui.key\",\"target\":%1,"
+                               "\"key_result\":%2,\"performed\":%3,"
+                               "\"graphics\":%4,\"expected\":%5}")
+                .arg(jsonStringLocal(id), key_result.trimmed(),
+                     state_matches && key_sent ? "true" : "false")
+                .arg(current.boards.empty() ? -1 : static_cast<qlonglong>(current.boards.front().graphics.size()))
+                .arg(expected);
+            const auto state_path = output_dir /
+                (name + (id == "action:undo" ? "-undo.png" : "-redo.png")).toStdString();
+            window->grab().save(QString::fromStdString(state_path.string()));
+          }
           if (gemini_count_target_sequence &&
               id == "control:geminiExactInputCounting" &&
               gemini_checkbox_changed) {
@@ -1981,6 +2228,7 @@ int main(int argc, char** argv) {
           const std::optional<int> y = extractJsonInt(target_json, "\"logical_y\":");
           QString screenshot_path;
           if (found && x.has_value() && y.has_value() &&
+              !undo_redo_target_sequence &&
               (!conversation_history_target_sequence ||
                id == "action:agent_new_chat" || id == "action:agent_submit_chat") &&
               (!memory_secret_target_sequence ||
@@ -2029,7 +2277,7 @@ int main(int argc, char** argv) {
                              local_target.y() + 16);
             painter.end();
             screenshot.save(screenshot_path);
-          } else if (!conversation_history_target_sequence &&
+          } else if (!undo_redo_target_sequence && !conversation_history_target_sequence &&
                      ((scoped_click_before_capture_ids.contains(id) &&
                       (!memory_secret_target_sequence ||
                        id == "action:closeMemoryManager" ||
@@ -2175,10 +2423,23 @@ int main(int argc, char** argv) {
                            before_path.string())));
       }
       runPass("initial");
+      if (undo_redo_target_sequence) {
+        const ccad::Project final_project = readProject(project_path);
+        const bool final_restored = !final_project.boards.empty() &&
+            !final_project.boards.front().graphics.empty();
+        entries << QString("{\"undo_redo_final_restored\":%1,\"graphics\":%2,"
+                           "\"screenshot\":%3}")
+            .arg(final_restored ? "true" : "false")
+            .arg(final_project.boards.empty() ? -1 : static_cast<qlonglong>(final_project.boards.front().graphics.size()))
+            .arg(jsonStringLocal(QString::fromStdString((output_dir /
+                (name + "-redo.png").toStdString()).string())));
+        memory_target_actions_ok = memory_target_actions_ok && final_restored;
+      }
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
       if (!editor_context_target_sequence && !semantic_memory_target_sequence && !gemini_count_target_sequence &&
+          !undo_redo_target_sequence &&
           !conversation_history_target_sequence &&
           !memory_secret_target_sequence &&
           !memory_kind_target_sequence &&
@@ -2345,6 +2606,7 @@ int main(int argc, char** argv) {
                       ((memory_target_sequence || memory_secret_target_sequence ||
                        provider_target_sequence ||
                        gemini_count_target_sequence ||
+                       undo_redo_target_sequence ||
                        memory_importance_target_sequence ||
                        semantic_memory_target_sequence) &&
                       !memory_target_actions_ok)) {

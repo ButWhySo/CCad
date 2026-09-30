@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1051-context-provenance-merge-r4",
+    "feature":  "Mapped GUI verification using the passing integrated Qt build and CTest",
+    "validation_mode":  "gui",
+    "interaction_plan":  "config/gui_interaction_plans/sprint1038-agent-context-editor.json",
+    "target_sequence":  "sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-30T07:41:34.9212175Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.7 log=artifacts/evidence/sprint-1051-context-provenance-merge-r4/preflight.log",
+                      "finished_utc":  "2026-09-30T07:41:35.6879926Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1051-context-provenance-merge-r2; source timestamps precede test log",
+                      "finished_utc":  "2026-09-30T07:41:36.3551979Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1051-context-provenance-merge-r2; 126/126 passed",
+                      "finished_utc":  "2026-09-30T07:41:36.3551979Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=26.78 log=artifacts/evidence/sprint-1051-context-provenance-merge-r4/ui_harness.log",
+                      "finished_utc":  "2026-09-30T07:42:03.1318958Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=14; screenshots=4",
+                      "finished_utc":  "2026-09-30T07:42:03.4008923Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-30T07:42:03.4298991Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/ctest.log",
+                                         "sha256":  "71A165087923EC0C2FB9E92E69427DFE1BEB788AEAE783B94BAD8B3E463F1192"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4.stdout.log",
+                                         "sha256":  "A2E21C9DE9F2FB6B2E5011ED6B91926EC08E7645766E84DA946446BA4C851294"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4-before.png",
+                                         "sha256":  "AAF4A0B667165553A6FEE04F72EF4959650F2937345C65E91D38982493F758F2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4-context-settings-opened.png",
+                                         "sha256":  "739AF0778ED2D62C19D8DA40823F04CD077E2E96A19777E9A54B02001F92D839"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4-restored-final.png",
+                                         "sha256":  "D43EF69A532A91A5660BAD775C62A5FDDD9CD568D136B9A7897AD9E4AF24C5CA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4-schematic-object-selected.png",
+                                         "sha256":  "CB8DA2CC12DD42EB92C5118211E76A53EAC0199857A37C2BF20593DD686C87D5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/sprint1038-agent-context-editor-ui-sprint-1051-context-provenance-merge-r4-target-sequence.json",
+                                         "sha256":  "F6AE93F728105DFB32D82106B7C7960FD6C349C2D7CA004EEC3C668F84DDC935"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1051-context-provenance-merge-r4/ui_harness.log",
+                                         "sha256":  "2C4739EDE5636BBD325316BEA503DB32DB9BA3E56FB4B473E0FF5144360F1537"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T07:42:03.5078892Z"
+}

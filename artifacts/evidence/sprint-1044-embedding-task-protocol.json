@@ -1,0 +1,65 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1044-embedding-task-protocol",
+    "feature":  "Model-specific semantic embedding prompts, identity reporting, and cache invalidation",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T01:19:49.8634272Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.98 log=artifacts/evidence/sprint-1044-embedding-task-protocol/preflight.log",
+                      "finished_utc":  "2026-09-30T01:19:50.9321069Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=2.56 log=artifacts/evidence/sprint-1044-embedding-task-protocol/build.log",
+                      "finished_utc":  "2026-09-30T01:19:53.4987210Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=153.42 log=artifacts/evidence/sprint-1044-embedding-task-protocol/ctest.log",
+                      "finished_utc":  "2026-09-30T01:22:26.9211551Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/ctest.log",
+                                         "sha256":  "034B8410B36E0091CCD9437715BAF6F64B4DEA60A1230AB6E61909285973953D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/embeddinggemma-calibration.json",
+                                         "sha256":  "017FDD8190F49FCB57E3B136288F1F04BAA60E95BD1C54CE66A9F00888104AD7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/embeddinggemma-held_out.json",
+                                         "sha256":  "954FB77802A84F5C47E5C49A9EE27F88AF797D64B2F846CFB3FC8BD2CA19CB90"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/nomic-embed-text-calibration.json",
+                                         "sha256":  "2BAD3F4D68F4B0D996CA9AFC0D50F6052CCB954E26236968977ECE60E3297715"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/nomic-embed-text-held_out.json",
+                                         "sha256":  "71DFDA05CD5420948DBB1ADA7739687B5971922CFDCA96C56B79A8A5CCC7864B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1044-embedding-task-protocol/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T01:22:27.0246940Z"
+}

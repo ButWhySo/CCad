@@ -1,0 +1,65 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1045-semantic-corpus",
+    "feature":  "R7 source-grounded function-intent and semantic hard-negative retrieval corpus",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T01:47:10.3408924Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.78 log=artifacts/evidence/sprint-1045-semantic-corpus/preflight.log",
+                      "finished_utc":  "2026-09-30T01:47:11.1889841Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.23 log=artifacts/evidence/sprint-1045-semantic-corpus/build.log",
+                      "finished_utc":  "2026-09-30T01:47:11.4319827Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=145.82 log=artifacts/evidence/sprint-1045-semantic-corpus/ctest.log",
+                      "finished_utc":  "2026-09-30T01:49:37.2563128Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/ctest.log",
+                                         "sha256":  "3ABF12F828876DB5F683CE8CCA0A74EA9DB5B593596C628D73302F6CF14FB5A2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/embeddinggemma-calibration.json",
+                                         "sha256":  "3246274F5B83A5A3495CF784A6DC5DA1ABFC4C09F40F176488CA08AD48D448E0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/embeddinggemma-held_out.json",
+                                         "sha256":  "E708482CDFBB951B1EE61C96F163AD07879CFBEA57597732271D4DEE2D8A5F20"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/nomic-calibration.json",
+                                         "sha256":  "9015A002DAE2989C6B5F1219AE30B5B3F7CFD6327C226C91BAC67F2487EA4DDC"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/nomic-held_out.json",
+                                         "sha256":  "0CD0AD3D5002CB0E70497AA5C7A84894E1CB8C8C8F3522EA8FDA2802119F80F3"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1045-semantic-corpus/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T01:49:37.3560370Z"
+}

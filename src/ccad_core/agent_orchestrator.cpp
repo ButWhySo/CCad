@@ -139,6 +139,9 @@ std::string OrchestratorConfig::to_json() const {
         << "\"max_retry_count\":" << max_retry_count << ","
         << "\"provider_execution_enabled\":" << (provider_execution_enabled ? "true" : "false") << ","
         << "\"project_mutation_enabled\":" << (project_mutation_enabled ? "true" : "false") << ","
+        << "\"tool_call_id_present\":" << (!tool_call_id.empty() ? "true" : "false") << ","
+        << "\"project_revision_present\":" << (!project_revision.empty() ? "true" : "false") << ","
+        << "\"approval_request_token_present\":" << (!approval_request_token.empty() ? "true" : "false") << ","
         << "\"approved_tool_name\":\"" << escapeJson(approved_tool_name) << "\"," 
         << "\"approved_tool_token_present\":" << (!approved_tool_token.empty() ? "true" : "false")
         << "}";
@@ -235,6 +238,8 @@ std::string ContextBuilder::build_context(const ProjectContext& base_ctx) {
 }
 
 // ─── ToolBroker ─────────────────────────────────────────────────
+ToolBroker::ToolBroker(Now now) : now_(std::move(now)) {}
+
 void ToolBroker::register_tool(const OrchestratorTool& tool) {
     tools_[tool.name] = tool;
 }
@@ -250,6 +255,31 @@ std::optional<OrchestratorTool> ToolBroker::get_tool(const std::string& name) co
     auto it = tools_.find(name);
     if (it != tools_.end()) return it->second;
     return std::nullopt;
+}
+
+bool ToolBroker::cancel_approval(const std::string& token) {
+    if (token.empty()) return false;
+    std::lock_guard<std::mutex> lock(approval_mutex_);
+    const auto pending = pending_approvals_.find(token);
+    if (pending == pending_approvals_.end()) return false;
+    const bool expired = pending->second.expires_at <= now_();
+    pending_approvals_.erase(pending);
+    if (expired) {
+        expired_approval_tokens_.insert(token);
+        if (expired_approval_tokens_.size() > 1024) {
+            expired_approval_tokens_.erase(expired_approval_tokens_.begin());
+        }
+        consumed_approval_tokens_.insert(token);
+        if (consumed_approval_tokens_.size() > 1024) {
+            consumed_approval_tokens_.erase(consumed_approval_tokens_.begin());
+        }
+    } else {
+        consumed_approval_tokens_.insert(token);
+        if (consumed_approval_tokens_.size() > 1024) {
+            consumed_approval_tokens_.erase(consumed_approval_tokens_.begin());
+        }
+    }
+    return true;
 }
 
 bool ToolBroker::check_policy(const OrchestratorTool& tool, const OrchestratorConfig& cfg) {
@@ -270,24 +300,90 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
     }
     // A preview is explicitly non-mutating. It must never be blocked behind,
     // or accidentally displayed as, a human approval request.
-    const auto dry_run_key = args_json.find("\"dry_run\"");
-    const auto dry_run_value = dry_run_key == std::string::npos ? std::string::npos : args_json.find("true", dry_run_key);
-    const bool requested_dry_run = dry_run_key != std::string::npos && dry_run_value != std::string::npos &&
-                                   args_json.find("false", dry_run_key) == std::string::npos;
-    if (requested_dry_run) {
+    if (cfg.dry_run) {
         return "{\"status\":\"dry_run\",\"tool_name\":\"" + escapeJson(name) + "\",\"args\":" + args_json + "}";
     }
-    if (!check_policy(it->second, cfg)) {
-        const char* error = cfg.require_approval && cfg.approved_tool_name != name
-                                ? "approval_required" : "project_mutation_disabled";
-        return std::string("{\"error\":\"") + error + "\",\"tool_name\":\"" + escapeJson(name) + "\"}";
+    const bool mutating = it->second.default_risk != TaskRisk::ReadOnly;
+    if (mutating && !cfg.project_mutation_enabled) {
+        return "{\"error\":\"project_mutation_disabled\",\"tool_name\":\"" +
+               escapeJson(name) + "\"}";
     }
-    if (cfg.require_approval && it->second.default_risk != TaskRisk::ReadOnly) {
+    if (cfg.require_approval && mutating) {
         std::lock_guard<std::mutex> lock(approval_mutex_);
-        if (!consumed_approval_tokens_.insert(cfg.approved_tool_token).second) {
-            return "{\"error\":\"approval_token_consumed\",\"tool_name\":\"" +
-                   escapeJson(name) + "\"}";
+        const auto now = now_();
+        const auto rememberConsumed = [this](const std::string& token) {
+            consumed_approval_tokens_.insert(token);
+            if (consumed_approval_tokens_.size() > 1024) {
+                consumed_approval_tokens_.erase(consumed_approval_tokens_.begin());
+            }
+        };
+        for (auto pending = pending_approvals_.begin(); pending != pending_approvals_.end();) {
+            if (pending->second.expires_at <= now) {
+                expired_approval_tokens_.insert(pending->first);
+                if (expired_approval_tokens_.size() > 1024) {
+                    expired_approval_tokens_.erase(expired_approval_tokens_.begin());
+                }
+                rememberConsumed(pending->first);
+                pending = pending_approvals_.erase(pending);
+            } else {
+                ++pending;
+            }
         }
+        const auto error = [&name](const char* code) {
+            return std::string("{\"error\":\"") + code + "\",\"tool_name\":\"" +
+                   escapeJson(name) + "\"}";
+        };
+
+        if (cfg.approved_tool_token.empty()) {
+            if (cfg.approval_request_token.empty()) return error("approval_required");
+            if (cfg.tool_call_id.empty()) return error("tool_call_id_missing");
+            if (cfg.project_revision.empty()) return error("project_revision_unavailable");
+            if (expired_approval_tokens_.contains(cfg.approval_request_token) ||
+                consumed_approval_tokens_.contains(cfg.approval_request_token) ||
+                pending_approvals_.contains(cfg.approval_request_token)) {
+                return error("approval_token_reused");
+            }
+            if (pending_approvals_.size() >= 64) return error("approval_capacity_reached");
+            for (const auto& [token, pending] : pending_approvals_) {
+                (void)token;
+                if (pending.tool_call_id == cfg.tool_call_id) {
+                    return error("tool_call_already_pending");
+                }
+            }
+            pending_approvals_.emplace(cfg.approval_request_token, PendingApproval{
+                .tool_name = name,
+                .args_json = args_json,
+                .tool_call_id = cfg.tool_call_id,
+                .project_revision = cfg.project_revision,
+                .expires_at = now + std::chrono::minutes(5),
+            });
+            return error("approval_required");
+        }
+
+        const auto pending = pending_approvals_.find(cfg.approved_tool_token);
+        if (pending == pending_approvals_.end()) {
+            return error(expired_approval_tokens_.contains(cfg.approved_tool_token)
+                             ? "approval_expired"
+                             : consumed_approval_tokens_.contains(cfg.approved_tool_token)
+                                   ? "approval_token_consumed" : "approval_token_unknown");
+        }
+        if (pending->second.project_revision != cfg.project_revision) {
+            pending_approvals_.erase(pending);
+            rememberConsumed(cfg.approved_tool_token);
+            return error("approval_stale");
+        }
+        if (cfg.approved_tool_name != pending->second.tool_name ||
+            name != pending->second.tool_name || args_json != pending->second.args_json ||
+            cfg.tool_call_id != pending->second.tool_call_id) {
+            pending_approvals_.erase(pending);
+            rememberConsumed(cfg.approved_tool_token);
+            return error("approval_plan_mismatch");
+        }
+        pending_approvals_.erase(pending);
+        rememberConsumed(cfg.approved_tool_token);
+    } else if (!check_policy(it->second, cfg)) {
+        return "{\"error\":\"project_mutation_disabled\",\"tool_name\":\"" +
+               escapeJson(name) + "\"}";
     }
     return it->second.execute(args_json);
 }
@@ -353,6 +449,10 @@ std::optional<OrchestratorTool> AgentOrchestrator::get_tool(const std::string& n
 
 std::string AgentOrchestrator::execute_tool(const std::string& name, const std::string& args_json, const OrchestratorConfig& cfg) {
     return tool_broker_.execute_tool(name, args_json, cfg);
+}
+
+bool AgentOrchestrator::cancel_approval(const std::string& token) {
+    return tool_broker_.cancel_approval(token);
 }
 
 void AgentOrchestrator::set_progress_callback(ProgressCallback cb) {

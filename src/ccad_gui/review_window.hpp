@@ -101,6 +101,7 @@ class ReviewWindow final : public QMainWindow {
   QString uiScreenshotJson(const QString& path, bool dry_run);
   QString agentHarnessContextJson() const;
   QString projectContextJson() const;
+  std::string agentDesignRevision() const;
   QString projectStateJson() const;
   QString projectObjectCountsJson() const;
   QString projectReviewJson() const;
@@ -205,7 +206,9 @@ class ReviewWindow final : public QMainWindow {
   void updateActiveNetStatus();
   std::string activePcbNetOrDefault() const;
   void pushUndoSnapshot();
-  void restoreProjectSnapshot(const ccad::Project& snapshot);
+  bool restoreProjectSnapshot(const ccad::Project& snapshot);
+  void undoProjectChange();
+  void redoProjectChange();
   void updateUndoRedoActions();
   QString buildUiMapJson() const;
   void rebuildUiMapIndexCache() const;

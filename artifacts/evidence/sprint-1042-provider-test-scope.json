@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1042-provider-test-scope",
+    "feature":  "Scope provider error contract to provider message",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-29T11:58:47.3911255Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.8 log=artifacts/evidence/sprint-1042-provider-test-scope/preflight.log",
+                      "finished_utc":  "2026-09-29T11:58:48.2594690Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=626.29 log=artifacts/evidence/sprint-1042-provider-test-scope/build.log",
+                      "finished_utc":  "2026-09-29T12:09:14.5598746Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=190.62 log=artifacts/evidence/sprint-1042-provider-test-scope/ctest.log",
+                      "finished_utc":  "2026-09-29T12:12:25.1801630Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-provider-test-scope/build.log",
+                                         "sha256":  "AF29A9CB0885C54675D3712C6A50AA0488D001607B83BE95936FDCAD1BA075F5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-provider-test-scope/ctest.log",
+                                         "sha256":  "9F44EAF5AD74914DF80C9157BFA2B46A82E5BE9A14FC58B9C3A93710FF9DB055"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1042-provider-test-scope/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-29T12:12:25.3001659Z"
+}
