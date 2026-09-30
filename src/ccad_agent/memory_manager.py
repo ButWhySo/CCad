@@ -124,6 +124,11 @@ class MemoryManager:
         }
         config_identity = "|".join((config["backend"], config["base_url"], config["model"]))
         old_identity = getattr(self._embedding_backend, "identity", "")
+        config_changed = (bool(self._embedding_config_identity) and
+                          self._embedding_config_identity != config_identity)
+        if config_changed:
+            self._clear_embedding_cache()
+            self._embedding_backend = None
         self.semantic_config = config
         if not config["enabled"]:
             self._embedding_backend = None
@@ -148,9 +153,7 @@ class MemoryManager:
                 backend = OllamaEmbeddingBackend(config["base_url"], config["model"])
                 probe = backend.check_ready()
             new_identity = getattr(backend, "identity", "")
-            if ((old_identity and old_identity != new_identity) or
-                    (self._embedding_config_identity and
-                     self._embedding_config_identity != config_identity)):
+            if old_identity and old_identity != new_identity:
                 self._embedding_cache.clear()
                 self._query_embedding_cache.clear()
             self._embedding_backend = backend
@@ -168,9 +171,23 @@ class MemoryManager:
                                      "cache_entries": 0}
 
     def semantic_state(self):
-        return {**self._semantic_status,
-                "cache_entries": self.embedding_cache_entries,
-                "model_version": str(self._semantic_status.get("model_version", ""))[:128]}
+        state = {**self._semantic_status,
+                 "cache_entries": self.embedding_cache_entries,
+                 "model_version": str(self._semantic_status.get("model_version", ""))[:128]}
+        backend = self._embedding_backend
+        identity = getattr(backend, "model_identity", None)
+        if not isinstance(identity, dict):
+            config = self.semantic_config
+            identity = {
+                "provider": config.get("backend", ""),
+                "model": config.get("model", ""),
+                "digest": state["model_version"],
+                "dimension": None,
+                "task_mode": "explicit_retrieval_and_similarity_v1",
+                "normalization": "l2_unit",
+            }
+        state["model_identity"] = dict(identity)
+        return state
 
     @property
     def semantic_embedding_backend(self):
@@ -196,6 +213,7 @@ class MemoryManager:
                                      "cache_entries": self.embedding_cache_entries}
         except EmbeddingError as error:
             self._embedding_backend = None
+            self._clear_embedding_cache()
             self._semantic_status.update({"ready": False, "status": error.category,
                                           "error": error.category})
         return self.semantic_state()
@@ -557,6 +575,8 @@ class MemoryManager:
                 OverflowError, ArithmeticError) as error:
             category = (error.category if isinstance(error, EmbeddingError)
                         else "embedding_invalid_response")
+            if category == "embedding_dimension_mismatch":
+                self._clear_embedding_cache()
             self._semantic_status.update({"ready": False, "status": category,
                                           "error": category})
             self._embedding_backend = None

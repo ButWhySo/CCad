@@ -56,6 +56,7 @@ class RetrievalMetricsTests(unittest.TestCase):
             report = run_benchmark(corpus, split="held_out", work_dir=Path(temp),
                                    warmups=0, repetitions=2)
         self.assertEqual(report["dataset_version"], corpus["dataset_version"])
+        self.assertEqual(report["benchmark_version"], "1.1.0")
         self.assertEqual(report["split"], "held_out")
         self.assertGreater(report["summary"]["case_count"], 0)
         history = next(row for row in report["cases"]
@@ -77,6 +78,7 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertEqual(report["systems"]["product_startup_latency_ms"], None)
         self.assertEqual(report["systems"]["embedding_latency_ms"]["status"],
                          "not_requested")
+        self.assertIsNone(report["runtime"]["semantic_model_identity"])
         self.assertEqual(report["systems"]["backend_failure_recovery"]["status"],
                          "not_measured_no_local_semantic_backend")
         self.assertEqual(report["systems"]["follow_up_tool_calls"],

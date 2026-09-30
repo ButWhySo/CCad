@@ -1,5 +1,18 @@
 # CCad Agent production TODO
 
+### Sprint 1044 — explicit embedding task protocol
+
+- [x] Apply official model-specific retrieval query/document prompts; isolate similarity prompts from retrieval.
+- [x] Report backend, model digest, observed dimension, task mode, and normalization; invalidate stale process vectors on identity/dimension changes.
+- [x] Preserve lexical fallback, restrict lazy vector rebuilds to authorized retrieval candidates, and never install/download models implicitly.
+- [x] Cover exact prompt formats, model/digest changes, dimension drift, lexical fallback, and no-download behavior with protocol contracts.
+- [x] Re-run calibration and held-out retrieval against installed local EmbeddingGemma and Nomic; record identity and measured outcomes without model-winner claims.
+- [x] Pass changed-module Pyright, focused Agent contracts, Qt/MinGW Release, and full CTest (127/127); non-visual manifest `artifacts/evidence/sprint-1044-embedding-task-protocol.json` SHA-256 `1EF8A5BE78F9E66D898DB2C9DBA8DC9C84E980799DA079C1385E464DFFF5A4B2`.
+- [x] Update codebase map, feature inventory, progress, and retrieval backlog in this slice.
+- [x] Run redacted tracked-repository and staged-addition secret scans; three tracked files contain known synthetic test fixtures, staged additions have zero credential-pattern matches. Stage only verified code, docs, tests, and evidence manifest.
+- [ ] Commit and push the verified slice; confirm remote branch equals the tested commit.
+- [ ] Verify hosted CI on the exact pushed SHA when a PR/manual workflow event exists; branch-only pushes do not trigger CI.
+
 ### Sprint 1043 live provider turn follow-up
 
 - [x] Add response-contract checks: empty text/empty text blocks are invalid, while text, structured content, and native tool-call-only responses are accepted. Focused contracts pass 14/14; changed-module Pyright reports zero diagnostics.
@@ -7137,15 +7150,17 @@ or equivalent explicit task enum.
 
 ### EmbeddingGemma requirements
 
-- [ ] Use the model's retrieval-query formatting for retrieval queries.
-- [ ] Use the model's document formatting for indexed retrieval documents.
-- [ ] Use sentence-similarity formatting only for symmetric similarity tasks such as near-duplicate comparison.
-- [ ] Add protocol tests asserting exact prompt/task formatting.
-- [ ] Never reuse the semantic-duplicate threshold as a retrieval threshold.
+- [x] Use the model's retrieval-query formatting for retrieval queries.
+- [x] Use the model's document formatting for indexed retrieval documents.
+- [x] Use sentence-similarity formatting only for symmetric similarity tasks such as near-duplicate comparison.
+- [x] Add protocol tests asserting exact prompt/task formatting.
+- [x] Never reuse the semantic-duplicate threshold as a retrieval threshold.
 
 ### Model identity
 
-Persist/report at least:
+Report the runtime identity and bind process cache keys to its model digest and embedding protocol; persist the identity with vectors only if durable vector storage is introduced:
+
+- [x] Report backend, model, digest, learned vector dimension, task mode, and normalization; include model digest and protocol/normalization version in process-cache identity.
 
 ```text
 provider/backend
@@ -7160,15 +7175,17 @@ normalization behavior
 
 When model/digest changes:
 
-- [ ] invalidate incompatible cached vectors;
-- [ ] mark semantic state rebuilding/not-ready;
-- [ ] preserve lexical retrieval;
-- [ ] rebuild only authorized corpora;
-- [ ] never silently download/install a model.
+- [x] Invalidate incompatible cached vectors on model digest/configuration changes and dimension drift.
+- [x] Report backend readiness separately from process-cache state; these vectors are lazy and process-only, so do not invent an asynchronous rebuild state.
+- [x] Preserve lexical retrieval when semantic readiness or vector validation fails.
+- [x] Embed only authorized candidates supplied by the active project or enabled memory scope; do not bulk-rebuild unrelated corpora.
+- [x] Never silently download/install a model; verify only through the installed-model catalog.
 
 ### Done when
 
 A retrieval embedding can never accidentally use duplicate-classification semantics.
+
+References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) documents `task: search result | query:` and `title: none | text:` for retrieval, with sentence similarity reserved for similarity tasks; [Nomic's official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) defines distinct `search_query`, `search_document`, and `clustering` task types.
 
 ---
 

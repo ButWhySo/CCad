@@ -57,6 +57,10 @@ class TimedEmbeddingBackend:
         self.query_latency_ms: list[float] = []
         self.document_latency_ms: list[float] = []
 
+    @property
+    def model_identity(self) -> dict[str, Any]:
+        return dict(self._backend.model_identity)
+
     def embed_query(self, text: str) -> list[float]:
         started = time.perf_counter_ns()
         try:
@@ -596,16 +600,20 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     memory_disk = memory_path.stat().st_size if memory_path.exists() else 0
     conversation_disk = sum(path.stat().st_size for path in work_dir.glob(
         "benchmark-conversation.sqlite3*"))
+    if local_semantic:
+        semantic_state = manager.semantic_state()
     return {
-        "schema_version": 1, "benchmark_version": "1.0.0",
+        "schema_version": 1, "benchmark_version": "1.1.0",
         "dataset_id": dataset["dataset_id"], "dataset_version": dataset["dataset_version"],
         "dataset_sha256": hashlib.sha256(payload).hexdigest(), "split": split,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "git_commit": git_commit, "platform": platform.platform(),
         "runtime": {"python": platform.python_version(), "backend": "CCad in-process retrieval",
-                    "semantic_enabled": bool(local_semantic),
-                    "semantic_status": semantic_state.get("status", "disabled"),
-                    "semantic_model": semantic_state.get("model", "") if local_semantic else ""},
+                     "semantic_enabled": bool(local_semantic),
+                     "semantic_status": semantic_state.get("status", "disabled"),
+                     "semantic_model": semantic_state.get("model", "") if local_semantic else "",
+                     "semantic_model_identity": (
+                         semantic_state.get("model_identity") if local_semantic else None)},
         "summary": {"case_count": len(reports), "measured_case_count": sum(
                         row["status"] not in {"unavailable", "failed"} for row in reports),
                     "false_negative_case_count": false_negative,

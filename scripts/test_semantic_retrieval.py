@@ -19,6 +19,13 @@ from semantic_retrieval import EmbeddingError, OllamaEmbeddingBackend
 
 class OllamaTestHandler(BaseHTTPRequestHandler):
     requests = []
+    paths = []
+    forced_dimension: int | None = None
+    model_digests = {
+        "test-embed:latest": "sha256:fixture-v1",
+        "embeddinggemma:latest": "sha256:gemma-fixture",
+        "nomic-embed-text:latest": "sha256:nomic-fixture",
+    }
     @staticmethod
     def vector(value):
         text = value.casefold()
@@ -29,16 +36,17 @@ class OllamaTestHandler(BaseHTTPRequestHandler):
         return [0.0, 0.0, 1.0]
 
     def do_GET(self):
+        self.paths.append(self.path)
         if self.path != "/api/tags":
             self.send_error(404)
             return
         self._json({"models": [
-            {"name": "test-embed:latest", "digest": "sha256:fixture-v1"},
-            {"name": "embeddinggemma:latest", "digest": "sha256:gemma-fixture"},
-            {"name": "nomic-embed-text:latest", "digest": "sha256:nomic-fixture"},
+            {"name": name, "digest": digest}
+            for name, digest in self.model_digests.items()
         ]})
 
     def do_POST(self):
+        self.paths.append(self.path)
         if self.path != "/api/embed":
             self.send_error(404)
             return
@@ -46,7 +54,9 @@ class OllamaTestHandler(BaseHTTPRequestHandler):
         self.requests.append(body)
         values = body["input"]
         values = [values] if isinstance(values, str) else values
-        vectors = [self.vector(value) for value in values]
+        vectors = ([1.0] * self.forced_dimension for _ in values) if self.forced_dimension else (
+            self.vector(value) for value in values)
+        vectors = list(vectors)
         self._json({"model": body["model"], "embeddings": vectors})
 
     def _json(self, value):
@@ -90,24 +100,58 @@ server = ThreadingHTTPServer(("127.0.0.1", 0), OllamaTestHandler)
 thread = Thread(target=server.serve_forever, daemon=True)
 thread.start()
 try:
+    assert MemoryManager.MIN_SEMANTIC_SIMILARITY == 0.25
+    assert MemoryManager.NEAR_DUPLICATE_THRESHOLD == 0.88
     endpoint = f"http://127.0.0.1:{server.server_port}"
     backend = OllamaEmbeddingBackend(endpoint, "test-embed")
     assert backend.check_ready()["ready"] is True
     assert backend.model_version == "sha256:fixture-v1"
     assert backend.embed_documents(["switching regulator powers board"])[0] == [1.0, 0.0, 0.0]
     assert backend.embed_query("how to step down supply voltage") == [1.0, 0.0, 0.0]
+    assert backend.model_identity == {
+        "provider": "ollama_local", "model": "test-embed",
+        "digest": "sha256:fixture-v1", "dimension": 3,
+        "task_mode": "explicit_retrieval_and_similarity_v1",
+        "normalization": "l2_unit",
+    }
+    OllamaTestHandler.forced_dimension = 4
+    try:
+        backend.embed_query("dimension contract")
+    except EmbeddingError as error:
+        assert error.category == "embedding_dimension_mismatch"
+    else:
+        raise AssertionError("model dimension drift was accepted")
+    OllamaTestHandler.forced_dimension = None
+    missing_model = OllamaEmbeddingBackend(endpoint, "not-installed")
+    request_count = len(OllamaTestHandler.paths)
+    assert missing_model.check_ready()["status"] == "model_not_installed"
+    assert len(OllamaTestHandler.paths) == request_count + 1
+    assert OllamaTestHandler.paths[-1] == "/api/tags"
+    assert "/api/pull" not in OllamaTestHandler.paths
     gemma_backend = OllamaEmbeddingBackend(endpoint, "embeddinggemma")
     assert gemma_backend.check_ready()["ready"] is True
     similarity_query = "A switching regulator converts an input rail to stable output voltage."
+    gemma_backend.embed_query(similarity_query)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "task: search result | query: " + similarity_query]
+    similarity_documents = ["The power rail uses a 0.25 mm track."]
+    gemma_backend.embed_documents(similarity_documents)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "title: none | text: " + similarity_documents[0]]
     gemma_backend.embed_similarity_query(similarity_query)
     assert OllamaTestHandler.requests[-1]["input"] == [
         "task: sentence similarity | query: " + similarity_query]
-    similarity_documents = ["The power rail uses a 0.25 mm track."]
     gemma_backend.embed_similarity_documents(similarity_documents)
     assert OllamaTestHandler.requests[-1]["input"] == [
         "task: sentence similarity | query: " + similarity_documents[0]]
     nomic_backend = OllamaEmbeddingBackend(endpoint, "nomic-embed-text")
     assert nomic_backend.check_ready()["ready"] is True
+    nomic_backend.embed_query(similarity_query)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "search_query: " + similarity_query]
+    nomic_backend.embed_documents(similarity_documents)
+    assert OllamaTestHandler.requests[-1]["input"] == [
+        "search_document: " + similarity_documents[0]]
     nomic_backend.embed_similarity_query(similarity_query)
     assert OllamaTestHandler.requests[-1]["input"] == ["clustering: " + similarity_query]
     nomic_backend.embed_similarity_documents(similarity_documents)
@@ -116,6 +160,30 @@ try:
     ordinary_backend = OllamaEmbeddingBackend(endpoint, "test-embed")
     ordinary_backend.embed_similarity_query(similarity_query)
     assert OllamaTestHandler.requests[-1]["input"] == [similarity_query]
+    with tempfile.TemporaryDirectory() as directory:
+        manager = MemoryManager(MemoryStore(Path(directory) / "digest-change.json"),
+                                thread_id="digest-thread")
+        manager.configure({"ltm": True, "semantic": {
+            "enabled": True, "model": "test-embed", "base_url": endpoint}})
+        manager.add("Switching regulator powers the board", tier="ltm")
+        assert manager.retrieve("step down regulator", limit=2)
+        assert manager.embedding_cache_entries > 0
+        assert manager.semantic_state()["model_identity"]["dimension"] == 3
+        OllamaTestHandler.forced_dimension = 4
+        degraded, _ = manager.retrieve_with_metadata("switching regulator", limit=2)
+        assert degraded
+        assert manager.semantic_state()["status"] == "embedding_dimension_mismatch"
+        assert manager.embedding_cache_entries == 0
+        OllamaTestHandler.forced_dimension = None
+        assert manager.refresh_semantic_readiness()["ready"] is True
+        OllamaTestHandler.model_digests["test-embed:latest"] = "sha256:fixture-v2"
+        changed = manager.refresh_semantic_readiness()
+        assert changed["ready"] is True
+        assert changed["model_identity"]["digest"] == "sha256:fixture-v2"
+        assert changed["cache_entries"] == 0
+        assert manager.retrieve("step down regulator", limit=2)
+        assert manager.embedding_cache_entries > 0
+        OllamaTestHandler.model_digests["test-embed:latest"] = "sha256:fixture-v1"
     with tempfile.TemporaryDirectory() as directory:
         ollama_manager = MemoryManager(
             MemoryStore(Path(directory) / "ollama-semantic-dedupe.json"),

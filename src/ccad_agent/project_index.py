@@ -1514,6 +1514,9 @@ class ProjectIndex:
             return ranked
         except EmbeddingError as error:
             self._semantic_status = error.category
+            if error.category == "embedding_dimension_mismatch":
+                self._semantic_vectors.clear()
+                self._semantic_query_vectors.clear()
         except Exception:
             self._semantic_status = "embedding_failed"
         return []

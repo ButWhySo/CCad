@@ -19,6 +19,8 @@ class EmbeddingError(RuntimeError):
 
 
 class OllamaEmbeddingBackend:
+    EMBEDDING_PROTOCOL_VERSION = 1
+    NORMALIZATION = "l2_unit"
     MAX_TEXTS = 64
     MAX_TEXT_CHARS = 16_384
     MAX_DIMENSIONS = 16_384
@@ -28,6 +30,7 @@ class OllamaEmbeddingBackend:
         self.base_url = self._validate_base_url(base_url)
         self.model = self._validate_model(model)
         self.model_version = ""
+        self.embedding_dimension: int | None = None
         self._http = build_opener(ProxyHandler({}))
 
     @staticmethod
@@ -55,7 +58,45 @@ class OllamaEmbeddingBackend:
 
     @property
     def identity(self) -> str:
-        return f"ollama:{self.base_url}:{self.model}:{self.model_version}"
+        return (f"ollama:{self.base_url}:{self.model}:{self.model_version}:"
+                f"semantic-v{self.EMBEDDING_PROTOCOL_VERSION}:{self.NORMALIZATION}")
+
+    @property
+    def model_identity(self) -> dict:
+        """Safe identity of the model and the vector contract used for retrieval."""
+        return {
+            "provider": "ollama_local",
+            "model": self.model,
+            "digest": self.model_version,
+            "dimension": self.embedding_dimension,
+            "task_mode": "explicit_retrieval_and_similarity_v1",
+            "normalization": self.NORMALIZATION,
+        }
+
+    def _model_family(self) -> str:
+        return self.model.rsplit("/", 1)[-1].split(":", 1)[0].casefold()
+
+    def _format_task(self, texts, task: str) -> list:
+        values = list(texts)
+        family = self._model_family()
+        if family == "embeddinggemma":
+            prefixes = {
+                "retrieval_query": "task: search result | query: ",
+                "retrieval_document": "title: none | text: ",
+                "similarity": "task: sentence similarity | query: ",
+            }
+        elif family in {"nomic-embed-text", "nomic-embed-text-v1",
+                        "nomic-embed-text-v1.5"}:
+            prefixes = {
+                "retrieval_query": "search_query: ",
+                "retrieval_document": "search_document: ",
+                "similarity": "clustering: ",
+            }
+        else:
+            prefixes = {}
+        prefix = prefixes.get(task, "")
+        return [prefix + value if prefix and isinstance(value, str) else value
+                for value in values]
 
     def _request(self, path: str, payload: dict | None = None, *, timeout=2):
         data = None if payload is None else json.dumps(payload).encode("utf-8")
@@ -89,16 +130,23 @@ class OllamaEmbeddingBackend:
                                   self.model + ":")), None)
             if model is None:
                 self.model_version = ""
+                self.embedding_dimension = None
                 return {"ready": False, "status": "model_not_installed",
-                        "error": "model_not_installed"}
+                        "error": "model_not_installed",
+                        "model_identity": self.model_identity}
             digest = str(model.get("digest", ""))
-            self.model_version = digest[:128]
-            if not self.model_version:
+            version = digest[:128]
+            if not version:
                 raise EmbeddingError("embedding_model_version_missing")
+            if self.model_version and self.model_version != version:
+                self.embedding_dimension = None
+            self.model_version = version
             return {"ready": True, "status": "ready", "error": "",
-                    "model_version": self.model_version}
+                    "model_version": self.model_version,
+                    "model_identity": self.model_identity}
         except EmbeddingError as error:
             self.model_version = ""
+            self.embedding_dimension = None
             return {"ready": False, "status": error.category, "error": error.category}
 
     @classmethod
@@ -120,24 +168,15 @@ class OllamaEmbeddingBackend:
         return [item / norm for item in vector]
 
     def embed_documents(self, texts) -> list[list[float]]:
-        return self._embed(texts)
+        return self._embed(self._format_task(texts, "retrieval_document"))
 
     def embed_query(self, text: str) -> list[float]:
-        vectors = self._embed([text])
+        vectors = self._embed(self._format_task([text], "retrieval_query"))
         return vectors[0]
 
     def embed_similarity_documents(self, texts) -> list[list[float]]:
-        """Apply each supported model's documented similarity/duplicate task prompt."""
-        values = list(texts)
-        model_name = self.model.rsplit("/", 1)[-1].split(":", 1)[0].casefold()
-        if model_name == "embeddinggemma":
-            values = [f"task: sentence similarity | query: {text}"
-                      if isinstance(text, str) else text for text in values]
-        elif model_name in {"nomic-embed-text", "nomic-embed-text-v1",
-                            "nomic-embed-text-v1.5"}:
-            values = [f"clustering: {text}" if isinstance(text, str) else text
-                      for text in values]
-        return self._embed(values)
+        """Use symmetric-similarity prompts only for similarity/duplicate tasks."""
+        return self._embed(self._format_task(texts, "similarity"))
 
     def embed_similarity_query(self, text: str) -> list[float]:
         return self.embed_similarity_documents([text])[0]
@@ -160,4 +199,9 @@ class OllamaEmbeddingBackend:
         vectors = [self._normalize_vector(row) for row in rows]
         if len({len(vector) for vector in vectors}) != 1:
             raise EmbeddingError("embedding_dimension_mismatch")
+        dimension = len(vectors[0])
+        if (self.embedding_dimension is not None and
+                self.embedding_dimension != dimension):
+            raise EmbeddingError("embedding_dimension_mismatch")
+        self.embedding_dimension = dimension
         return vectors
