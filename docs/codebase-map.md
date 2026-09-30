@@ -2878,3 +2878,9 @@ manifest `artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8.json`
 The UI test keeps tracing disabled and does not send a Cloud trace. Verify the
 fresh Cloud observation by trace ID only when project access exists; local
 OTLP receiver acceptance is not proof of Cloud ingestion.
+
+## Agent contract maintenance (Sprint 1054)
+
+`src/ccad_agent/method_catalog.py` describes dispatchable Python JSON-RPC methods, including the GUI conversation-history list/load controls. In `orchestrator.py`, `tool_approval_decision()` consults validated native catalog metadata: read-only tools and dry runs do not require mutation approval, while mutating or unknown `ui.*` calls remain gated. The offline Agent contract runner accepts `-PythonPath` for isolated worktrees that reuse an existing local environment; its catalog, provider, checkpoint, and ACK contracts must be run after the native executable is built when they exercise MCP stdio.
+
+The process-local broker path registers its `call_id` queue before emitting `tool_call`, so a fast Qt/client response cannot arrive before its waiter exists. `route_protocol_line()` consumes only a result for a currently registered ID and acknowledges it after queue delivery. The local OpenAI-compatible provider contract exercises this path with a top-level JSON-RPC `result`, covering the call-before-registration race.

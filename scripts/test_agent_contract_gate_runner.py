@@ -7,6 +7,8 @@ root = Path(__file__).resolve().parents[1]
 runner = (root / "scripts" / "run_agent_contract_gate.ps1").read_text(encoding="utf-8")
 
 assert "src\\ccad_agent\\venv\\Scripts\\python.exe" in runner
+assert "[string]$PythonPath" in runner
+assert "Resolve-Path -LiteralPath $PythonPath" in runner
 assert '"_gui_"' in runner
 assert '"test_gui_"' in runner
 assert '"visual"' in runner

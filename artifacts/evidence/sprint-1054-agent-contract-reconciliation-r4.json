@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1054-agent-contract-reconciliation-r4",
+    "feature":  "Agent contract reconciliation, result correlation and truthful approval policy",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T14:45:56.7838912Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.75 log=artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4/preflight.log",
+                      "finished_utc":  "2026-09-30T14:45:57.5909840Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=3.08 log=artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4/build.log",
+                      "finished_utc":  "2026-09-30T14:46:00.6889285Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=127.23 log=artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4/ctest.log",
+                      "finished_utc":  "2026-09-30T14:48:07.9179533Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4/ctest.log",
+                                         "sha256":  "2D6FF5D8B1B157B576594FD86DA6D3B6BB1BB3ACA7DDBDD8FE255744FA034D2D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T14:48:07.9701947Z"
+}
