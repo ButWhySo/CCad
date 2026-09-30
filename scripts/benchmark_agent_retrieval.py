@@ -129,6 +129,7 @@ def _snapshot(fixture_name: str) -> dict[str, Any]:
             "U1": (0.0, 0.0), "C1": (0.45, 0.20), "C2": (1.55, 0.0),
             "C3": (13.0, 8.0), "R1": (8.0, 8.0), "R2": (11.0, 8.0),
             "U2": (25.0, 15.0), "U3": (31.0, 20.0), "J2": (40.0, 5.0),
+            "D1": (20.0, 10.0), "L1": (22.0, 10.0), "Q1": (24.0, 10.0),
         }
         values = {
             "U1": ("MCU controller", "microcontroller controller"),
@@ -140,6 +141,9 @@ def _snapshot(fixture_name: str) -> dict[str, Any]:
             "U2": ("USB interface", "USB transceiver"),
             "U3": ("power regulator", "switching converter"),
             "J2": ("USB connector", "USB-C receptacle"),
+            "D1": ("USB TVS diode", "transient suppressor protects USB data pins"),
+            "L1": ("USB common-mode choke", "filters common-mode noise on USB pair"),
+            "Q1": ("LED driver transistor", "switches status LED from controller GPIO"),
         }
         footprints = []
         for ref, (x, y) in positions.items():
@@ -201,6 +205,20 @@ def _snapshot(fixture_name: str) -> dict[str, Any]:
                                "description": "controller board connector",
                                "position": {"x_mm": 5 + index * 2, "y_mm": 65},
                                "layer_id": "F.Cu"})
+        footprints.extend([
+            {"reference": "D2", "value": "ESD protector",
+             "description": "clamps electrostatic discharge at the external interface",
+             "position": {"x_mm": 33, "y_mm": 30}, "layer_id": "F.Cu"},
+            {"reference": "Y1", "value": "16 MHz crystal",
+             "description": "clock source for the microcontroller",
+             "position": {"x_mm": 35, "y_mm": 30}, "layer_id": "F.Cu"},
+            {"reference": "Q2", "value": "load switch",
+             "description": "disconnects peripheral supply under controller control",
+             "position": {"x_mm": 37, "y_mm": 30}, "layer_id": "F.Cu"},
+            {"reference": "L2", "value": "ferrite bead",
+             "description": "isolates analog supply from switching noise",
+             "position": {"x_mm": 39, "y_mm": 30}, "layer_id": "F.Cu"},
+        ])
         pads = [{"id": "J3.1", "component_id": "J3", "pin_number": "1",
                  "pin_name": "SCL", "net_id": "I2C_SCL",
                  "position": {"x_mm": 30, "y_mm": 20}}]
@@ -411,6 +429,30 @@ def _seed_memories(manager: MemoryManager, fixture: str) -> dict[str, str]:
          "User rejected a copper bridge near the switching node because it couples switching noise.", "correction", 5),
         ("memory:accepted-ground-return", "Accepted ground return",
          "Keep a separate short ground return beside the switching node.", "preference", 3),
+        ("memory:preferred-routing-layer", "Preferred routing layer",
+         "Prefer F.Cu for signal tracks when clearance and layer rules allow it.",
+         "preference", 4),
+        ("memory:accepted-via-transition", "Accepted layer transition",
+         "Use a paired via transition from F.Cu to B.Cu when routing around an obstacle.",
+         "fact", 3),
+        ("memory:accepted-local-bypass", "Accepted local bypass",
+         "Place a 100 nF ceramic bypass capacitor close to the IC supply pins.",
+         "preference", 4),
+        ("memory:preferred-antenna-clearance", "Preferred antenna clearance",
+         "Keep copper pours, components, and tracks outside the RF antenna clearance region.",
+         "preference", 5),
+        ("memory:old-antenna-pour-correction", "Removed antenna pour",
+         "An earlier copper pour beneath the RF antenna was removed after clearance review.",
+         "correction", 3),
+        ("memory:preferred-usb-edge", "USB connector placement",
+         "Place the USB connector on the left board edge to preserve the enclosure opening.",
+         "preference", 4),
+        ("memory:preferred-analog-isolation", "Analog supply isolation",
+         "Keep the analog supply isolated from switching-converter noise with a ferrite bead.",
+         "fact", 3),
+        ("memory:previous-layer-correction", "Previous layer correction",
+         "The first signal route used B.Cu, then moved to F.Cu to satisfy the layer constraint.",
+         "correction", 2),
     ]
     identities: dict[str, str] = {}
     for benchmark_id, title, content, kind, importance in records:
@@ -533,6 +575,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
         status = "measured"
         retrieval_status = "ready"
         channel_names: list[str] = []
+        semantic_candidates: list[dict[str, Any]] = []
         context_chars = 0
         context_bytes = 0
         retrieval_calls = 0
@@ -540,6 +583,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
         def retrieve_once():
             nonlocal result_ids, source_revision, status, retrieval_status
             nonlocal channel_names, context_chars, context_bytes, retrieval_calls
+            nonlocal semantic_candidates
             retrieval_calls += 1
             if is_memory:
                 if not memory_channels:
@@ -559,6 +603,14 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                 result_ids = [memory_aliases.get(hit.canonical_id,
                                                  f"unmapped:{hit.canonical_id}")
                               for hit in result.hits]
+                semantic_candidates = [
+                    {"id": memory_aliases.get(hit.canonical_id,
+                                               f"unmapped:{hit.canonical_id}"),
+                     "score": float(hit.semantic_similarity)}
+                    for hit in result.hits
+                    if hit.channel == RetrievalChannel.SEMANTIC and
+                    isinstance(hit.semantic_similarity, (int, float)) and
+                    not isinstance(hit.semantic_similarity, bool)]
                 source_revision = "memory-fixture-v1"
                 retrieval_status = result.status.value
                 status = "measured" if retrieval_status == "ready" else "unavailable"
@@ -604,9 +656,18 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                 embedding_backend=manager.semantic_embedding_backend)
             result = retriever.retrieve(request)
             aliases = project_aliases[fixture]
-            result_ids = [next((alias for alias, native in aliases.items()
-                                if native == hit.canonical_id),
-                               f"unmapped:{hit.canonical_id}") for hit in result.hits]
+            aliases_by_native_id = {native: alias for alias, native in aliases.items()}
+            result_ids = [aliases_by_native_id.get(hit.canonical_id,
+                                                   f"unmapped:{hit.canonical_id}")
+                          for hit in result.hits]
+            semantic_candidates = [
+                {"id": aliases_by_native_id.get(hit.canonical_id,
+                                                f"unmapped:{hit.canonical_id}"),
+                 "score": float(hit.semantic_similarity)}
+                for hit in result.hits
+                if hit.channel == RetrievalChannel.SEMANTIC and
+                isinstance(hit.semantic_similarity, (int, float)) and
+                not isinstance(hit.semantic_similarity, bool)]
             source_revision = result.revision or fixture_meta.get("source_revision", "")
             retrieval_status = result.status.value
             status = "measured" if retrieval_status in {"ready", "partial"} else "unavailable"
@@ -628,6 +689,8 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                                 set(case["distractor_ids"]))
         reports.append({
             "case_id": case["id"], "task": task, "fixture": case["fixture"],
+            "threshold_task": case.get("threshold_task", task
+                                        if case["semantic_search_allowed"] else ""),
             "status": status, "retrieval_status": retrieval_status,
             "semantic_search_allowed": case["semantic_search_allowed"],
             "project_retrieval_mode": (project_retrieval_mode
@@ -645,6 +708,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
             "channels_available_on_hits": channel_names,
             "source_revision": source_revision,
             "expected_ids": list(case["expected_ids"]), "result_ids": result_ids,
+            "semantic_candidates": semantic_candidates,
             "metrics": metrics, "channels_used": channel_names,
             "context": {"relevant_facts_included": len(set(result_ids) &
                                                            set(case["expected_ids"])),
@@ -684,7 +748,7 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     if local_semantic:
         semantic_state = manager.semantic_state()
     return {
-        "schema_version": 1, "benchmark_version": "1.4.0",
+        "schema_version": 1, "benchmark_version": "1.5.0",
         "dataset_id": dataset["dataset_id"], "dataset_version": dataset["dataset_version"],
         "dataset_sha256": hashlib.sha256(payload).hexdigest(), "split": split,
         "project_retrieval_mode": project_retrieval_mode,

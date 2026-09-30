@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1049 — R7 expanded retrieval calibration
+
+- [x] Add balanced source-described positives and semantic hard negatives for each retrieval task in calibration and held-out splits; advance fixture revisions and dataset to 1.3.0.
+- [x] Preserve actual semantic candidate IDs/scores in benchmark 1.5.0 reports and add calibration-only, model/task/corpus/evaluation/surface-scoped cutoff analysis that does not alter production settings.
+- [x] Run 32 real local reports across EmbeddingGemma/Nomic, two splits, exact/lexical/semantic/hybrid/full project modes, and lexical/semantic/hybrid memory modes; analyze calibration and held-out outcomes without claiming an unsupported gain.
+- [x] Pass dataset, benchmark, threshold-analysis, Python compilation, and changed-module Pyright checks before the full build.
+- [x] Run the official Qt/MinGW Release build and full CTest gate (128/128); no GUI behavior changed, so use the official nonvisual verifier and inspect its logs/manifest `artifacts/evidence/sprint-1049-r7-retrieval-evaluation.json`, SHA-256 `A3F16839F979CF70AFD9B8CA73A040FA9E03A62D4C979ABF5069082A284FF99D`.
+- [x] Update codebase map, feature inventory, retrieval capability matrix, progress, and this TODO with verified build/test evidence.
+- [x] Run redacted repository and staged-diff secret scans; staged additions have zero credential-pattern matches. The tracked scan finds three existing synthetic test tokens and two path-name false positives; stage this slice's source, tests, docs, and required hash manifest only, excluding workspace-only benchmark reports and all pre-existing user changes.
+- [ ] Commit, push the sprint branch, fast-forward merge to main only after verification, confirm remote refs/CI, and prune only the merged sprint branch.
+
 ### Sprint 1048 — Python CI checkpoint-restart schema parity
 
 - [x] Fix the checkpoint-restart fake model to read provider-safe function declarations, matching `bind_native_tools()` rather than expecting `StructuredTool` objects.
@@ -7243,11 +7254,11 @@ Determine whether embeddings are actually improving CCad retrieval.
 
 Sprint 1038's duplicate calibration is useful but deliberately small and conservative. Do not extrapolate it to general retrieval.
 
-- [ ] Expand the still-small source-grounded calibration and held-out sets across all semantic retrieval classes below; keep memory duplicate classification separate from retrieval relevance. Sprint 1045 adds component-function/design-intent cases; sample remains limited.
-- [x] Evaluate hard negatives with semantic retrieval enabled and score false-positive cost per case/model, not only recall. Sprint 1045 observed 2/2 false-positive hard negatives per split/model.
-- [x] Compare exact-only, lexical-only, semantic-only, and hybrid execution for ProjectIndex cases; Sprint 1046 used pre-ranking channel control and recorded each mode/model/split separately. Sprint 1047 adds project-entity and memory retrieval modes plus the full deterministic+semantic ProjectIndex stack. Semantic-only held-out recall@3 was below lexical-only for the Sprint 1046 project corpus; both semantic-bearing modes returned 2/2 hard negatives, so do not promote semantic retrieval.
+- [x] Expand the still-small source-grounded calibration and held-out sets across all semantic retrieval classes below; keep memory duplicate classification separate from retrieval relevance. Sprint 1049 adds four positive and three hard-negative examples per semantic class and split, with distinct fixture revisions and source-grounded entity descriptions.
+- [x] Evaluate hard negatives with semantic retrieval enabled and score false-positive cost per case/model, not only recall. Sprint 1049 has 14 project hard negatives and 3 memory negatives in each split; scoped design-intent semantic retrieval returns all 3 held-out hard negatives versus 2/3 lexical on both models.
+- [x] Compare exact-only, lexical-only, semantic-only, and hybrid execution for ProjectIndex cases; Sprint 1049 also compares the full deterministic+semantic ProjectIndex stack and lexical/semantic/hybrid memory modes on dataset 1.3.0, reporting every mode/model/split separately. Project semantic modes show no calibration-set recall gain; memory semantic Recall@3 is below lexical/hybrid for both models, so no semantic promotion is supported.
 - [x] Add separate memory-retrieval and project-entity cases to both calibration and held-out corpus splits; Sprint 1047 reports are small-sample coverage checks, not generalized quality claims.
-- [ ] Scope any acceptance threshold by model digest, task, corpus, and evaluation version; do not introduce a universal cosine cutoff.
+- [x] Scope any acceptance threshold by model digest, task, corpus, and evaluation version; do not introduce a universal cosine cutoff. Sprint 1049 adds offline calibration profiles keyed by model digest, task, dataset ID/version/SHA, benchmark version, evaluation version, and retrieval surface; profiles affect no production setting and inherit candidate-generation limits from the current retriever.
 - [ ] Claim useful semantic gain only when held-out incremental recall and hard-negative false-positive cost both support it.
 
 ### Create separate benchmark sets for

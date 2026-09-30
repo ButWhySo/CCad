@@ -92,7 +92,7 @@ class RetrievalMetricsTests(unittest.TestCase):
             report = run_benchmark(corpus, split="held_out", work_dir=Path(temp),
                                    warmups=0, repetitions=2)
         self.assertEqual(report["dataset_version"], corpus["dataset_version"])
-        self.assertEqual(report["benchmark_version"], "1.4.0")
+        self.assertEqual(report["benchmark_version"], "1.5.0")
         self.assertEqual(report["split"], "held_out")
         self.assertGreater(report["summary"]["case_count"], 0)
         history = next(row for row in report["cases"]
@@ -106,6 +106,8 @@ class RetrievalMetricsTests(unittest.TestCase):
         semantic_allowed = [row for row in report["cases"]
                             if row["semantic_search_allowed"]]
         self.assertTrue(semantic_allowed)
+        self.assertTrue(all(isinstance(row["semantic_candidates"], list)
+                            for row in semantic_allowed))
         self.assertTrue(all("semantic" in row["requested_channels"]
                             for row in semantic_allowed))
         self.assertEqual(report["summary"]["semantic_eligible_case_count"],

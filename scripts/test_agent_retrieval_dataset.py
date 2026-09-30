@@ -71,6 +71,34 @@ class RetrievalDatasetTests(unittest.TestCase):
                 self.assertTrue(cases)
                 self.assertTrue(any(case["semantic_search_allowed"] for case in cases))
 
+    def test_semantic_classes_have_balanced_positive_and_negative_examples(self):
+        semantic_tasks = {"semantic_paraphrase", "component_function", "design_intent",
+                          "project_entity", "memory_retrieval"}
+        for split in SPLITS:
+            for task in semantic_tasks:
+                cases = [case for case in self.dataset["cases"]
+                         if case.get("threshold_task", case["task"]) == task and
+                         case["split"] == split and case["semantic_search_allowed"]]
+                positives = [case for case in cases if case["expected_ids"]]
+                negatives = [case for case in cases if not case["expected_ids"]]
+                with self.subTest(split=split, task=task):
+                    self.assertGreaterEqual(len(positives), 4)
+                    self.assertGreaterEqual(len(negatives), 3)
+                    if task == "memory_retrieval":
+                        self.assertTrue(all(case["task"] == task for case in cases))
+                    else:
+                        self.assertTrue(all(case["task"] in {task, "hard_negative"}
+                                            for case in cases))
+
+    def test_fixture_revisions_advance_with_expanded_entity_facts(self):
+        fixtures = self.dataset["fixtures"]
+        self.assertEqual(self.dataset["dataset_version"], "1.3.0")
+        self.assertEqual(fixtures["power_small"]["project_revision"], "power-small-v2")
+        self.assertEqual(fixtures["controller_large"]["project_revision"],
+                         "controller-large-v2")
+        self.assertIn("component:D1", fixtures["power_small"]["entity_ids"])
+        self.assertIn("component:Y1", fixtures["controller_large"]["entity_ids"])
+
     def test_corpus_covers_board_scale_repeated_classes_and_nonsemantic_queries(self):
         fixtures = self.dataset["fixtures"]
         board_sizes = {tuple(fixtures[name]["board_size_mm"])

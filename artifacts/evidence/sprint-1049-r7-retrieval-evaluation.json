@@ -1,0 +1,193 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1049-r7-retrieval-evaluation",
+    "feature":  "R7 retrieval dataset 1.3.0, semantic candidate score reports, and model/task/corpus-scoped offline threshold evaluation",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T05:17:52.7630885Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.2 log=artifacts/evidence/sprint-1049-r7-retrieval-evaluation/preflight.log",
+                      "finished_utc":  "2026-09-30T05:17:54.0566228Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=23 log=artifacts/evidence/sprint-1049-r7-retrieval-evaluation/build.log",
+                      "finished_utc":  "2026-09-30T05:18:17.0668954Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=218.43 log=artifacts/evidence/sprint-1049-r7-retrieval-evaluation/ctest.log",
+                      "finished_utc":  "2026-09-30T05:21:55.4954519Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/build.log",
+                                         "sha256":  "5671F8F3AD3C4C5CD6AFCC3E52AF3D72A3A6F92C71908256C42C006CDDDBC873"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/ctest.log",
+                                         "sha256":  "3C033AF6161A7147558A38956E7EB592048A7293F823F8B684CCAF4D4C3A30BD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-hybrid-calibration.json",
+                                         "sha256":  "3694546A039C1DB59C04FB5B7BB8F5D5AD75434DC14AA744424842BC363FCC77"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-hybrid-held_out.json",
+                                         "sha256":  "97D2A66553A54AC6E329B90AD44842FB00032417D9F0DEC0C7FEA38218238DC7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-lexical-calibration.json",
+                                         "sha256":  "6B8938DFE24278AEF0AEF501D2D5E21D136E3D807C872C834EC0691C7E7005CD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-lexical-held_out.json",
+                                         "sha256":  "FE72EFD6E7252EF11588A0588E909297F6E2F5331C30294CE0768A457CA9AAB8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-semantic-calibration.json",
+                                         "sha256":  "B8FADD1DA4D04D8B4270DFB3B87E6BFACDE41B081612649BC37F1F328EAF81C2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-semantic-held_out.json",
+                                         "sha256":  "1AF8CB04B0088D43AA4D477866973CFD7D16264F25CE29D1B4CBA7668D81E868"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-memory-threshold-analysis.json",
+                                         "sha256":  "DE5EA46F470CA406560DE57A29B8B182376FF84A7D71ADCB3C93F17B68B1C70E"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-exact-calibration.json",
+                                         "sha256":  "F90A1AD5933D7071DCBF80A07C54B6BF42647082575C496975ED90815E9C2BFE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-exact-held_out.json",
+                                         "sha256":  "46A158D43A77AC280BF8E74A14EAFA53CA82D64C1582867D45F85613BB33152C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-full-calibration.json",
+                                         "sha256":  "3ACDCE621B6694EE46BBE15C5BAADE7BCCC749D467EBDE16669CDAB658DF0634"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-full-held_out.json",
+                                         "sha256":  "D88C8035355E0DBC6466E28074398A7B36B438A04A65674D9956A2647FF26CAE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-hybrid-calibration.json",
+                                         "sha256":  "848AF32EFF8E34322037159A40CF8872E737988FFEE124C14543B770E1A97A50"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-hybrid-held_out.json",
+                                         "sha256":  "06DA136349D73569103B3794A055938D155D7A6ACF8D29EE02032E31E00B13BA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-lexical-calibration.json",
+                                         "sha256":  "64BB1D27421621A20DC975DE113579DC8E9DDDBAA7CC59042A8B71F938CFEE75"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-lexical-held_out.json",
+                                         "sha256":  "D18396197270ECFB08F391A0BAE13D5C0AF811518DAB7842E879E1284C3D2F6A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-semantic-calibration.json",
+                                         "sha256":  "1890B6E8E84FDCB9758F1091DA7EC9910CAD81A80716EDE50E29534C652665B0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-semantic-held_out.json",
+                                         "sha256":  "E4433ABC91C8EE686FBAFE974140AAB2ACBFB2DD8829BD388CEF14A83D59BE3D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/embeddinggemma-project-threshold-analysis.json",
+                                         "sha256":  "BF49AF3488B387EA35E0DF795717FA3DB58662381E0DA13E976101DF3C8CFCF5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-hybrid-calibration.json",
+                                         "sha256":  "572C6155D8DCE1B5AF5630230D81F15C7D8FB1698B1ACC1A82C8560192666ED1"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-hybrid-held_out.json",
+                                         "sha256":  "07D2E33D2047A79EAA28BE3D4A6130D548DD4E76B1BF0F24007DB1CF45A93C27"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-lexical-calibration.json",
+                                         "sha256":  "50DA3F947B4E2D4B3AE8BA9C7F7BDD95916C67E6D35AEF10CF9535D6B0C70643"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-lexical-held_out.json",
+                                         "sha256":  "80CFD2A534D8A74223792CCE905D137055A79DF36A309D38B1E8A071A323B3D9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-semantic-calibration.json",
+                                         "sha256":  "1DAB13CF4404E47C4A92F745FD46ECE675008538462AD88DA12A0EED8B3505F6"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-semantic-held_out.json",
+                                         "sha256":  "B424ED7747B50D63BE2FAA62CE7834A2BF3092BA338B6D054A8E4CDA947BE2AE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-memory-threshold-analysis.json",
+                                         "sha256":  "2BA81BD6F4032D96AC9103DE04ACDD219EE8B0C37A442CA8293690CB650F683B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-exact-calibration.json",
+                                         "sha256":  "02E608AE24F765D6F86616B77C0A286B838A5AFBBB4711C4ECDC94B780A42E49"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-exact-held_out.json",
+                                         "sha256":  "117373856F29E00818601587BE6D996CA0F56E3C2241DDCB7417166BE11FF881"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-full-calibration.json",
+                                         "sha256":  "38985B1A276C1DB057A70AF524C8FB67DC0828BF29EEFC3D578767B69C252AE9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-full-held_out.json",
+                                         "sha256":  "88FA1A8E17450A6175D4CE910C2D3C77C4999F661E70B0D6D887635866917EBF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-hybrid-calibration.json",
+                                         "sha256":  "BE7C006DA80F63D34FFEA854E9CC1CC65B5AD4CFA81D2FF6061333D797681231"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-hybrid-held_out.json",
+                                         "sha256":  "22BBD0FEC91D346B770F887D22A78C8808658B4E675D721A296E35A11F38D1B6"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-lexical-calibration.json",
+                                         "sha256":  "7C1323D2B300FA4D8714F888B786F80D23EFAB90CBD92577A9F2D80847F36BE9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-lexical-held_out.json",
+                                         "sha256":  "75509D75CFCB8654CBC0AEFF8DBE936548F9B8A3CD678D3A1FD58E053A47A47B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-semantic-calibration.json",
+                                         "sha256":  "947B3FC0D4AF14850A91F8FCF6CFEF0712B71A819A13DF7DB8C461060BB355F8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-semantic-held_out.json",
+                                         "sha256":  "4EFDC653F241D736CAB2684042B8EEAB5815E910415EDC5590A63436A1A4B046"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/nomic-project-threshold-analysis.json",
+                                         "sha256":  "4960CC229964A35C1FA8CFB45F6834443DE225E13CB2B8C7F3D76975B58A7FF9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1049-r7-retrieval-evaluation/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T05:21:55.9795730Z"
+}

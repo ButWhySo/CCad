@@ -1,5 +1,30 @@
 # Implemented Features
 
+## Sprint 1049 — scoped retrieval evaluation and threshold analysis
+
+The versioned evaluation corpus advances to 1.3.0, with four positive and three
+hard-negative examples per semantic class and split across semantic paraphrase,
+component function, design intent, project entity, and memory retrieval. The
+real benchmark retains per-candidate semantic scores, and a separate offline
+analyzer fits only on calibration data and binds its profiles to model digest,
+task, corpus ID/version/SHA, benchmark and evaluator versions, and retrieval
+surface. It cannot change runtime retrieval settings and reports that scores
+come from the current retriever's candidate-generation filter. Thirty-two local
+runs compare exact, lexical, semantic, hybrid, and full project retrieval plus
+lexical, semantic, and hybrid memory retrieval for EmbeddingGemma and Nomic
+across both splits. Neither model shows calibration-set recall gain over
+lexical retrieval; held-out design-intent semantic recall is 0.8 versus 0.6
+lexical, but returns 3/3 scoped hard negatives versus lexical's 2/3. Memory
+semantic Recall@3 is 0.375 versus lexical/hybrid at 0.625, and all modes return
+the three memory hard negatives. No global threshold or promotion is claimed.
+Contracts cover split balance, held-out isolation, report scope, and
+false-positive accounting. Qt/MinGW Release and full CTest passed 128/128;
+changed-module Pyright reports zero diagnostics. Nonvisual verifier manifest
+`artifacts/evidence/sprint-1049-r7-retrieval-evaluation.json` has SHA-256
+`A3F16839F979CF70AFD9B8CA73A040FA9E03A62D4C979ABF5069082A284FF99D`. The 32
+benchmark reports and four threshold analyses remain workspace-only under
+`artifacts/evidence/sprint-1049-r7-retrieval-evaluation/`.
+
 ## Sprint 1048 — checkpoint-restart CI fixture parity
 
 The checkpoint restart contract fixture now consumes the provider-safe

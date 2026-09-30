@@ -2672,6 +2672,30 @@ that build/test evidence does not close the model-backed turn requirement.
 `scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
 retrieval paths; the CTest and CI `agent-python` gates run it.
 
+Sprint 1049 advances the source-revisioned fixture set to dataset 1.3.0 and
+benchmark 1.5.0. Calibration and held-out splits each contain four positive
+examples and three hard negatives for semantic paraphrase, component function,
+design intent, project entity, and memory retrieval; project and memory
+duplicate classification remain separate tasks. Benchmark reports retain the
+actual semantic candidate IDs/scores. `scripts/analyze_agent_retrieval_thresholds.py`
+fits only on calibration rows and scopes experimental cutoffs by model digest,
+task, corpus identity/version/SHA, benchmark/evaluation version, and retrieval
+surface. It cannot modify production configuration and reports that candidate
+generation inherits the current retriever's filter. Thirty-two local runs compare
+exact, lexical, semantic, hybrid, and full project retrieval plus lexical,
+semantic, and hybrid memory retrieval across EmbeddingGemma
+(`85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1`) and Nomic
+(`0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f`), both
+project/memory surfaces and both splits. Neither model has calibration-set
+incremental recall over lexical retrieval in the scoped profiles. Held-out
+design-intent semantic recall is 0.8 versus 0.6 lexical for both, but semantic
+retrieval returns 3/3 scoped hard negatives versus lexical's 2/3; calibration
+does not support that tradeoff. Memory semantic Recall@3 is 0.375 versus
+lexical/hybrid at 0.625, and all modes return 3/3 memory hard negatives. Thus
+no threshold or semantic promotion is justified. The
+full JSON reports are workspace-only under
+`artifacts/evidence/sprint-1049-r7-retrieval-evaluation/`.
+
 Sprint 1045 expands this versioned corpus with distinct component-function and
 design-intent tasks, plus semantically enabled hard engineering negatives. The
 benchmark applies each case's semantic-use policy to project and memory requests.
