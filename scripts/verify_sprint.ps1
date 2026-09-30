@@ -8,6 +8,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $root
 $plan = $null
@@ -157,6 +160,12 @@ try {
       ($_.id -eq $target -or $_.target -eq $target) -and
       $_.result.result.performed -eq $true
     })) { throw "Required mapped text entry failed or missing: $target" }
+  }
+  if ($plan.target_sequence -eq 'sprint1056-layer-net-inventory') {
+    if (-not ($entries | Where-Object {
+      $_.layer_catalog_verified -eq $true -and $_.net_catalog_verified -eq $true -and
+      $_.active_layer_id -and $_.active_net_id
+    })) { throw 'Live typed board layer/net catalogs were not verified by the app-owned sequence.' }
   }
   $images = @(Get-ChildItem -LiteralPath $screenshotsRoot -Filter "$runName-*.png" -File)
   if ($images.Count -ne $plan.meaningful_screenshots) {

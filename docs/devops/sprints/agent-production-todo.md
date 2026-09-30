@@ -1,5 +1,14 @@
 # CCad Agent production TODO
 
+### Sprint 1056 — authoritative live PCB layer and net inventory
+
+- [x] Return the bounded, exact board-layer catalog from `ui.active_layer` with ID, name, kind, visibility, separately identified active layer ID, total count, and omitted count (up to 256 records).
+- [x] Return bounded PCB net IDs from `ui.active_net` with active net ID, same-ID schematic member identities/counts when present, PCB pad/via/track counts, and omitted counts (512 nets, 32 schematic members per net).
+- [x] Require the model to inspect these authoritative catalogs before setting a layer or net; prohibit guessed identifiers.
+- [x] Add Qt GUI-map contract coverage and verify the feature through the official app-owned mapped harness; live board reported 59 layers, 4 nets, active `F.Cu`/`AC1`, eight performed clicks, two inspected screenshots, and empty stderr.
+- [x] Run changed-module Pyright, Qt/MinGW Release build, full CTest, redacted tracked/staged secret-pattern scans, and the passing evidence-manifest gate; update handover, feature, progress, backlog, and TODO in this slice. The tracked scan's existing hits were placeholder fixtures or `task-`/`solder-mask-` false positives; staged diff had zero matches.
+- [ ] Commit and push only after the local gate and exact-commit hosted CI pass.
+
 ### Sprint 1054 — Agent runtime contract reconciliation and read-only approval safety
 
 - [x] Reconcile the broader offline Agent contract gate with the actual runtime: method catalog parity, context-turn lifecycle, durable approval metadata, Cerebras model fallback, and tool-result ACK ordering.
@@ -1181,6 +1190,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Add screenshot/evidence capture with viewport, layer, and selection metadata.
 - [ ] Add UI-map inspection and mapped-action tools; never fixed-coordinate scripts for normal operation.
 - [ ] Add exact PCB/schematic state inspection and typed placement/edit transactions with units, snap, net, geometry, rules, and validation.
+  - [x] Expose bounded live PCB layer/net catalogs through `ui.active_layer`/`ui.active_net`, including layer identities/visibility and net member/object counts; prompt requires inventory inspection before selecting an ID (Sprint 1056; full board/schematic inspection and typed transactions remain open).
 - [x] Let models compose real tools dynamically.
 
 ## Safety and approvals
@@ -1188,7 +1198,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [ ] Keep read-only, calculation, screenshot, and dry-run calls immediate.
 - [ ] Gate every persistent, destructive, external, CLI, Python-write, export, or process action before execution.
 - [ ] Bind approval to immutable typed action plan and project/context revision; expire stale approvals.
-  - [ ] Bind broker grant to exact registered method, exact serialized argument JSON, model call ID, and current project/context revision; consume once and expire. Replay, substitution, staleness, and cancellation contracts pass; deterministic expiry coverage remains open.
+  - [x] Bind broker grant to exact registered method, exact serialized argument JSON, model call ID, and current project/context revision; consume once and expire. Replay, substitution, staleness, cancellation, and deterministic expiry contracts pass (including `test_approval_expiry_is_deterministic_and_distinct_from_replay`).
   - [x] Verify Qt supplies the live design-context revision at proposal and approval time; reject malformed calls without synthetic IDs.
 - [ ] Support approve, reject, revise, cancel, undo, and post-action verification through transaction/audit path.
 - [ ] Block command injection, unrestricted filesystem access, secret exposure, and unbounded subprocess/network execution.

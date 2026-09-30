@@ -168,6 +168,8 @@ class ProviderToolSelectionTests(unittest.TestCase):
         prompt = orchestrator.get_system_prompt(
             "the CCad PCB Routing Expert.", tools)
         self.assertIn("Use project.state for complete live", prompt)
+        self.assertIn("inspect ui.active_layer or ui.active_net", prompt)
+        self.assertIn("Never infer an ID from a display name", prompt)
 
     def test_read_only_tool_calls_do_not_report_approval_pending(self):
         self.assertFalse(orchestrator.tool_calls_require_approval([{

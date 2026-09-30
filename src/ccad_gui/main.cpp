@@ -1663,8 +1663,13 @@ int main(int argc, char** argv) {
       const bool semantic_memory_target_sequence = name.startsWith("sprint991-semantic-memory");
       const bool editor_context_target_sequence =
           name.startsWith("sprint1038-agent-context-editor");
+      const bool layer_net_catalog_target_sequence =
+          name.startsWith("sprint1056-layer-net-inventory");
       const QStringList target_ids = editor_context_target_sequence
           ? QStringList{}
+          : layer_net_catalog_target_sequence
+          ? QStringList{"tab:pcb", "action:fit", "action:zoom_in", "action:zoom_out",
+                        "action:grid", "tab:schematic", "tab:pcb", "tab:agent"}
           : undo_redo_target_sequence
           ? QStringList{"action:undo", "action:redo", "action:grid",
                         "tab:schematic", "tab:pcb", "action:zoom_in", "action:zoom_out"}
@@ -1775,6 +1780,7 @@ int main(int argc, char** argv) {
                                         << "control:agent_chat_input" << "action:agent_submit_chat";
       }
       bool memory_target_actions_ok = true;
+      bool layer_net_catalog_actions_ok = true;
       bool gemini_checkbox_changed = false;
       QJsonObject initial_memory_toggle_state;
       const auto visibleMemoryCheckbox = [](const QString& id) -> QCheckBox* {
@@ -1794,10 +1800,12 @@ int main(int argc, char** argv) {
                             semantic_memory_target_sequence,
                             conversation_history_target_sequence,
                             undo_redo_target_sequence,
+                            layer_net_catalog_target_sequence,
                             provider_target_sequence,
                             gemini_count_target_sequence,
                             langfuse_turn_state_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
+                            &layer_net_catalog_actions_ok,
                             &gemini_checkbox_changed,
                             &visibleMemoryCheckbox,
                             &trigger_before_capture_ids,
@@ -2217,6 +2225,23 @@ int main(int argc, char** argv) {
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
+          if (layer_net_catalog_target_sequence && found) {
+            const QString click_payload =
+                QString("{\"id\":%1}").arg(jsonStringLocal(id));
+            const QString click_result =
+                window->runAgentUiQueryJson("ui.click", click_payload);
+            const QJsonObject click_response =
+                QJsonDocument::fromJson(click_result.toUtf8()).object();
+            const bool performed = click_response.value("ok").toBool() &&
+                click_response.value("result").toObject()
+                    .value("performed").toBool();
+            layer_net_catalog_actions_ok =
+                layer_net_catalog_actions_ok && performed;
+            entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.click\",\"result\":%3}")
+                .arg(jsonStringLocal(pass_name), jsonStringLocal(id),
+                     click_result.trimmed());
+            QApplication::processEvents();
+          }
           if (langfuse_turn_state_target_sequence && id == "label:langfuseStatus") {
             QString visible_status;
             for (int attempt = 0; attempt < 30; ++attempt) {
@@ -2287,6 +2312,8 @@ int main(int argc, char** argv) {
                id == "action:settingsBtn" || id == "label:langfuseStatus") &&
               (!conversation_history_target_sequence ||
                id == "action:agent_new_chat" || id == "action:agent_submit_chat") &&
+              (!layer_net_catalog_target_sequence || id == "tab:pcb" ||
+               id == "tab:agent") &&
               (!memory_secret_target_sequence ||
                id == "action:agent_memory_manage") &&
               (!langfuse_turn_state_target_sequence ||
@@ -2484,6 +2511,51 @@ int main(int argc, char** argv) {
                            before_path.string())));
       }
       runPass("initial");
+      if (layer_net_catalog_target_sequence) {
+        const QJsonObject layer_response = QJsonDocument::fromJson(
+            window->runAgentUiQueryJson("ui.active_layer", "{}").toUtf8())
+            .object().value("result").toObject();
+        const QJsonArray layers = layer_response.value("layers").toArray();
+        bool active_layer_found = false;
+        for (const QJsonValue& value : layers) {
+          const QJsonObject layer = value.toObject();
+          if (layer.value("id").toString() ==
+              layer_response.value("active_layer_id").toString()) {
+            active_layer_found = layer.value("copper").toBool();
+            break;
+          }
+        }
+        const QJsonObject net_response = QJsonDocument::fromJson(
+            window->runAgentUiQueryJson("ui.active_net", "{}").toUtf8())
+            .object().value("result").toObject();
+        const QJsonArray nets = net_response.value("nets").toArray();
+        bool active_net_found = false;
+        for (const QJsonValue& value : nets) {
+          if (value.toObject().value("id").toString() ==
+              net_response.value("active_net_id").toString()) {
+            active_net_found = value.toObject().value("active").toBool();
+            break;
+          }
+        }
+        const bool layer_catalog_verified =
+            layer_response.value("available").toBool() &&
+            layer_response.value("layer_count").toInt() >= layers.size() &&
+            layer_response.value("layers_omitted").toInt() >= 0 && active_layer_found;
+        const bool net_catalog_verified =
+            net_response.value("available").toBool() &&
+            net_response.value("net_count").toInt() >= nets.size() &&
+            net_response.value("nets_omitted").toInt() >= 0 && active_net_found;
+        layer_net_catalog_actions_ok = layer_catalog_verified && net_catalog_verified;
+        entries << QString("{\"layer_catalog_verified\":%1,\"layer_count\":%2,"
+                           "\"active_layer_id\":%3,\"net_catalog_verified\":%4,"
+                           "\"net_count\":%5,\"active_net_id\":%6}")
+            .arg(layer_catalog_verified ? "true" : "false")
+            .arg(layer_response.value("layer_count").toInt())
+            .arg(jsonStringLocal(layer_response.value("active_layer_id").toString()))
+            .arg(net_catalog_verified ? "true" : "false")
+            .arg(net_response.value("net_count").toInt())
+            .arg(jsonStringLocal(net_response.value("active_net_id").toString()));
+      }
       if (undo_redo_target_sequence) {
         const ccad::Project final_project = readProject(project_path);
         const bool final_restored = !final_project.boards.empty() &&
@@ -2499,7 +2571,8 @@ int main(int argc, char** argv) {
       // window->resize(1120, 720); // Removed because fullscreen resize crashes Qt on Windows
       QApplication::processEvents();
       QThread::msleep(static_cast<unsigned long>(per_target_wait_ms));
-      if (!editor_context_target_sequence && !semantic_memory_target_sequence && !gemini_count_target_sequence &&
+      if (!editor_context_target_sequence && !layer_net_catalog_target_sequence &&
+          !semantic_memory_target_sequence && !gemini_count_target_sequence &&
           !undo_redo_target_sequence &&
           !conversation_history_target_sequence &&
           !memory_secret_target_sequence &&
@@ -2665,6 +2738,7 @@ int main(int argc, char** argv) {
       const QByteArray bytes = report.toUtf8();
       output.write(bytes.constData(), bytes.size());
       if (!output || (editor_context_target_sequence && !editor_context_target_actions_ok) ||
+                      (layer_net_catalog_target_sequence && !layer_net_catalog_actions_ok) ||
                       ((memory_target_sequence || memory_secret_target_sequence ||
                        langfuse_turn_state_target_sequence ||
                        provider_target_sequence ||

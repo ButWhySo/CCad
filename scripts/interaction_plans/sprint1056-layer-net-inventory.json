@@ -1,0 +1,16 @@
+{
+  "target_sequence": "sprint1056-layer-net-inventory",
+  "project": "..\\..\\CCad\\artifacts\\demos\\sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:pcb",
+    "action:fit",
+    "action:zoom_in",
+    "action:zoom_out",
+    "action:grid",
+    "tab:schematic",
+    "tab:agent"
+  ],
+  "required_text_entries": [],
+  "meaningful_screenshots": 2
+}

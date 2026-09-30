@@ -169,6 +169,35 @@ int main(int argc, char** argv) {
       context_result.value("active_view").toString() != "pcb") {
     return 23;
   }
+  const QJsonObject active_layer = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("ui.active_layer", "{}").toUtf8()).object()
+      .value("result").toObject();
+  const QJsonArray available_layers = active_layer.value("layers").toArray();
+  bool front_layer_found = false;
+  bool back_layer_found = false;
+  for (const QJsonValue& value : available_layers) {
+    const QJsonObject layer = value.toObject();
+    front_layer_found = front_layer_found ||
+        (layer.value("id").toString() == "F.Cu" &&
+         layer.value("name").toString() == "Front copper" &&
+         layer.value("kind").toString() == "copper");
+    back_layer_found = back_layer_found ||
+        (layer.value("id").toString() == "B.Cu" &&
+         layer.value("visible").toBool());
+  }
+  if (active_layer.value("active_layer_id").toString() != "F.Cu" ||
+      available_layers.size() != 2 || !front_layer_found || !back_layer_found) {
+    return 30;
+  }
+  const QJsonObject active_net = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("ui.active_net", "{}").toUtf8()).object()
+      .value("result").toObject();
+  const QJsonArray available_nets = active_net.value("nets").toArray();
+  if (available_nets.size() != 1 ||
+      available_nets.at(0).toObject().value("id").toString() != "GND" ||
+      active_net.value("active_net_id").toString() != "GND") {
+    return 31;
+  }
   const QString select_schematic = window.runAgentUiQueryJson(
       "ui.select_canvas_object",
       "{\"id\":\"U1\",\"canvas\":\"canvas:schematic\"}");

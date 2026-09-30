@@ -1,0 +1,91 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1056-layer-net-inventory-r7",
+    "feature":  "Live typed PCB layer and net inventory discovery for Agent routing context",
+    "validation_mode":  "gui",
+    "interaction_plan":  "scripts/interaction_plans/sprint1056-layer-net-inventory.json",
+    "target_sequence":  "sprint1056-layer-net-inventory-sprint-1056-layer-net-inventory-r7",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-30T17:15:32.4518652Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.48 log=artifacts/evidence/sprint-1056-layer-net-inventory-r7/preflight.log",
+                      "finished_utc":  "2026-09-30T17:15:32.9752364Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.17 log=artifacts/evidence/sprint-1056-layer-net-inventory-r7/build.log",
+                      "finished_utc":  "2026-09-30T17:15:33.1513633Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=127.54 log=artifacts/evidence/sprint-1056-layer-net-inventory-r7/ctest.log",
+                      "finished_utc":  "2026-09-30T17:17:40.7013144Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=13.15 log=artifacts/evidence/sprint-1056-layer-net-inventory-r7/ui_harness.log",
+                      "finished_utc":  "2026-09-30T17:17:53.8539005Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=8; screenshots=2",
+                      "finished_utc":  "2026-09-30T17:17:53.9329398Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-30T17:17:53.9509436Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/ctest.log",
+                                         "sha256":  "DFDDCD9471A3ABADFA6C18CB47CA467CD83622884373DDE627DCAB5F38EB8209"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/sprint1056-layer-net-inventory-sprint-1056-layer-net-inventory-r7.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/sprint1056-layer-net-inventory-sprint-1056-layer-net-inventory-r7.stdout.log",
+                                         "sha256":  "33A0F8C512F43FEB53DE1267A3DDF8CDB6944D8C8770364CE814C9E397440A4A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/sprint1056-layer-net-inventory-sprint-1056-layer-net-inventory-r7-initial-tab_agent.png",
+                                         "sha256":  "53E5A77FFC932C03949C8B475F47353F6F59F66CA8F286754B77BE1037C2595F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/sprint1056-layer-net-inventory-sprint-1056-layer-net-inventory-r7-initial-tab_pcb.png",
+                                         "sha256":  "673FB0CFC2F00C607AB9A1EC0813C0947B9B34A6541A21935F26CD9B39DE35DD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/sprint1056-layer-net-inventory-sprint-1056-layer-net-inventory-r7-target-sequence.json",
+                                         "sha256":  "55239ACA77231EEE30961FCCC695434743C641E9B6D8BBB538761639449376D9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1056-layer-net-inventory-r7/ui_harness.log",
+                                         "sha256":  "002A7B1A3EB938FFDD5E22417FD2D1275759DD0542B30C4BB613D45CEA93FC5A"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T17:17:53.9859442Z"
+}

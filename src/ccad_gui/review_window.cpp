@@ -923,7 +923,7 @@ QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}
                           QJsonObject{{"minimum_epoch", 1}, {"timeout_ms", 20}}));
 
   append(agentMethodEntry("ui.active_layer", "pcb_state", "Active PCB Layer",
-                          "Return the active PCB routing layer.",
+                          "Return the active PCB routing layer and the bounded catalog of actual board layers.",
                           true, false, false, true, false, emptySchema(),
                           "Active layer id and layer list."));
   append(agentMethodEntry("ui.set_active_layer", "pcb_state", "Set Active PCB Layer",
@@ -934,7 +934,7 @@ QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}
                           "Active layer setter result.",
                           QJsonObject{{"layer_id", "B.Cu"}}));
   append(agentMethodEntry("ui.active_net", "pcb_state", "Active PCB Net",
-                          "Return the active PCB net.",
+                          "Return the active PCB net and the bounded catalog of nets present in the board or schematic.",
                           true, false, false, true, false, emptySchema(),
                           "Active net id and net list."));
   append(agentMethodEntry("ui.set_active_net", "pcb_state", "Set Active PCB Net",
@@ -4240,27 +4240,46 @@ void ReviewWindow::syncActivePcbLayerFromBoard() {
 
 QString ReviewWindow::activePcbLayerJson() const {
   if (!!project_cache_.boards.empty()) {
-    return QString("{\"schema_version\":1,\"available\":false,"
-                   "\"reason\":\"missing_board\",\"active_layer_id\":\"\"}\n");
+    return jsonObjectLine(QJsonObject{{"schema_version", 1}, {"available", false},
+                                      {"reason", "missing_board"},
+                                      {"active_layer_id", ""}, {"layers", QJsonArray{}},
+                                      {"layers_omitted", 0}});
   }
   const std::string layer_id = activePcbLayerOrDefault();
   const ccad::Layer* layer = findBoardLayer(project_cache_.boards[0], layer_id);
   if (layer == nullptr) {
-    return QString("{\"schema_version\":1,\"available\":false,"
-                   "\"reason\":\"missing_copper_layer\",\"active_layer_id\":\"\"}\n");
+    return jsonObjectLine(QJsonObject{{"schema_version", 1}, {"available", false},
+                                      {"reason", "missing_copper_layer"},
+                                      {"active_layer_id", ""}, {"layers", QJsonArray{}},
+                                      {"layers_omitted", 0}});
   }
-  int copper_count = 0;
+  constexpr qsizetype kMaxLayers = 256;
+  QJsonArray layers;
+  const auto& board_layers = project_cache_.boards[0].layers;
+  for (qsizetype i = 0; i < std::min<qsizetype>(board_layers.size(), kMaxLayers); ++i) {
+    const ccad::Layer& candidate = board_layers[static_cast<std::size_t>(i)];
+    layers.append(QJsonObject{{"id", qstr(candidate.id)},
+                              {"name", qstr(candidate.name)},
+                              {"kind", qstr(candidate.kind)},
+                              {"visible", candidate.visible},
+                              {"copper", isCopperLayer(candidate)}});
+  }
+  QJsonObject response{{"schema_version", 1},
+                       {"available", true},
+                       {"active_layer_id", qstr(layer->id)},
+                       {"layer_name", qstr(layer->name)},
+                       {"visible", layer->visible},
+                       {"copper_layer_count", 0},
+                       {"layer_count", static_cast<qint64>(board_layers.size())},
+                       {"layers_omitted", static_cast<qint64>(
+                            board_layers.size() - static_cast<std::size_t>(layers.size()))},
+                       {"layers", layers}};
   for (const ccad::Layer& candidate : project_cache_.boards[0].layers) {
     if (isCopperLayer(candidate)) {
-      ++copper_count;
+      response.insert("copper_layer_count", response.value("copper_layer_count").toInt() + 1);
     }
   }
-  return QString("{\"schema_version\":1,\"available\":true,\"active_layer_id\":%1,"
-                 "\"layer_name\":%2,\"visible\":%3,\"copper_layer_count\":%4}\n")
-      .arg(jsonString(qstr(layer->id)))
-      .arg(jsonString(qstr(layer->name)))
-      .arg(boolJson(layer->visible))
-      .arg(copper_count);
+  return jsonObjectLine(response);
 }
 
 QString ReviewWindow::setActivePcbLayerForAutomation(const QString& layer_id) {
@@ -4354,19 +4373,65 @@ void ReviewWindow::syncActivePcbNetFromProject() {
 
 QString ReviewWindow::activePcbNetJson() const {
   if (!!project_cache_.boards.empty()) {
-    return QString("{\"schema_version\":1,\"available\":false,"
-                   "\"reason\":\"missing_board\",\"active_net_id\":\"\",\"net_count\":0}\n");
+    return jsonObjectLine(QJsonObject{{"schema_version", 1}, {"available", false},
+                                      {"reason", "missing_board"}, {"active_net_id", ""},
+                                      {"net_count", 0}, {"nets", QJsonArray{}},
+                                      {"nets_omitted", 0}});
   }
+  constexpr qsizetype kMaxNets = 512;
+  constexpr qsizetype kMaxMembersPerNet = 32;
   const std::vector<std::string> net_ids = availablePcbNetIds(project_cache_);
   const std::string net_id = activePcbNetOrDefault();
   if (net_id.empty()) {
-    return QString("{\"schema_version\":1,\"available\":false,"
-                   "\"reason\":\"missing_nets\",\"active_net_id\":\"\",\"net_count\":0}\n");
+    return jsonObjectLine(QJsonObject{{"schema_version", 1}, {"available", false},
+                                      {"reason", "missing_nets"}, {"active_net_id", ""},
+                                      {"net_count", 0}, {"nets", QJsonArray{}},
+                                      {"nets_omitted", 0}});
   }
-  return QString("{\"schema_version\":1,\"available\":true,"
-                 "\"active_net_id\":%1,\"net_count\":%2}\n")
-      .arg(jsonString(qstr(net_id)))
-      .arg(static_cast<qulonglong>(net_ids.size()));
+  QJsonArray nets;
+  for (std::size_t i = 0; i < std::min<std::size_t>(net_ids.size(), kMaxNets); ++i) {
+    const std::string& candidate_id = net_ids[i];
+    QJsonArray members;
+    qsizetype member_count = 0;
+    if (!project_cache_.schematics.empty()) {
+      for (const ccad::Net& schematic_net : project_cache_.schematics[0].nets) {
+        if (schematic_net.id != candidate_id) continue;
+        member_count = static_cast<qsizetype>(schematic_net.members.size());
+        for (std::size_t member_index = 0;
+             member_index < std::min<std::size_t>(schematic_net.members.size(), kMaxMembersPerNet);
+             ++member_index) {
+          const ccad::NetMember& member = schematic_net.members[member_index];
+          members.append(QJsonObject{{"component_id", qstr(member.component_id)},
+                                     {"pin_name", qstr(member.pin_name)}});
+        }
+        break;
+      }
+    }
+    qint64 pad_count = 0;
+    qint64 via_count = 0;
+    qint64 track_count = 0;
+    for (const ccad::Pad& pad : project_cache_.boards[0].pads)
+      if (pad.net_id == candidate_id) ++pad_count;
+    for (const ccad::Via& via : project_cache_.boards[0].vias)
+      if (via.net_id == candidate_id) ++via_count;
+    for (const ccad::TrackSegment& track : project_cache_.boards[0].tracks)
+      if (track.net_id == candidate_id) ++track_count;
+    nets.append(QJsonObject{{"id", qstr(candidate_id)},
+                            {"active", candidate_id == net_id},
+                            {"schematic_member_count", member_count},
+                            {"schematic_members_omitted", static_cast<qint64>(
+                                 member_count - static_cast<qsizetype>(members.size()))},
+                            {"schematic_members", members},
+                            {"pcb_pad_count", pad_count},
+                            {"pcb_via_count", via_count},
+                            {"pcb_track_count", track_count}});
+  }
+  return jsonObjectLine(QJsonObject{{"schema_version", 1},
+                                    {"available", true},
+                                    {"active_net_id", qstr(net_id)},
+                                    {"net_count", static_cast<qint64>(net_ids.size())},
+                                    {"nets_omitted", static_cast<qint64>(net_ids.size() - nets.size())},
+                                    {"nets", nets}});
 }
 
 QString ReviewWindow::setActivePcbNetForAutomation(const QString& net_id) {

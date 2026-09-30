@@ -353,7 +353,8 @@ if ($Name.StartsWith("sprint991-semantic-memory")) {
 if ($Name.StartsWith("sprint1038-agent-context-editor") -or
     $Name.StartsWith("sprint1030-conversation-history") -or
     $Name.StartsWith("sprint1031-agent-markdown") -or
-    $Name.StartsWith("sprint1037-undo-redo")) {
+    $Name.StartsWith("sprint1037-undo-redo") -or
+    $Name.StartsWith("sprint1056-layer-net-inventory")) {
   $agentPython = $env:CCAD_AGENT_PYTHON
   if (-not $agentPython -or -not (Test-Path -LiteralPath $agentPython)) {
     $agentPython = Join-Path $PSScriptRoot "..\src\ccad_agent\venv\Scripts\python.exe"

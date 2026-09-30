@@ -56,6 +56,7 @@ int main() {
   const std::string evidence_ci =
       readFile(root / ".github" / "workflows" / "ci.yml");
   const std::string evidence_ignore = readFile(root / ".gitignore");
+  const std::string app_owned_gui = readFile(root / "src" / "ccad_gui" / "main.cpp");
   const std::string workflow =
       readFile(root / ".agents" / "workflows" / "visual-validation.md");
 
@@ -82,6 +83,9 @@ int main() {
                   "Sprint 998 fixture proves native net membership before launch");
   requireContains(target_harness, "[int]$PerTargetMilliseconds = 800",
                   "multi-target harness per-target wait");
+  requireContains(target_harness,
+                  "$Name.StartsWith(\"sprint1056-layer-net-inventory\")",
+                  "Sprint 1056 UI proof selects the isolated Agent runtime");
   requireContains(target_harness,
                   "} elseif ($Name.Contains(\"sprint997\")) {\n      @(\"conversation_turn_visible\", \"pcb_geometry_relationships_visible\")",
                   "Sprint 997 geometry validation uses its own conversation assertions");
@@ -169,4 +173,19 @@ int main() {
                   "non-visual manifest states why GUI proof is not applicable");
   requireContains(evidence_verifier, "-InteractionPlan",
                   "GUI evidence still requires an interaction plan");
+  requireContains(evidence_verifier,
+                  "$PSNativeCommandUseErrorActionPreference = $false",
+                  "native stderr warnings are logged without masking exit codes");
+  requireContains(evidence_verifier,
+                  "$exit = $LASTEXITCODE",
+                  "native command failures are still determined by exit status");
+  requireContains(app_owned_gui,
+                  "if (layer_net_catalog_target_sequence && found)",
+                  "Sprint 1056 resolves every GUI target through a real UI-map click");
+  requireContains(app_owned_gui,
+                  "runAgentUiQueryJson(\"ui.click\", click_payload)",
+                  "Sprint 1056 mapped interaction uses the application UI-map action");
+  requireContains(app_owned_gui,
+                  "&layer_net_catalog_actions_ok",
+                  "Sprint 1056 records mapped action failures in its sequence result");
 }

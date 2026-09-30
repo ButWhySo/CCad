@@ -357,6 +357,8 @@ The safety model must include provider data policies, local-only mode, read-only
 
 The native tool surface should expose deterministic GUI tools next to kernel tools. Current methods cover `ui.map`, compact deltas, target lookup, screenshot, project context, ERC/DRC, and several PCB workflow actions. The backlog still includes `ui.double_click`, richer `ui.key`, `ui.drag`, `ui.scroll`, `ui.wait_for_dialog`, selection editing, properties dialog tools, transaction apply/rollback, dialog automation, KiCad-compatible library chooser tooling, and schematic authoring tools.
 
+Sprint 1056 extends `ui.active_layer` and `ui.active_net` to publish exact bounded layer/net inventories from the live typed project. The live app-owned validation returned 59 board layers and four PCB nets; exact active IDs were `F.Cu` and `AC1`. This does not claim complete schematic-net reconciliation, broad typed PCB/schematic inspection, or executable transaction support; those remain open.
+
 MCP support should mature beyond first-slice `tools/list` and `tools/call`. The harness should expose MCP tools, resources, prompts, sampling boundaries, tool schemas, deferred tool loading, tool search, connector manifests, permission prompts, tool-result normalization, tool-result summarization, replay, mocks, hooks, callbacks, and standard resource URIs for projects, boards, schematics, library items, screenshots, DRC reports, ERC reports, traces, and evidence manifests. External connectors such as browser, curl, document/PDF readers, vendor APIs, and future procurement services must go through the same permission and audit surface.
 
 ### Observability, BYOT, and Run History

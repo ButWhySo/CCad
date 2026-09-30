@@ -1843,7 +1843,7 @@ def get_system_prompt(role_desc: str,
         if scope_instruction:
             parts.append(scope_instruction)
     parts.extend([
-             "For a requested PCB layer or net, verify it exists in project context, then call ui.set_active_layer or ui.set_active_net before a dependent mutation.",
+             "For a requested PCB layer or net, inspect ui.active_layer or ui.active_net for the authoritative available IDs and metadata, confirm the requested ID exists, then call ui.set_active_layer or ui.set_active_net before a dependent mutation. Never infer an ID from a display name or invent a layer/net.",
              "Treat tool results as authoritative: report a change only after performed=true; report the returned failure reason otherwise.",
              "Persistent mutations require the approval path. Use rendered proposal preview when available; never describe text-only context as a visual diff."])
     if base_prompt: parts.append(f"System Base: {base_prompt}")
