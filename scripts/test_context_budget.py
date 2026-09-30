@@ -56,6 +56,19 @@ class Tool:
 
 
 class ContextBudgetTests(unittest.TestCase):
+    def test_memory_authorship_provenance_never_enters_provider_package(self):
+        marker = "private-thread-7f3a"
+        packed = CONTEXT._memory_payload([{
+            "id": "memory-1", "tier": "ltm", "scope": "conversation",
+            "content": "Keep the return path short.",
+            "provenance": {"authorship": "user_authored",
+                           "source_thread_ids": [marker],
+                           "source_turn_ids": ["turn-private"]},
+        }])
+        self.assertNotIn("provenance", packed[0])
+        self.assertNotIn(marker, json.dumps(packed))
+        self.assertNotIn("turn-private", json.dumps(packed))
+
     def test_memory_summary_manifest_and_turn_context_are_bounded_and_truthful(self):
         package = CONTEXT.build_context_package(
             "{}", [{"id": "m1", "tier": "ltm", "scope": "conversation",

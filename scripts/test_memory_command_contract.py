@@ -32,19 +32,28 @@ with tempfile.TemporaryDirectory() as temp:
     else:
         raise AssertionError("non-retained Working Memory write succeeded")
     added, result = execute_memory_command(
-        manager, 'add tier:ltm scope:conversation kind:preference importance:5 title:"route rule" Keep ground return short')
+        manager, 'add tier:ltm scope:conversation kind:preference importance:5 title:"route rule" Keep ground return short',
+        source_thread_id="thread-a", source_turn_id="turn-a")
     assert added == "memory_added" and result["tier"] == "ltm"
     assert result["kind"] == "preference"
     assert result["importance"] == 5
     listed, result = execute_memory_command(manager, "list tier:ltm scope:conversation")
     assert listed == "memory_state" and len(result["entries"]) == 1
     entry_id = result["entries"][0]["id"]
+    record = manager.list(tier="ltm")[0]
+    assert record["provenance"]["authorship"] == "user_authored"
+    assert record["provenance"]["explicit_user_evidence"] is True
+    assert record["provenance"]["source_evidence_classes"] == ["explicit_user_command"]
+    assert record["provenance"]["source_thread_ids"] == ["thread-a"]
+    assert record["provenance"]["source_turn_ids"] == ["turn-a"]
     _, update = execute_memory_command(
-        manager, f"update {entry_id} kind:correction importance:1 Keep return path short")
+        manager, f"update {entry_id} kind:correction importance:1 Keep return path short",
+        source_thread_id="thread-a", source_turn_id="turn-b")
     assert update["updated"]
     assert manager.list(tier="ltm")[0]["kind"] == "correction"
     assert manager.list(tier="ltm")[0]["importance"] == 1
     assert manager.list(tier="ltm")[0]["namespace"] == "thread-a"
+    assert manager.list(tier="ltm")[0]["provenance"]["source_turn_ids"] == ["turn-a", "turn-b"]
     project_added, project_result = execute_memory_command(
         manager, 'add tier:ltm scope:project title:"board rule" Keep analog ground return clear')
     assert project_added == "memory_added"

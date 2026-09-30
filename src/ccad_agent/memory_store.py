@@ -7,6 +7,7 @@ legacy credential-bearing records are excluded from every public read result.
 
 import hashlib
 import json
+import math
 import os
 import re
 import tempfile
@@ -25,6 +26,13 @@ SECRET_FIELD_MARKERS = re.compile(
     r"api[_-]?key|secret|password|token|credential|authorization|"
     r"private[_-]?key|auth[_-]", re.IGNORECASE
 )
+_PROVENANCE_AUTHORS = {"user_authored", "auto_generated", "system_compaction", "unknown"}
+_PROVENANCE_EVIDENCE = {"explicit_user_command", "memory_manager_ui",
+                        "reviewed_compaction", "automatic_extraction", "legacy_unknown"}
+_PROVENANCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
+_PROVENANCE_FIELDS = {"authorship", "explicit_user_evidence", "source_evidence_classes",
+                      "source_thread_ids", "source_turn_ids", "source_event_ids",
+                      "source_memory_ids", "confidence", "pinned"}
 
 
 class MemoryStoreError(RuntimeError):
@@ -68,7 +76,74 @@ class MemoryStore:
                     not isinstance(item["importance"], int) or
                     not 1 <= item["importance"] <= 5):
                 raise MemoryStoreError("memory_store_corrupt")
+            try:
+                item["provenance"] = self._normalise_provenance(
+                    item.get("provenance"), legacy=item.get("provenance") is None)
+            except ValueError as error:
+                raise MemoryStoreError("memory_store_corrupt") from error
         return data
+
+    @staticmethod
+    def _normalise_provenance(value=None, *, legacy=False):
+        if value is None:
+            value = {"authorship": "unknown" if legacy else "unknown",
+                     "source_evidence_classes": ["legacy_unknown"] if legacy else []}
+        if not isinstance(value, dict) or set(value) - _PROVENANCE_FIELDS:
+            raise ValueError("invalid memory provenance")
+        authorship = value.get("authorship", "unknown")
+        explicit = value.get("explicit_user_evidence", False)
+        pinned = value.get("pinned", False)
+        if authorship not in _PROVENANCE_AUTHORS or type(explicit) is not bool or type(pinned) is not bool:
+            raise ValueError("invalid memory provenance")
+        confidence = value.get("confidence")
+        if confidence is not None and (isinstance(confidence, bool) or
+                                       not isinstance(confidence, (int, float)) or
+                                       not math.isfinite(confidence) or not 0 <= confidence <= 1):
+            raise ValueError("invalid memory provenance")
+        result = {"authorship": authorship, "explicit_user_evidence": explicit,
+                  "source_evidence_classes": [], "source_thread_ids": [],
+                  "source_turn_ids": [], "source_event_ids": [],
+                  "source_memory_ids": [], "confidence": confidence, "pinned": pinned}
+        for field in ("source_evidence_classes", "source_thread_ids", "source_turn_ids",
+                      "source_event_ids", "source_memory_ids"):
+            items = value.get(field, [])
+            limit = 64 if field == "source_memory_ids" else 16
+            if not isinstance(items, (list, tuple)) or len(items) > limit:
+                raise ValueError("invalid memory provenance")
+            allowed = _PROVENANCE_EVIDENCE if field == "source_evidence_classes" else None
+            clean = []
+            for item in items:
+                if not isinstance(item, str) or not _PROVENANCE_ID.fullmatch(item):
+                    raise ValueError("invalid memory provenance")
+                if allowed is not None and item not in allowed:
+                    raise ValueError("invalid memory provenance")
+                if SECRET_MARKERS.search(item) or SECRET_FIELD_MARKERS.search(item):
+                    raise ValueError("invalid memory provenance")
+                if item not in clean:
+                    clean.append(item)
+            result[field] = clean
+        if explicit and authorship != "user_authored":
+            raise ValueError("invalid memory provenance")
+        return result
+
+    @classmethod
+    def _merge_provenance(cls, existing, incoming):
+        old = cls._normalise_provenance(existing)
+        new = cls._normalise_provenance(incoming)
+        merged = dict(old)
+        for field in ("source_evidence_classes", "source_thread_ids", "source_turn_ids",
+                      "source_event_ids", "source_memory_ids"):
+            limit = 64 if field == "source_memory_ids" else 16
+            merged[field] = list(dict.fromkeys(old[field] + new[field]))[:limit]
+        merged["explicit_user_evidence"] = old["explicit_user_evidence"] or new["explicit_user_evidence"]
+        if merged["explicit_user_evidence"]:
+            merged["authorship"] = "user_authored"
+        elif new["authorship"] != "unknown":
+            merged["authorship"] = new["authorship"]
+        merged["pinned"] = old["pinned"] or new["pinned"]
+        if new["confidence"] is not None:
+            merged["confidence"] = new["confidence"]
+        return merged
 
     def _write(self, entries):
         name = ""
@@ -101,12 +176,13 @@ class MemoryStore:
                 and not self.contains_secret(entry)]
 
     def add(self, content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
-            namespace="project", expires_at="", importance=3):
+            namespace="project", expires_at="", importance=3, provenance=None):
         if str(tier).strip().lower() in {"stm", "working_memory"}:
             raise ValueError("Working Memory is process-only and cannot be persisted")
         entry = self._normalise_entry(content, title=title, scope=scope, tags=tags,
                                       tier=tier, kind=kind, namespace=namespace,
-                                      expires_at=expires_at, importance=importance)
+                                      expires_at=expires_at, importance=importance,
+                                      provenance=provenance)
         entries = self._read()
         entries.append(entry)
         self._write(entries)
@@ -114,15 +190,16 @@ class MemoryStore:
 
     @staticmethod
     def normalise(content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
-                  namespace="project", expires_at="", importance=3):
+                  namespace="project", expires_at="", importance=3, provenance=None):
         return MemoryStore._normalise_entry(
             content, title=title, scope=scope, tags=tags, tier=tier, kind=kind,
-            namespace=namespace, expires_at=expires_at, importance=importance)
+            namespace=namespace, expires_at=expires_at, importance=importance,
+            provenance=provenance)
 
     @staticmethod
     def _normalise_entry(content, *, title="", scope="project", tags=None,
                          tier="ltm", kind="fact", namespace="project", expires_at="",
-                         importance=3):
+                         importance=3, provenance=None):
         content = str(content or "").strip()
         if not content or len(content) > 8000:
             raise ValueError("memory content must contain 1..8000 characters")
@@ -155,6 +232,7 @@ class MemoryStore:
             "namespace": namespace,
             "tags": clean_tags,
             "created_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": MemoryStore._normalise_provenance(provenance),
         }
         if expires_at:
             try:
@@ -167,7 +245,8 @@ class MemoryStore:
         return entry
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               tier=None, namespace=None, expires_at=None, kind=None, importance=None):
+               tier=None, namespace=None, expires_at=None, kind=None, importance=None,
+               provenance=None):
         if SECRET_MARKERS.search(str(entry_id or "")):
             return None
         entries = self._read()
@@ -184,13 +263,17 @@ class MemoryStore:
                     kind=current.get("kind", "fact") if kind is None else kind,
                     namespace=current.get("namespace", "project") if namespace is None else namespace,
                     expires_at=current.get("expires_at", "") if expires_at is None else expires_at,
-                    importance=current.get("importance", 3) if importance is None else importance)
+                    importance=current.get("importance", 3) if importance is None else importance,
+                    provenance=self._merge_provenance(current.get("provenance"), provenance)
+                    if provenance is not None else current.get("provenance"))
                 replacement["id"] = entry_id
                 replacement["created_at"] = current.get("created_at", replacement["created_at"])
                 replacement["updated_at"] = datetime.now(timezone.utc).isoformat()
                 for field in ("last_used_at", "use_count"):
                     if field in current:
                         replacement[field] = current[field]
+                replacement["provenance"] = self._merge_provenance(
+                    current.get("provenance"), replacement.get("provenance"))
                 entries[index] = replacement
                 self._write(entries)
                 return replacement
@@ -328,10 +411,22 @@ class MemoryStore:
 
         entries = self._read()
         self._validate_compaction_sources(entries, sources, tier, namespace, scope)
+        stored_by_id = {str(entry.get("id", "")): entry for entry in entries}
+        persisted_sources = [stored_by_id[source_id] for source_id in source_ids]
 
         replacement = self._normalise_entry(
             summary, title=title, scope=scope, tags=tags, tier=tier,
-            namespace=namespace, expires_at=expires_at)
+            namespace=namespace, expires_at=expires_at, provenance={
+                "authorship": "system_compaction",
+                "source_evidence_classes": ["reviewed_compaction"],
+                "source_memory_ids": source_ids,
+                "source_thread_ids": list(dict.fromkeys(
+                    value for entry in persisted_sources for value in
+                    entry.get("provenance", {}).get("source_thread_ids", [])))[:16],
+                "source_turn_ids": list(dict.fromkeys(
+                    value for entry in persisted_sources for value in
+                    entry.get("provenance", {}).get("source_turn_ids", [])))[:16],
+            })
         source_id_set = set(source_ids)
         updated = [entry for entry in entries
                    if str(entry.get("id", "")) not in source_id_set]

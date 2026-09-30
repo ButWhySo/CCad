@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1060 — explicit memory provenance (in progress)
+
+- [x] Persist validated memory authorship, explicit-user-evidence, evidence class, thread/turn IDs, optional confidence, pinned state, and bounded source-memory lineage; legacy entries default to unknown provenance without rewriting their files.
+- [x] Attach explicit-user-command provenance to `/memory add` and `/memory update`, and Memory Manager UI provenance to `agent.memory_add` / `agent.memory_update`; do not accept provenance claims from model arguments.
+- [x] Preserve existing lineage on edits and carry source memory/thread/turn lineage into reviewed compaction summaries as system-authored records.
+- [x] Keep provenance out of provider context through the existing memory payload allowlist; add regression coverage.
+- [x] Run official Qt MinGW Release/full CTest gate (126/126), inspect logs/manifest, and run changed-module Pyright (0 diagnostics). Final manifest `artifacts/evidence/sprint1060-memory-provenance-r2.json`, SHA-256 `0B4C7427659787B21D29A9BAD22398A25034C29A8D91E781BC84800F4A897719`.
+- [x] Run redacted tracked-repository scan (five existing fixture-only matches in three untouched test files; no credentials) and staged-diff scan (zero high-confidence matches); stage only verified source/tests/docs and the required manifest. Build/CTest logs remain workspace-only.
+- [ ] Remaining schema/write-gate work stays open: source event IDs from authoritative transcript events, generated-memory extraction and authorization, contradiction/supersession, last-verified/decay, and user-facing pin controls.
+
+
 ### Sprint 1059 — spatially bounded project inspection (pushed; hosted CI pending)
 
 - [x] Add validated millimetre bbox input with inclusive typed AABB intersection for supported PCB/schematic geometry.

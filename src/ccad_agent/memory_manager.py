@@ -646,7 +646,8 @@ class MemoryManager:
 
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
             kind=None,
-            expires_at="", importance=None):
+            expires_at="", importance=None, source_evidence_class="",
+            source_thread_id="", source_turn_id=""):
         tier = self._check_tier(tier)
         if not self.enabled[tier]:
             raise RuntimeError(f"memory tier disabled: {tier}")
@@ -660,18 +661,25 @@ class MemoryManager:
                               "episodic": "user"}[tier])
         namespace = self.namespace_for(tier, scope)
         importance = 3 if importance is None else importance
+        provenance = self._user_provenance(
+            source_evidence_class, source_thread_id, source_turn_id)
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
                                      tier=tier, kind=kind or "fact", namespace=namespace,
-                                     expires_at=expires_at, importance=importance)
+                                     expires_at=expires_at, importance=importance,
+                                     provenance=provenance)
         normalized = " ".join(entry["content"].casefold().split())
         existing = next((item for item in self.list(tier=tier, scope=scope)
                          if " ".join(str(item.get("content", "")).casefold().split()) == normalized), None)
         if existing:
             if ((kind is not None and existing.get("kind", "fact") != kind) or
                     (importance is not None and
-                     existing.get("importance", 3) != importance)):
+                     existing.get("importance", 3) != importance) or
+                    source_evidence_class):
                 return self.update(existing["id"], content, kind=kind,
-                                   importance=importance)
+                                   importance=importance,
+                                   source_evidence_class=source_evidence_class,
+                                   source_thread_id=source_thread_id,
+                                   source_turn_id=source_turn_id)
             return existing
         duplicate = self._near_duplicate(entry["content"], tier, scope=scope)
         if duplicate:
@@ -684,7 +692,7 @@ class MemoryManager:
             entry = self.store.add(entry["content"], title=entry["title"], scope=scope,
                                    tags=entry["tags"], kind=entry["kind"], tier=tier,
                                    namespace=namespace, expires_at=expires_at,
-                                   importance=importance)
+                                   importance=importance, provenance=provenance)
             self.store.keep_latest(tier, namespace, 64)
             entry["project_id"] = self.project_id
         self.runtime[tier].append(entry)
@@ -696,6 +704,14 @@ class MemoryManager:
             while len(self._working_memory_tasks) > self.MAX_WORKING_MEMORY_TASKS:
                 self._working_memory_tasks.popitem(last=False)
         return entry
+
+    def _user_provenance(self, evidence_class="", thread_id="", turn_id=""):
+        if not evidence_class:
+            return None
+        return {"authorship": "user_authored", "explicit_user_evidence": True,
+                "source_evidence_classes": [evidence_class],
+                "source_thread_ids": [str(thread_id)] if thread_id else [],
+                "source_turn_ids": [str(turn_id)] if turn_id else []}
 
     def _near_duplicate(self, content: str, tier: str, *, exclude_id="", scope=None):
         words = set(self._word.findall(str(content).casefold()))
@@ -781,7 +797,8 @@ class MemoryManager:
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               expires_at=None, kind=None, importance=None):
+               expires_at=None, kind=None, importance=None, source_evidence_class="",
+               source_thread_id="", source_turn_id=""):
         for tier in self.TIERS:
             if not self.enabled[tier]:
                 if tier != "working_memory" and any(
@@ -803,6 +820,11 @@ class MemoryManager:
                       "importance": entry.get("importance", 3) if importance is None else importance,
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
+            provenance = self._user_provenance(
+                source_evidence_class, source_thread_id, source_turn_id)
+            if provenance is not None:
+                fields["provenance"] = self.store._merge_provenance(
+                    entry.get("provenance"), provenance)
             candidate = self.store.normalise(content, **fields)
             duplicate = self._near_duplicate(candidate["content"], tier,
                                              exclude_id=entry_id, scope=target_scope)
@@ -819,8 +841,13 @@ class MemoryManager:
                 for field in ("last_used_at", "use_count"):
                     if field in entry:
                         replacement[field] = entry[field]
+                replacement["provenance"] = self.store._merge_provenance(
+                    entry.get("provenance"), candidate.get("provenance"))
             else:
-                replacement = self.store.update(entry_id, content, **fields)
+                store_fields = dict(fields)
+                store_fields.pop("provenance", None)
+                replacement = self.store.update(
+                    entry_id, content, provenance=provenance, **store_fields)
                 if replacement is None:
                     return None
                 replacement["project_id"] = self.project_id

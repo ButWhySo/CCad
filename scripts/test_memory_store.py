@@ -17,10 +17,20 @@ with tempfile.TemporaryDirectory() as temp:
     assert store_path.is_file()
     item = store.add("Use 0.25 mm minimum track width", title="routing", tags=["pcb"],
                      tier="episodic", namespace="local-user", scope="user",
-                     kind="preference")
+                     kind="preference", provenance={
+                         "authorship": "user_authored",
+                         "explicit_user_evidence": True,
+                         "source_evidence_classes": ["explicit_user_command"],
+                         "source_thread_ids": ["thread-a"],
+                         "source_turn_ids": ["turn-a"],
+                     })
     assert store.list()[0]["id"] == item["id"]
     assert store.list()[0]["kind"] == "preference"
     assert store.list()[0]["importance"] == 3
+    assert item["provenance"]["authorship"] == "user_authored"
+    assert item["provenance"]["explicit_user_evidence"] is True
+    assert item["provenance"]["source_thread_ids"] == ["thread-a"]
+    assert item["provenance"]["source_turn_ids"] == ["turn-a"]
     assert store.list(scope="other") == []
     updated = store.update(item["id"], "Use 0.30 mm minimum track width", title="updated")
     assert updated["id"] == item["id"]
@@ -28,6 +38,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert updated["namespace"] == "local-user"
     assert updated["scope"] == "user"
     assert updated["kind"] == "preference"
+    assert updated["provenance"] == item["provenance"]
     assert updated["importance"] == 3
     recorded = store.record_usage([item["id"], "missing"],
                                   used_at="2026-09-25T12:00:00+00:00")
@@ -51,6 +62,8 @@ with tempfile.TemporaryDirectory() as temp:
     legacy = MemoryStore(legacy_path).list()[0]
     assert legacy["kind"] == "fact"
     assert legacy["importance"] == 3
+    assert legacy["provenance"]["authorship"] == "unknown"
+    assert legacy["provenance"]["explicit_user_evidence"] is False
     legacy_disk = legacy_path.read_text(encoding="utf-8")
     assert '"kind"' not in legacy_disk and '"importance"' not in legacy_disk
     assert store.delete(item["id"]) is True
@@ -95,6 +108,19 @@ with tempfile.TemporaryDirectory() as temp:
         assert "ISO-8601" in str(error)
     else:
         raise AssertionError("invalid memory expiry was accepted")
+    for provenance in (
+            {"authorship": "invented"},
+            {"authorship": "system_compaction", "explicit_user_evidence": True},
+            {"source_thread_ids": ["api_key:secret"]},
+            {"confidence": 1.1},
+            {"explicit_user_evidence": "yes"},
+    ):
+        try:
+            store.add("Reject invalid provenance", provenance=provenance)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid memory provenance was accepted")
 
 with tempfile.TemporaryDirectory() as temp:
     legacy_path = Path(temp) / "legacy-secrets.json"

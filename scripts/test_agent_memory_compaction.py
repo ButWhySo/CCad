@@ -74,7 +74,13 @@ with tempfile.TemporaryDirectory() as temp:
     store = MemoryStore(Path(temp) / "memory.json")
     manager = MemoryManager(store, thread_id="thread-a")
     saved = [store.add(item["content"], tier="ltm", namespace="thread-a",
-                       title=item["title"], scope="conversation") for item in records]
+                       title=item["title"], scope="conversation", provenance={
+                           "authorship": "user_authored",
+                           "explicit_user_evidence": True,
+                           "source_evidence_classes": ["explicit_user_command"],
+                           "source_thread_ids": ["thread-a"],
+                           "source_turn_ids": [f"turn-{index}"],
+                       }) for index, item in enumerate(records)]
     manager.configure({"stm": False, "ltm": True, "episodic": True})
     prepared = prepare_memory_compaction(
         manager.list(tier="ltm", scope="conversation"), tier="ltm",
@@ -85,6 +91,13 @@ with tempfile.TemporaryDirectory() as temp:
         summary="Preserve 0.25 mm clearance at J3 and its ground return path.",
         title="Conversation memory summary", tags=["pcb"], expires_at="")
     assert compacted["tier"] == "ltm" and compacted["namespace"] == "thread-a"
+    assert compacted["provenance"]["authorship"] == "system_compaction"
+    assert compacted["provenance"]["explicit_user_evidence"] is False
+    assert set(compacted["provenance"]["source_memory_ids"]) == {
+        item["id"] for item in saved}
+    assert compacted["provenance"]["source_thread_ids"] == ["thread-a"]
+    assert set(compacted["provenance"]["source_turn_ids"]) == {
+        f"turn-{index}" for index in range(4)}
     current = store.list(tier="ltm", namespace="thread-a", scope="conversation")
     assert len(current) == 1 and current[0]["id"] == compacted["id"]
     assert not ({item["id"] for item in saved} & {item["id"] for item in current})

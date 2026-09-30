@@ -60,6 +60,7 @@ with tempfile.TemporaryDirectory() as temp:
     env = os.environ.copy()
     env["APPDATA"] = str(app_data)
     env["CCAD_AGENT_MEMORY_PATH"] = str(memory_path)
+    env["CCAD_AGENT_THREAD_ID"] = "rpc-thread-provenance"
     env["CCAD_AGENT_CHECKPOINT_DB"] = str(checkpoint_path)
     env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
     requests = [
@@ -129,6 +130,35 @@ with tempfile.TemporaryDirectory() as temp:
     with sqlite3.connect(checkpoint_path) as database:
         assert database.execute("SELECT value FROM protected_checkpoint").fetchone() == ("retain",)
     database.close()
+
+with tempfile.TemporaryDirectory() as temp:
+    memory_path = Path(temp) / "memory.json"
+    env = os.environ.copy()
+    env["APPDATA"] = str(Path(temp) / "roaming")
+    env["CCAD_AGENT_MEMORY_PATH"] = str(memory_path)
+    env["CCAD_AGENT_THREAD_ID"] = "rpc-thread-provenance"
+    env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
+    requests = [
+        {"method": "agent.set_thread_id", "params": {
+            "thread_id": "rpc-thread-provenance"}},
+        {"method": "agent.memory_set_enabled", "params": {
+            "tier": "ltm", "enabled": True}},
+        {"method": "agent.memory_add", "params": {
+            "tier": "ltm", "scope": "conversation", "content":
+            "Preserve explicit user memory provenance through the GUI RPC."}},
+    ]
+    process = subprocess.run(
+        [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
+        input="".join(json.dumps(request) + "\n" for request in requests),
+        capture_output=True, text=True,
+        env=env, timeout=45, check=False)
+    assert process.returncode == 0, process.stderr[-2000:]
+    entry = json.loads(memory_path.read_text(encoding="utf-8"))[0]
+    assert entry["provenance"]["authorship"] == "user_authored"
+    assert entry["provenance"]["explicit_user_evidence"] is True
+    assert entry["provenance"]["source_evidence_classes"] == ["memory_manager_ui"]
+    assert entry["provenance"]["source_thread_ids"] == ["rpc-thread-provenance"]
+    assert entry["provenance"]["source_turn_ids"] == []
 
 with tempfile.TemporaryDirectory() as temp:
     root = Path(temp)

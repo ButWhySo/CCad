@@ -2969,7 +2969,9 @@ def handle_provider_and_state_request(req, executor):
                     tier=tier,
                     scope=str(params.get("scope", "")),
                     title=str(params.get("title", "")),
-                    kind=params.get("kind"), importance=params.get("importance"))
+                    kind=params.get("kind"), importance=params.get("importance"),
+                    source_evidence_class="memory_manager_ui",
+                    source_thread_id=memory_manager.identities.get("ltm", ""))
                 if entry is None:
                     raise RuntimeError("memory_add_failed")
                 result = {"id": entry["id"], "tier": entry["tier"],
@@ -2981,7 +2983,9 @@ def handle_provider_and_state_request(req, executor):
                 entry = memory_manager.update(
                     str(params.get("id", "")), str(params.get("content", "")),
                     title=params.get("title"), scope=params.get("scope"),
-                    kind=params.get("kind"), importance=params.get("importance"))
+                    kind=params.get("kind"), importance=params.get("importance"),
+                    source_evidence_class="memory_manager_ui",
+                    source_thread_id=memory_manager.identities.get("ltm", ""))
                 result = {"id": str(params.get("id", "")), "updated": entry is not None,
                           "kind": entry.get("kind", "fact") if entry else "",
                           "importance": entry.get("importance", 3) if entry else None,
@@ -3437,7 +3441,9 @@ def handle_human_message(req):
                     cmd_args.strip()[len("compact"):], context_thread_id)
             else:
                 try:
-                    event, result = execute_memory_command(memory_manager, cmd_args)
+                    event, result = execute_memory_command(
+                        memory_manager, cmd_args, source_thread_id=requested_thread,
+                        source_turn_id=turn_id)
                     if event in {"memory_added", "memory_updated",
                                  "memory_deleted", "memory_reset"}:
                         invalidate_thread_context(requested_thread)

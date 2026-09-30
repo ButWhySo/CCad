@@ -14,7 +14,7 @@ def _metadata(arguments, *, allowed):
     return values, " ".join(tokens).strip()
 
 
-def execute_memory_command(manager, arguments):
+def execute_memory_command(manager, arguments, *, source_thread_id="", source_turn_id=""):
     """Return one safe JSON-RPC event; persistent deletes require explicit scope."""
     command, _, remainder = arguments.strip().partition(" ")
     command = command.lower()
@@ -36,7 +36,10 @@ def execute_memory_command(manager, arguments):
         entry = manager.add(content, tier=options.get("tier", "ltm"),
                              scope=options.get("scope"),
                              title=options.get("title", ""),
-                             kind=options.get("kind"), importance=importance)
+                             kind=options.get("kind"), importance=importance,
+                             source_evidence_class="explicit_user_command",
+                             source_thread_id=source_thread_id,
+                             source_turn_id=source_turn_id)
         return "memory_added", {"id": entry["id"], "tier": entry["tier"],
                                  "scope": entry["scope"], "kind": entry["kind"],
                                  "importance": entry["importance"],
@@ -52,7 +55,10 @@ def execute_memory_command(manager, arguments):
                                title=options.get("title") if "title" in options else None,
                                scope=options.get("scope") if "scope" in options else None,
                                kind=options.get("kind") if "kind" in options else None,
-                               importance=importance)
+                               importance=importance,
+                               source_evidence_class="explicit_user_command",
+                               source_thread_id=source_thread_id,
+                               source_turn_id=source_turn_id)
         return "memory_updated", {"id": entry_id, "updated": entry is not None,
                                   "kind": entry.get("kind", "fact") if entry else "",
                                   "importance": entry.get("importance", 3) if entry else None,
