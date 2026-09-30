@@ -5,8 +5,9 @@
 - [x] Fix the checkpoint-restart fake model to read provider-safe function declarations, matching `bind_native_tools()` rather than expecting `StructuredTool` objects.
 - [x] Reproduce the pre-fix failure, then pass the first/resume subprocess pairs for accepted, denied, and canceled calls.
 - [x] Run the complete hosted `agent-python` contract script set locally, Python compilation, Pyright 1.1.414 (0 diagnostics), Qt/MinGW Release build, and full CTest (127/127); no GUI behavior changed.
-- [ ] Push the fix, confirm the exact remote SHA, and verify the resulting hosted CI run is green before pruning merged branches.
-- [ ] Update the final hosted status and evidence reference after GitHub completes.
+- [x] Push and fast-forward merge the fix to `main`; confirm remote SHA `5860e066cde6d65acc827588a238b4e1d66b494b` and hosted CI run `36666758062` passes all five jobs.
+- [x] Update progress and feature records with the CI result and manifest `artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2.json` (SHA-256 `B890AD40E7A44D82497B61348F4C88440FDAAAAC017F27DA52C81B2A6466A74C`).
+- [x] Delete merged local and remote branches for Sprints 1043, 1046, 1047, and 1048; preserve active Sprint 1039 and its separate worktree.
 
 ### Sprint 1047 — memory and project-entity retrieval ablations
 
@@ -18,7 +19,7 @@
 - [x] Add pre-implementation contracts for corpus split integrity, channel selection, execution-time channel propagation, and policy exclusion; focused dataset, benchmark, memory-manager, and typed retrieval tests pass.
 - [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release verification, and full CTest (127/127); inspect logs and final nonvisual manifest `artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256 `833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`. The final manifest reuses the earlier full-suite pass because subsequent code change only advanced benchmark metadata; focused benchmark contracts were rerun after that change.
 - [x] Run redacted tracked-repository and staged-diff secret scans; tracked matches are four existing synthetic test sentinels in three test files, while staged additions contain no high-confidence credential patterns.
-- [x] Commit `21f3a8c38608e4ac4ed46bd7e0bed8e1c4df2349`, push branch `sprint-1047-memory-retrieval-ablation`, and confirm the exact remote SHA matches. This slice was later merged to `main`; its hosted run exposed the checkpoint-fixture mismatch tracked in Sprint 1048.
+- [x] Commit `21f3a8c38608e4ac4ed46bd7e0bed8e1c4df2349`, push branch `sprint-1047-memory-retrieval-ablation`, and confirm the exact remote SHA matches. This slice was merged to `main`; its hosted run exposed the checkpoint-fixture mismatch, fixed and verified by Sprint 1048.
 
 References checked: Google’s [EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) and Nomic’s [official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) define retrieval-specific query/document embedding behavior. Current integration follows the previously recorded task-prompt protocol; this slice measures retrieval relevance and does not change model prompts.
 

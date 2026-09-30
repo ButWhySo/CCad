@@ -9,7 +9,10 @@ present, then exercises accepted, denied, and canceled calls across separate
 processes. This is a test reliability correction; no production runtime or GUI
 behavior changed. The complete Python CI contract set, Python compilation,
 Pyright, Qt/MinGW Release build, and full CTest (127/127) pass locally. Hosted
-CI confirmation is pending publication of the fix.
+main CI run `36666758062` passed all five jobs on commit
+`5860e066cde6d65acc827588a238b4e1d66b494b`; manifest
+`artifacts/evidence/sprint-1048-checkpoint-ci-contract-r2.json` records the
+local Release and CTest evidence.
 
 ## Sprint 1047 — memory and project-entity retrieval ablations
 
