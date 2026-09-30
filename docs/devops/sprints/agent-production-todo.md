@@ -10,7 +10,7 @@
 - [x] Pass changed-module Pyright, focused Agent contracts, Qt/MinGW Release, and full CTest (127/127); non-visual manifest `artifacts/evidence/sprint-1044-embedding-task-protocol.json` SHA-256 `1EF8A5BE78F9E66D898DB2C9DBA8DC9C84E980799DA079C1385E464DFFF5A4B2`.
 - [x] Update codebase map, feature inventory, progress, and retrieval backlog in this slice.
 - [x] Run redacted tracked-repository and staged-addition secret scans; three tracked files contain known synthetic test fixtures, staged additions have zero credential-pattern matches. Stage only verified code, docs, tests, and evidence manifest.
-- [ ] Commit and push the verified slice; confirm remote branch equals the tested commit.
+- [x] Commit `862793b6f7a1ec3e413820b8857a34d1c5849638` and push; `git ls-remote` confirms the feature branch points to that exact tested SHA.
 - [ ] Verify hosted CI on the exact pushed SHA when a PR/manual workflow event exists; branch-only pushes do not trigger CI.
 
 ### Sprint 1043 live provider turn follow-up
