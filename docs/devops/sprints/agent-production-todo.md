@@ -10,7 +10,8 @@
 - [x] Run Qt/MinGW Release plus full CTest (126/126) and record the local evidence manifest; no rendered UI change is intended by this read-only tool addition. Manifest `artifacts/evidence/sprint-1057-project-snapshot-r2.json`, SHA-256 `39FAF7BB8415FAA38BC18FD86233AE12A735D42F8468BDBB2E662D177DD88B4B`.
 - [x] Update the codebase map, feature inventory, progress, backlog, and this TODO with verified behavior and remaining R11 gaps.
 - [x] Run redacted tracked-text and staged-addition secret checks. The tracked scan surfaced 21 existing fixture/documentation/env-name/CLI-option false positives, all reviewed with match contents redacted; the staged additions contain zero credential-pattern matches.
-- [ ] Commit and publish only verified scoped files, then verify hosted checks on the exact pushed SHA before any merge.
+- [x] Commit verified scoped files as `2db152df04c4d93129239eedd41e56541e400e72` and push `sprint-1057-project-snapshot`; verify the remote branch points to that exact SHA.
+- [ ] Open/update the PR and verify hosted checks on the exact pushed SHA before merge. PR creation through the connected GitHub integration returned HTTP 403 (`Resource not accessible by integration`); do not merge without hosted CI.
 
 ### Sprint 1056 — authoritative live PCB layer and net inventory
 
