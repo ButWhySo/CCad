@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1054 — Agent runtime contract parity and read-only tool policy
+
+The Python Agent now classifies `ui.*` calls using the validated native tool catalog. Catalog-declared read-only calls and dry runs bypass mutation approval; mutating and unknown `ui.*` calls remain approval-gated. Process-local broker waiters are registered before the tool-call event is emitted, and a correlated result is acknowledged only after it can be delivered to the waiting invocation. A local OpenAI-compatible endpoint contract verifies this race boundary and the top-level JSON-RPC result shape without contacting an external provider. The Python JSON-RPC method catalog now includes the existing conversation list/load methods so GUI discovery matches runtime dispatch. Offline contracts were changed from brittle source-string assumptions to runtime or structural assertions for current turn shutdown, approval metadata, provider fallback, and broker ACK correlation. The removed `ui_add_polygon` Python-schema test was deleted because native tools are supplied by the C++ catalog, not that obsolete Python surface. All 97 offline Agent contracts pass. Changed-module Pyright has 0 diagnostics; Qt/MinGW Release and full CTest pass 126/126. Manifest `artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4.json` (SHA-256 `9723E3580429BC2C494CE326255172882818037D8B0A9997212E63C58C53789E`).
+
 ## Sprint 1053 — Agent-turn trace continuity (local gate passed)
 
 The Langfuse root observation now remains open when LangGraph pauses for a

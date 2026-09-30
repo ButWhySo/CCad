@@ -1,16 +1,32 @@
-"""No-network contract: mutating tool calls expose approval requirement."""
+"""A dispatched mutating call carries its actual approval metadata."""
 
+import json
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 
-text = (Path(__file__).parents[1] / "src" / "ccad_agent" / "orchestrator.py").read_text(encoding="utf-8")
-assert '"approval_required": bool(await_result and approval["required"])' in text
-assert 'tool_approval_decision("ui.place_via", args)["required"]' in text
-assert 'tool_approval_decision("ui.place_via", args)["reason"]' in text
-assert 'def ui_add_track(x1: float, y1: float, x2: float, y2: float, dry_run: bool = False)' in text
-assert 'if broker_wait_enabled and not dry_run:' in text
-assert 'def ui_add_polygon(points: List[List[float]], layer: str, dry_run: bool = False)' in text
-assert '"approval_required",\n                    "approval_reason"]' in text
-assert '"approval_required": True' in text
-assert '"tool", "args", "call_id", "approval_required"' in text
-print("PASS tool approval metadata is explicit and dry-run aware; no network")
+root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(root / "src" / "ccad_agent"))
+import orchestrator  # noqa: E402
+
+events = []
+original_wait = orchestrator.broker_wait_enabled
+original_catalog = orchestrator.native_tool_catalog
+orchestrator.broker_wait_enabled = False
+orchestrator.native_tool_catalog = [{"method": "ui.add_zone", "read_only": False}]
+try:
+    with patch.object(orchestrator, "emit", side_effect=events.append):
+        content, artifact = orchestrator.dispatch_client_tool_output(
+            "ui.add_zone", {"start_x_mm": 0, "start_y_mm": 0, "dry_run": False})
+finally:
+    orchestrator.broker_wait_enabled = original_wait
+    orchestrator.native_tool_catalog = original_catalog
+
+call = next(event["params"] for event in events if event.get("method") == "tool_call")
+assert call["tool"] == "ui.add_zone"
+assert call["approval_required"] is True
+assert call["approval_reason"] == "project_mutation"
+assert json.loads(content)["error"] == "broker_wait_unavailable"
+assert artifact == {}
+print("PASS dispatched tool-call approval metadata; no network or project action")

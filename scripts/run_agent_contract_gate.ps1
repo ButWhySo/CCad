@@ -1,10 +1,15 @@
 param(
-    [switch]$IncludeCheckpointRestart
+    [switch]$IncludeCheckpointRestart,
+    [string]$PythonPath
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$python = Join-Path $root "src\ccad_agent\venv\Scripts\python.exe"
+$python = if ($PythonPath) {
+    (Resolve-Path -LiteralPath $PythonPath).Path
+} else {
+    Join-Path $root "src\ccad_agent\venv\Scripts\python.exe"
+}
 if (-not (Test-Path -LiteralPath $python)) {
     throw "Bundled agent venv missing: $python"
 }

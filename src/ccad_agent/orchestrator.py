@@ -174,20 +174,36 @@ def route_protocol_line(protocol_line: str) -> bool:
     call_id = response.get("id", "")
     with pending_calls_lock:
         result_queue = pending_calls.get(call_id)
-    if result_queue is None:
-        return False
-    result_queue.put(protocol_line)
+        if result_queue is None:
+            return False
+        result_queue.put(protocol_line)
+    result = response.get("result")
+    error = response.get("error")
+    emit({"jsonrpc": "2.0", "method": "tool_result_ack", "params": {
+        "call_id": call_id,
+        "success": error is None and result is not None,
+        "result_present": result is not None,
+        "error_present": error is not None,
+    }})
     return True
 
-def wait_for_broker_output(call_id: str) -> tuple[str, dict[str, Any]]:
-    """Receive exact C++ result as model content plus private audit artifact."""
-    timeout = max(1.0, float(os.environ.get("CCAD_BROKER_TIMEOUT_SECONDS", "30")))
-    deadline = time.monotonic() + timeout
+def register_pending_call(call_id: str) -> queue.Queue:
+    """Reserve correlation before publishing a call the client can answer."""
     result_queue = queue.Queue()
     thread_id = os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local")
     with pending_calls_lock:
         pending_calls[call_id] = result_queue
         pending_call_threads[call_id] = thread_id
+    return result_queue
+
+def wait_for_broker_output(call_id: str,
+                           result_queue: queue.Queue | None = None
+                           ) -> tuple[str, dict[str, Any]]:
+    """Receive exact C++ result as model content plus private audit artifact."""
+    timeout = max(1.0, float(os.environ.get("CCAD_BROKER_TIMEOUT_SECONDS", "30")))
+    deadline = time.monotonic() + timeout
+    if result_queue is None:
+        result_queue = register_pending_call(call_id)
     try:
         while True:
             if inbound_queue is not None:
@@ -339,9 +355,13 @@ def dispatch_checkpointed_tool(tool_name: str, args: dict):
 def tool_approval_decision(tool_name: str, args: dict):
     """Return one deterministic approval decision for a client tool call."""
     dry_run = bool(args.get("dry_run", False))
-    required = tool_name.startswith("ui.") and not dry_run
-    return {"required": required,
-            "reason": "dry_run" if dry_run else "project_mutation"}
+    entry = next((candidate for candidate in native_tool_catalog
+                  if candidate.get("method") == tool_name), None)
+    read_only = bool(entry and entry.get("read_only", False))
+    required = tool_name.startswith("ui.") and not dry_run and not read_only
+    reason = ("project_mutation" if required else "dry_run" if dry_run
+              else "read_only" if read_only else "not_mutating")
+    return {"required": required, "reason": reason}
 
 
 def tool_calls_require_approval(tool_calls: object) -> bool:
@@ -372,6 +392,8 @@ def dispatch_client_tool_output(tool_name: str, args: dict
                else new_tool_call_id(tool_name))
     approval = tool_approval_decision(tool_name, args)
     checkpointed = checkpoint_saver is not None and broker_wait_enabled
+    result_queue = (register_pending_call(call_id)
+                    if broker_wait_enabled and not checkpointed else None)
     emit_call = True
     if checkpointed:
         with checkpoint_tool_events_lock:
@@ -388,7 +410,7 @@ def dispatch_client_tool_output(tool_name: str, args: dict
             emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool(tool_name, args)
-        return wait_for_broker_output(call_id)
+        return wait_for_broker_output(call_id, result_queue)
     return json.dumps({"error": "broker_wait_unavailable", "tool": tool_name,
                        "project_action": False}), {}
 

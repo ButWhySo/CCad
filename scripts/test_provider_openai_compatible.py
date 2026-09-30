@@ -2,11 +2,13 @@
 
 import json
 import os
+import queue
 import re
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -46,8 +48,8 @@ class Handler(BaseHTTPRequestHandler):
             }
             finish = "tool_calls"
         else:
-            # Let the graph finish after the protocol emitted its tool request;
-            # this test has no native broker and must not fabricate execution.
+            # Complete only after the contract test returns a correlated,
+            # explicit dry-run result through the broker protocol.
             message = {"role": "assistant", "content": "Tool request was forwarded to CCad."}
             finish = "stop"
         response = {"id": "stub-chat", "object": "chat.completion", "created": 1,
@@ -92,48 +94,88 @@ def main():
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, env=env,
     )
+    agent_stdin = process.stdin
+    agent_stdout = process.stdout
+    agent_stderr = process.stderr
+    assert agent_stdin is not None and agent_stdout is not None and agent_stderr is not None
+    output_lines = queue.Queue()
+    def collect_stdout():
+        for output_line in agent_stdout:
+            output_lines.put(output_line)
+        output_lines.put(None)
+    stdout_reader = threading.Thread(target=collect_stdout, daemon=True)
+    stdout_reader.start()
     try:
-        try:
-            tool_catalog = [{
-                "method": "ui.place_via",
-                "description": "Place a via at a board coordinate.",
-                "read_only": False,
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "x_mm": {"type": "number", "description": "X coordinate in mm."},
-                        "y_mm": {"type": "number", "description": "Y coordinate in mm."},
-                        "dry_run": {"type": "boolean", "description": "Preview only."},
-                    },
-                    "required": ["x_mm", "y_mm"],
+        tool_catalog = [{
+            "method": "ui.place_via",
+            "description": "Place a via at a board coordinate.",
+            "read_only": False,
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "x_mm": {"type": "number", "description": "X coordinate in mm."},
+                    "y_mm": {"type": "number", "description": "Y coordinate in mm."},
+                    "dry_run": {"type": "boolean", "description": "Preview only."},
                 },
-            }]
-            stdout, stderr = process.communicate(
-                input=(json.dumps({"method": "agent.set_tool_catalog",
-                                   "params": {"catalog": tool_catalog}}) + "\n" +
-                       json.dumps({"method": "human_message", "params": {
-                           "text": "Routing Expert: place one via using approved route.",
-                           "context": "blank board with F.Cu",
-                       }}) + "\n"),
-                timeout=45,
-            )
-        except subprocess.TimeoutExpired as error:
-            process.kill()
-            stdout, stderr = process.communicate()
-            raise AssertionError(
-                f"local provider turn did not terminate after stdin EOF; stderr={stderr!r}"
-            ) from error
+                "required": ["x_mm", "y_mm"],
+            },
+        }]
+        agent_stdin.write(json.dumps({"method": "agent.set_tool_catalog",
+                                     "params": {"catalog": tool_catalog}}) + "\n")
+        agent_stdin.write(json.dumps({"method": "human_message", "params": {
+            "text": "Routing Expert: place one via using approved route.",
+            "context": "blank board with F.Cu",
+        }}) + "\n")
+        agent_stdin.flush()
+        lines = []
+        dry_run_call_id = ""
+        deadline = time.monotonic() + 45
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise queue.Empty
+                output_line = output_lines.get(timeout=remaining)
+                if output_line is None:
+                    raise AssertionError(f"agent exited before the broker call: {lines!r}")
+                if not output_line.strip().startswith("{"):
+                    continue
+                item = json.loads(output_line)
+                lines.append(item)
+                if item.get("method") != "tool_call":
+                    continue
+                call = item["params"]
+                assert call["approval_required"] is False
+                assert call["args"].get("dry_run") is True
+                dry_run_call_id = call["call_id"]
+                agent_stdin.write(json.dumps({"method": "tool_result",
+                                               "id": call["call_id"],
+                                               "result": {"success": True,
+                                                          "dry_run": True}}) + "\n")
+                agent_stdin.flush()
+                break
+        except queue.Empty as error:
+            raise AssertionError(f"local provider never reached native broker: {lines[-20:]}") from error
+        agent_stdin.close()
+        process.wait(timeout=45)
+        stdout_reader.join(timeout=5)
+        while True:
+            try:
+                output_line = output_lines.get_nowait()
+            except queue.Empty:
+                break
+            if output_line and output_line.strip().startswith("{"):
+                lines.append(json.loads(output_line))
+        stderr = agent_stderr.read()
         assert process.returncode == 0, f"orchestrator failed: {stderr}"
-        lines = [json.loads(line) for line in stdout.splitlines()
-                 if line.strip().startswith("{")]
-        assert requests, f"provider endpoint received no request; stdout={stdout!r}"
+        assert requests, f"provider endpoint received no request; events={lines!r}"
         router_request = next((
             request for request in requests
             if any(tool.get("function", {}).get("name") == "ccad_ui_place_via"
                    for tool in request.get("tools", []))), None)
         assert router_request is not None, (
             f"router tool schema missing; requests={json.dumps(requests, sort_keys=True)}; "
-            f"stdout={stdout!r}"
+            f"events={lines!r}"
         )
         assert router_request["model"] == "ccad-local-stub"
         tool_names = {
@@ -144,6 +186,10 @@ def main():
         assert "ccad_ui_place_via" in tool_names, "router tool schema missing"
         assert any(item.get("method") == "tool_call" for item in lines), \
             "provider tool call did not reach CCad protocol"
+        assert any(item.get("method") == "tool_result_ack" and
+                   item.get("params", {}).get("call_id") == dry_run_call_id and
+                   item.get("params", {}).get("success") is True for item in lines), \
+            f"correlated dry-run broker result was not acknowledged: {lines!r}"
         assert not any(item.get("params", {}).get("error_type") == "GraphRecursionError"
                        for item in lines), "local provider conversation did not converge"
         context_events = [item for item in lines if item.get("method") == "context_state"]

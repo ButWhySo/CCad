@@ -38,7 +38,9 @@ assert human_handler.index("telemetry_runtime.start_agent_turn(") < human_handle
 invoke_start = text.index("def invoke_agent_run(state):")
 invoke_end = text.index("\ndef get_system_prompt", invoke_start)
 assert "telemetry_runtime.begin_turn()" not in text[invoke_start:invoke_end]
-assert "telemetry_runtime.finish_agent_turn()" in text
+assert 'telemetry_runtime.finish_agent_turn, "abandoned"' in text
+assert 'telemetry_runtime.finish_agent_turn, "cancelled"' in text
+assert 'terminal_state="cancelled"' in text
 
 env = os.environ.copy()
 env.update({"CCAD_AGENT_DEFER_PROVIDER_INIT": "1", "PYTHONNOUSERSITE": "1",

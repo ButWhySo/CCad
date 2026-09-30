@@ -101,6 +101,21 @@ def orchestrator_method_catalog():
                   "resumable", "reason", "thread_id", "next", "checkpoint_id"]},
              "response_contracts": {"thread_resumed": {"fields": [
                  "thread_id", "next", "message_count"]}}},
+            {"name": "agent.list_conversations", "read_only": True,
+             "secrets": False,
+             "params": {"limit": {"type": "integer", "optional": True,
+                                     "minimum": 1, "maximum": 200}},
+             "responses": ["conversation_list"],
+             "response": {"method": "conversation_list", "fields": [
+                 "available", "threads", "active_thread_id", "error",
+                 "secret_value_visible"]}},
+            {"name": "agent.get_conversation", "read_only": True,
+             "secrets": False,
+             "params": {"thread_id": {"type": "string", "optional": False}},
+             "responses": ["conversation_loaded"],
+             "response": {"method": "conversation_loaded", "fields": [
+                 "available", "thread_id", "session_id", "project_id", "title",
+                 "messages", "error", "secret_value_visible"]}},
             {"name": "agent.set_provider_secret", "read_only": False,
              "secrets": True, "approval_required": True,
              "params": {"provider": {"type": "string"},

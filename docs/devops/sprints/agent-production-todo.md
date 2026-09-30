@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1054 — Agent runtime contract reconciliation and read-only approval safety
+
+- [x] Reconcile the broader offline Agent contract gate with the actual runtime: method catalog parity, context-turn lifecycle, durable approval metadata, Cerebras model fallback, and tool-result ACK ordering.
+- [x] Make tool approval policy honor authoritative native-catalog `read_only`; keep dry runs immediate and unknown `ui.*` tools fail-closed behind approval.
+- [x] Register process-local broker correlation before publishing a tool call; acknowledge only a correlated result, verified with a local OpenAI-compatible provider and the actual top-level JSON-RPC result shape.
+- [x] Remove the obsolete removed-`ui_add_polygon` schema test; verify history RPCs are included in the discoverable method catalog.
+- [x] Run all 97 offline Agent contract scripts after building the native MCP executable; resolve failures rather than skip tests.
+- [x] Run changed-module Pyright (0 diagnostics) and the official Qt/MinGW Release/full CTest gate (126/126); no GUI behavior changed. Passing manifest `artifacts/evidence/sprint-1054-agent-contract-reconciliation-r4.json`, SHA-256 `9723E3580429BC2C494CE326255172882818037D8B0A9997212E63C58C53789E`.
+- [x] Update the handover, feature inventory, progress, consolidated backlog, and this TODO; preserve proof and leave unrelated worktrees/evidence untouched.
+- [x] Complete redacted tracked-text and staged-addition secret checks, commit the verified slice, push the feature branch, and verify the exact remote SHA. The scan found four token-shaped test-fixture matches across three existing test files; review confirmed fixtures, and staged additions contain zero matches. Hosted CI remains open until a PR targets `main` because CI does not run on feature-branch pushes.
+
 ### Sprint 1053 — preserve one trace across approval and tool resume (in progress)
 
 - [x] Keep the per-turn Langfuse root open while a graph awaits human tool approval; resume approval, native tool dispatch, and graph continuation under the original trace context.
@@ -301,7 +312,7 @@ Check a box only after implementation and its required evidence exist.
 - [x] Run the exact hosted Python script set, Pyright (0 diagnostics), Python compilation, and checkpoint accept/deny/cancel restart tests.
 - [x] Pass Qt/MinGW Release and full CTest (120/120); inspect preflight/build/CTest logs and manifest `artifacts/evidence/sprint-1033-agent-lazy-graph.json` (SHA-256 `2213A62EFD3A8B994A6D55234748D263CF0DFF42F13F92F1DDF6F818FB6B7FF5`).
 - [ ] Open a pull request for the pushed branch and verify all hosted CI jobs on its exact head SHA before merging to `main`; the workflow runs only on `main` pushes, pull requests targeting `main`, or manual dispatch, and no run currently exists for this branch head.
-- [ ] Repair unrelated stale assertions in the broader offline Agent gate: method-catalog parity, pending-approval metadata, provider catalog/Cerebras source contracts, tool-approval metadata/policy, tool-result ordering, and removed `ui_add_polygon` schema test.
+- [x] Sprint 1054 reconciles stale runtime assertions in the broader offline Agent gate: method-catalog parity, pending-approval metadata, provider/Cerebras fallback, tool-approval policy, tool-result ACK ordering, and obsolete removed-`ui_add_polygon` schema test. Full gate/build evidence remains recorded in the Sprint 1054 block above.
 
 ### Sprint 1033 follow-up — Chat message-format compatibility
 
@@ -311,7 +322,7 @@ Check a box only after implementation and its required evidence exist.
 
 Initial hosted failure: run `36308918584` (#572) failed in `agent-python`; core Linux, core Windows, GUI Linux, and evidence-manifest lanes passed. Local reproduction identified slow, irrelevant adapter initialization in provider-control IPC. Local implementation gates now pass; hosted verification on this branch remains required.
 
-The broader offline Agent gate still fails only on the explicitly open stale-contract group above. These are not in the exact hosted Python command list; do not report that broader gate as green until repaired.
+The stale-contract group and full offline Agent gate are repaired in Sprint 1054; all 97 scripts pass against the built native MCP executable. Keep the separate hosted-CI/merge requirement open until the exact pushed branch head has a green hosted run.
 
 ### Sprint 1032 — Agent Markdown current-runtime recheck
 
