@@ -165,6 +165,10 @@ public:
 
 class ToolBroker {
 public:
+    using Clock = std::chrono::steady_clock;
+    using Now = std::function<Clock::time_point()>;
+
+    explicit ToolBroker(Now now = [] { return Clock::now(); });
     void register_tool(const OrchestratorTool& tool);
     std::vector<std::string> list_tools() const;
     std::optional<OrchestratorTool> get_tool(const std::string& name) const;
@@ -185,6 +189,8 @@ private:
     std::map<std::string, OrchestratorTool> tools_;
     std::map<std::string, PendingApproval> pending_approvals_;
     std::set<std::string> consumed_approval_tokens_;
+    std::set<std::string> expired_approval_tokens_;
+    Now now_;
     mutable std::mutex approval_mutex_;
 };
 

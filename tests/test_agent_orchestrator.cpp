@@ -616,6 +616,57 @@ static void test_mutation_requires_approval() {
     assert(spoofed_dry_run_executions == 0);
 }
 
+static void test_approval_expiry_is_deterministic_and_distinct_from_replay() {
+    using Clock = std::chrono::steady_clock;
+    auto now = Clock::time_point{};
+    ccad::ToolBroker broker([&now] { return now; });
+    int executions = 0;
+    broker.register_tool({
+        "pcb.expiry-test", "Expiry test", ccad::TaskRisk::LowMutation, "{}",
+        [&executions](const std::string&) {
+            ++executions;
+            return "{\"status\":\"applied\"}";
+        }});
+
+    ccad::OrchestratorConfig expired;
+    expired.tool_call_id = "call-expired";
+    expired.project_revision = "revision-1";
+    expired.approval_request_token = "token-expired";
+    assert(broker.execute_tool("pcb.expiry-test", "{\"x\":1}", expired).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+
+    now += std::chrono::minutes(5);
+    ccad::OrchestratorConfig fresh;
+    fresh.tool_call_id = "call-fresh";
+    fresh.project_revision = "revision-1";
+    fresh.approval_request_token = "token-fresh";
+    assert(broker.execute_tool("pcb.expiry-test", "{\"x\":2}", fresh).find(
+               "\"error\":\"approval_required\"") != std::string::npos);
+
+    expired.approval_request_token.clear();
+    expired.approved_tool_name = "pcb.expiry-test";
+    expired.approved_tool_token = "token-expired";
+    assert(broker.execute_tool("pcb.expiry-test", "{\"x\":1}", expired).find(
+               "\"error\":\"approval_expired\"") != std::string::npos);
+    assert(executions == 0);
+
+    expired.approved_tool_token.clear();
+    expired.approval_request_token = "token-expired";
+    assert(broker.execute_tool("pcb.expiry-test", "{\"x\":1}", expired).find(
+               "\"error\":\"approval_token_reused\"") != std::string::npos);
+    assert(executions == 0);
+
+    fresh.approval_request_token.clear();
+    fresh.approved_tool_name = "pcb.expiry-test";
+    fresh.approved_tool_token = "token-fresh";
+    assert(broker.execute_tool("pcb.expiry-test", "{\"x\":2}", fresh).find(
+               "\"status\":\"applied\"") != std::string::npos);
+    assert(executions == 1);
+    assert(broker.execute_tool("pcb.expiry-test", "{\"x\":2}", fresh).find(
+               "\"error\":\"approval_token_consumed\"") != std::string::npos);
+    assert(executions == 1);
+}
+
 // ─── Main ───────────────────────────────────────────────────────
 int main() {
     std::cout << "Agent Orchestrator Tests\n";
@@ -639,7 +690,8 @@ int main() {
     test_intake_layer();
     test_plan_blocks_risky_intent();
     test_mutation_requires_approval();
+    test_approval_expiry_is_deterministic_and_distinct_from_replay();
 
-    std::cout << "\nAll 14 orchestrator tests passed!\n";
+    std::cout << "\nAll 15 orchestrator tests passed!\n";
     return 0;
 }

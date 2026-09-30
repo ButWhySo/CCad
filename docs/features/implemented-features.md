@@ -1,5 +1,22 @@
 # Implemented Features
 
+## Sprint 1050 — deterministic approval expiry and replay protection
+
+`ToolBroker` now accepts a monotonic clock provider, defaulting to
+`std::chrono::steady_clock`, so approval expiry is testable without sleeping or
+changing production timing. A pending mutation grant expires after five
+minutes; broker processing sweeps expired grants at the exact deadline,
+records the expired state separately from consumed and unknown tokens, rejects
+reissue/replay, and never dispatches the executor for an expired grant. The
+test advances a fake clock to the deadline, checks the expired and reissue
+results, then proves a fresh grant applies exactly once. Existing broker
+contracts continue to verify method, arguments, provider call ID, project
+revision, stale-plan rejection, and cancellation. Qt/MinGW Release and full
+CTest pass 128/128. Manifest:
+`artifacts/evidence/sprint-1050-approval-expiry.json` (SHA-256
+`7A4ADA67A3B25C8B657285E53E2D676A03E8B434EA988A9A8F094025B1A142C3`).
+Hosted CI and merge are pending.
+
 ## Sprint 1049 — scoped retrieval evaluation and threshold analysis
 
 The versioned evaluation corpus advances to 1.3.0, with four positive and three

@@ -238,6 +238,8 @@ std::string ContextBuilder::build_context(const ProjectContext& base_ctx) {
 }
 
 // ─── ToolBroker ─────────────────────────────────────────────────
+ToolBroker::ToolBroker(Now now) : now_(std::move(now)) {}
+
 void ToolBroker::register_tool(const OrchestratorTool& tool) {
     tools_[tool.name] = tool;
 }
@@ -260,10 +262,22 @@ bool ToolBroker::cancel_approval(const std::string& token) {
     std::lock_guard<std::mutex> lock(approval_mutex_);
     const auto pending = pending_approvals_.find(token);
     if (pending == pending_approvals_.end()) return false;
+    const bool expired = pending->second.expires_at <= now_();
     pending_approvals_.erase(pending);
-    consumed_approval_tokens_.insert(token);
-    if (consumed_approval_tokens_.size() > 1024) {
-        consumed_approval_tokens_.erase(consumed_approval_tokens_.begin());
+    if (expired) {
+        expired_approval_tokens_.insert(token);
+        if (expired_approval_tokens_.size() > 1024) {
+            expired_approval_tokens_.erase(expired_approval_tokens_.begin());
+        }
+        consumed_approval_tokens_.insert(token);
+        if (consumed_approval_tokens_.size() > 1024) {
+            consumed_approval_tokens_.erase(consumed_approval_tokens_.begin());
+        }
+    } else {
+        consumed_approval_tokens_.insert(token);
+        if (consumed_approval_tokens_.size() > 1024) {
+            consumed_approval_tokens_.erase(consumed_approval_tokens_.begin());
+        }
     }
     return true;
 }
@@ -296,7 +310,7 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
     }
     if (cfg.require_approval && mutating) {
         std::lock_guard<std::mutex> lock(approval_mutex_);
-        const auto now = std::chrono::steady_clock::now();
+        const auto now = now_();
         const auto rememberConsumed = [this](const std::string& token) {
             consumed_approval_tokens_.insert(token);
             if (consumed_approval_tokens_.size() > 1024) {
@@ -305,6 +319,10 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
         };
         for (auto pending = pending_approvals_.begin(); pending != pending_approvals_.end();) {
             if (pending->second.expires_at <= now) {
+                expired_approval_tokens_.insert(pending->first);
+                if (expired_approval_tokens_.size() > 1024) {
+                    expired_approval_tokens_.erase(expired_approval_tokens_.begin());
+                }
                 rememberConsumed(pending->first);
                 pending = pending_approvals_.erase(pending);
             } else {
@@ -320,7 +338,8 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
             if (cfg.approval_request_token.empty()) return error("approval_required");
             if (cfg.tool_call_id.empty()) return error("tool_call_id_missing");
             if (cfg.project_revision.empty()) return error("project_revision_unavailable");
-            if (consumed_approval_tokens_.contains(cfg.approval_request_token) ||
+            if (expired_approval_tokens_.contains(cfg.approval_request_token) ||
+                consumed_approval_tokens_.contains(cfg.approval_request_token) ||
                 pending_approvals_.contains(cfg.approval_request_token)) {
                 return error("approval_token_reused");
             }
@@ -343,13 +362,10 @@ std::string ToolBroker::execute_tool(const std::string& name, const std::string&
 
         const auto pending = pending_approvals_.find(cfg.approved_tool_token);
         if (pending == pending_approvals_.end()) {
-            return error(consumed_approval_tokens_.contains(cfg.approved_tool_token)
-                             ? "approval_token_consumed" : "approval_token_unknown");
-        }
-        if (pending->second.expires_at <= now) {
-            pending_approvals_.erase(pending);
-            rememberConsumed(cfg.approved_tool_token);
-            return error("approval_expired");
+            return error(expired_approval_tokens_.contains(cfg.approved_tool_token)
+                             ? "approval_expired"
+                             : consumed_approval_tokens_.contains(cfg.approved_tool_token)
+                                   ? "approval_token_consumed" : "approval_token_unknown");
         }
         if (pending->second.project_revision != cfg.project_revision) {
             pending_approvals_.erase(pending);

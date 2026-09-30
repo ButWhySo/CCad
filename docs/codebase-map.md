@@ -2781,3 +2781,17 @@ Other providers, mutation approvals, and the complete tool catalog remain
 unverified. clangd's optional ExtractFunction action reported internal
 break/continue errors and its check did not complete; the compiler build is
 the authoritative C++ result.
+
+## Sprint 1050 — broker approval-expiry contract
+
+`ToolBroker` in `src/ccad_core/agent_orchestrator.hpp/.cpp` receives a
+monotonic `Now` function, defaulting to `Clock::now()`. Mutating-tool approval
+records remain bound to tool name, serialized arguments, model tool-call ID,
+and project revision; expiry is five minutes. During broker approval handling,
+expired pending tokens are removed before new requests or approvals are
+processed. Expired, consumed, and unknown tokens have distinct safe error
+codes, and expired tokens cannot be reissued as new pending grants. The
+deterministic contract is in `tests/test_agent_orchestrator.cpp` and proves no
+executor dispatch at expiry plus one-use behavior for a fresh grant. No GUI
+behavior changed. Verification: Qt/MinGW Release, CTest 128/128, manifest
+`artifacts/evidence/sprint-1050-approval-expiry.json`.

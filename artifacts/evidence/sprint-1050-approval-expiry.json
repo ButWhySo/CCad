@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1050-approval-expiry",
+    "feature":  "Deterministic approval expiry and replay boundary",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T05:55:10.5285837Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.05 log=artifacts/evidence/sprint-1050-approval-expiry/preflight.log",
+                      "finished_utc":  "2026-09-30T05:55:11.7008263Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=694 log=artifacts/evidence/sprint-1050-approval-expiry/build.log",
+                      "finished_utc":  "2026-09-30T06:06:45.7307817Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=246.79 log=artifacts/evidence/sprint-1050-approval-expiry/ctest.log",
+                      "finished_utc":  "2026-09-30T06:10:52.5209294Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1050-approval-expiry/build.log",
+                                         "sha256":  "1404CA60B970670A298F3EA733178CAEAF229AB528586D6F6F64C145822318D5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1050-approval-expiry/ctest.log",
+                                         "sha256":  "5DC2FF4DFC1314B7BC35D547A22B4E84D63D4FCE9D6F752D6BD997D4BF65E6D6"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1050-approval-expiry/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T06:10:52.6159297Z"
+}

@@ -1,5 +1,15 @@
 # CCad Agent production TODO
 
+### Sprint 1050 — deterministic approval expiry and one-use replay boundary
+
+- [x] Add an injected monotonic clock so the broker's five-minute approval deadline is deterministic in contract tests; expired approval returns `approval_expired` exactly at the deadline and never invokes the executor.
+- [x] Reject expired-token replay/reissue, preserve separate expired, consumed, and unknown outcomes, and verify valid fresh grants execute once; existing contracts cover exact method/arguments/call ID/revision binding, stale-plan rejection, and cancellation.
+- [x] Use clangd 19.1.7 with the configured Qt/MinGW compilation database; the changed test translation unit reports zero diagnostics. clangd parsed the implementation but its optional ExtractFunction probe emitted internal break/continue errors; official MinGW compilation is authoritative.
+- [x] Run the official nonvisual Qt/MinGW Release build and full CTest (128/128); inspect logs and manifest `artifacts/evidence/sprint-1050-approval-expiry.json`, SHA-256 `7A4ADA67A3B25C8B657285E53E2D676A03E8B434EA988A9A8F094025B1A142C3`.
+- [x] Update the codebase map, feature inventory, progress, and this TODO; no GUI behavior changed.
+- [x] Run redacted tracked-repository and staged-diff scans; both report no high-confidence credential patterns.
+- [ ] Commit and push only scoped source/tests/docs/manifest, merge after green CI, verify exact remote SHA/hosted CI, and prune only this merged branch.
+
 ### Sprint 1049 — R7 expanded retrieval calibration
 
 - [x] Add balanced source-described positives and semantic hard negatives for each retrieval task in calibration and held-out splits; advance fixture revisions and dataset to 1.3.0.
@@ -9,7 +19,7 @@
 - [x] Run the official Qt/MinGW Release build and full CTest gate (128/128); no GUI behavior changed, so use the official nonvisual verifier and inspect its logs/manifest `artifacts/evidence/sprint-1049-r7-retrieval-evaluation.json`, SHA-256 `A3F16839F979CF70AFD9B8CA73A040FA9E03A62D4C979ABF5069082A284FF99D`.
 - [x] Update codebase map, feature inventory, retrieval capability matrix, progress, and this TODO with verified build/test evidence.
 - [x] Run redacted repository and staged-diff secret scans; staged additions have zero credential-pattern matches. The tracked scan finds three existing synthetic test tokens and two path-name false positives; stage this slice's source, tests, docs, and required hash manifest only, excluding workspace-only benchmark reports and all pre-existing user changes.
-- [ ] Commit, push the sprint branch, fast-forward merge to main only after verification, confirm remote refs/CI, and prune only the merged sprint branch.
+- [x] Commit `77a04d1c11f04d67cec7538df1cfa05f3e24118b`, push and fast-forward merge to `main`; hosted CI run `36673762055` passed on that exact SHA, then remove the merged local/remote Sprint 1049 branch.
 
 ### Sprint 1048 — Python CI checkpoint-restart schema parity
 
@@ -43,8 +53,8 @@ References checked: Google’s [EmbeddingGemma model card](https://ai.google.dev
 - [x] Run changed-module Pyright (0 diagnostics) and official Qt/MinGW Release/full CTest (127/127); inspect logs and manifest `artifacts/evidence/sprint-1046-retrieval-mode-ablations.json` SHA-256 `BBBE80736F07302E7C88086C2A2E69EAF8F9A6BD97ED456DDF97817F1F7A374C`.
 - [x] Update codebase map, feature inventory, and progress with model digests, comparisons, and remaining limitations.
 - [x] Run redacted tracked-repository/staged-diff/file scans; the three tracked matches are two legacy `task-workspace` artifact-path false positives and one synthetic test sentinel; staged additions have zero credential-pattern matches.
-- [ ] Commit, push, and verify the exact remote branch SHA.
-- [ ] Continue expanding retrieval corpus and scope threshold evidence by model digest, task, corpus, and evaluation version; do not promote a universal semantic threshold.
+- [x] Commit, push, and verify the exact remote branch SHA; later merged to `main` and the served branch was pruned after hosted CI.
+- [x] Continue expanding retrieval corpus and scope threshold evidence by model digest, task, corpus, and evaluation version; Sprint 1049 added scoped offline calibration profiles and broader hard-negative coverage, without promoting a universal semantic threshold.
 
 ### Sprint 1045 — semantic retrieval corpus expansion
 
@@ -156,13 +166,14 @@ References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/
 
 ### Sprint 1037 — one-use approvals, truthful tool IDs, and project undo/redo
 
-- [ ] Bind each broker grant to exact method, arguments, provider call ID, and live design revision; consume once, expire, and revoke on cancel/reject.
+- [x] Bind each broker grant to exact method, arguments, provider call ID, and live design revision; consume once, expire, and revoke on cancel/reject. Sprint 1050 adds deterministic exact-deadline expiry and prevents expired-token reissue.
 - [x] Use parsed typed `dry_run` only; reject malformed provider calls and legacy text tools without synthetic IDs or execution; focused broker/Python contracts pass.
 - [x] Persist project Undo/Redo restoration atomically and verify board state after keyboard shortcuts and native actions on a disposable project.
-- [x] Pass approval replay/staleness/cancellation and dry-run contracts, provider-ID runtime contract, GUI Undo/Redo test, and Pyright (0 diagnostics in changed orchestrator module). Expiry behavior is implemented but still lacks a deterministic expiry contract.
+- [x] Pass approval replay/staleness/cancellation and dry-run contracts, provider-ID runtime contract, GUI Undo/Redo test, and Pyright (0 diagnostics in changed orchestrator module). Sprint 1050 adds a deterministic five-minute expiry/replay contract.
 - [x] Pass Qt/MinGW Release build and full CTest (123/123) in the inspected `sprint-1037-agent-safety-r4` verifier run.
 - [x] Pass the mapped GUI sequence; inspect four distinct before/staged/undo/redo screenshots and stdout/stderr in `sprint-1037-agent-safety-r4`.
-- [ ] Update handover/features/progress and check only verified items; run redacted secret scan; commit and push scoped source, tests, docs, and manifest.
+- [x] Update handover/features/progress and check only verified items; redacted tracked-repository and staged-diff scans report no high-confidence credential patterns in Sprint 1050.
+- [ ] Commit and push scoped source, tests, docs, and manifest.
 
 ### Sprint 1036 follow-up — Langfuse v4 metadata attribute contract
 
