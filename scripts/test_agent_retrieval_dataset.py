@@ -12,7 +12,7 @@ DATASET_PATH = ROOT / "scripts" / "fixtures" / "agent_retrieval_dataset_v1.json"
 TASKS = {
     "exact_cad", "lexical_engineering", "semantic_paraphrase", "hard_negative",
     "component_function", "design_intent", "graph_relationship", "spatial_geometry",
-    "memory", "historical_turn_record",
+    "memory_retrieval", "project_entity", "historical_turn_record",
 }
 SPLITS = {"calibration", "held_out"}
 
@@ -62,6 +62,14 @@ class RetrievalDatasetTests(unittest.TestCase):
                              queries_by_task_split[(task, "held_out")])
             self.assertFalse(expected_by_task_split[(task, "calibration")] &
                              expected_by_task_split[(task, "held_out")])
+
+    def test_memory_and_project_entity_have_semantic_eligible_split_cases(self):
+        for task in ("memory_retrieval", "project_entity"):
+            for split in SPLITS:
+                cases = [case for case in self.dataset["cases"]
+                         if case["task"] == task and case["split"] == split]
+                self.assertTrue(cases)
+                self.assertTrue(any(case["semantic_search_allowed"] for case in cases))
 
     def test_corpus_covers_board_scale_repeated_classes_and_nonsemantic_queries(self):
         fixtures = self.dataset["fixtures"]

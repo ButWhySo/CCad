@@ -316,12 +316,24 @@ class MemoryManager:
             identities["ltm:project"] = self._project_namespace()
         return identities
 
-    def retrieve(self, query: str, *, limit=8):
-        entries, _ = self.retrieve_with_metadata(query, limit=limit)
+    def retrieve(self, query: str, *, limit=8, channels=None):
+        entries, _ = self.retrieve_with_metadata(query, limit=limit, channels=channels)
         return entries
 
-    def retrieve_with_metadata(self, query: str, *, limit=8):
+    def retrieve_with_metadata(self, query: str, *, limit=8, channels=None):
         """Return ranked entries plus content-free provenance for diagnostics."""
+        if channels is None:
+            requested_channels = {"lexical", "semantic"}
+        else:
+            if isinstance(channels, (str, bytes)):
+                raise ValueError("memory_retrieval_channels_invalid")
+            requested_channels = {str(getattr(channel, "value", channel))
+                                  for channel in channels}
+            if (not requested_channels or
+                    not requested_channels.issubset({"lexical", "semantic"})):
+                raise ValueError("memory_retrieval_channels_invalid")
+        lexical_enabled = "lexical" in requested_channels
+        semantic_enabled = "semantic" in requested_channels
         self._prune_expired()
         candidates_by_tier = {tier: [] for tier in self.TIERS}
         for tier in self.TIERS:
@@ -355,26 +367,30 @@ class MemoryManager:
         result_limit = max(0, min(32, int(limit)))
         for tier in self.TIERS:
             candidates = candidates_by_tier[tier]
-            lexical = rank_documents(query, candidates,
-                                     min_matches=min(2, query_term_count))
+            lexical = (rank_documents(query, candidates,
+                                      min_matches=min(2, query_term_count))
+                       if lexical_enabled else [])
             eligible_ids = {item["document"]["entry"]["id"] for item in lexical}
-            channels = {}
-            for channel, field in (("title", "title_text"),
-                                   ("content", "content_text"),
-                                   ("tags", "tags_text")):
-                field_docs = [candidate for candidate in candidates
-                              if candidate["entry"]["id"] in eligible_ids]
-                channels[channel] = rank_documents(
-                    query, field_docs, text_key=field, min_matches=1)
-            fused = fuse_rankings(channels, weights={"title": 1.2,
-                                                     "content": 1.0,
-                                                     "tags": 0.8})
-            semantic_ranked = self._semantic_rankings(candidates, str(query))
+            lexical_channels_by_field = {}
+            if lexical_enabled:
+                for channel, field in (("title", "title_text"),
+                                       ("content", "content_text"),
+                                       ("tags", "tags_text")):
+                    field_docs = [candidate for candidate in candidates
+                                  if candidate["entry"]["id"] in eligible_ids]
+                    lexical_channels_by_field[channel] = rank_documents(
+                        query, field_docs, text_key=field, min_matches=1)
+            fused = (fuse_rankings(lexical_channels_by_field, weights={"title": 1.2,
+                                                                        "content": 1.0,
+                                                                        "tags": 0.8})
+                     if lexical_channels_by_field else [])
+            semantic_ranked = (self._semantic_rankings(candidates, str(query))
+                               if semantic_enabled else [])
             semantic_by_id = {item["document"]["entry"]["id"]: item
                               for item in semantic_ranked}
             if semantic_ranked:
                 fused = fuse_rankings(
-                    {**channels, "semantic": semantic_ranked},
+                    {**lexical_channels_by_field, "semantic": semantic_ranked},
                     weights={"title": 1.2, "content": 1.0,
                              "tags": 0.8, "semantic": 1.0})
             # Rank, weight, and diversify within the tier: unrelated memories
@@ -463,8 +479,11 @@ class MemoryManager:
                 item["document"]["entry"]["id"], 0.0), 6),
             "ranking_method": (
                 "tiered_hybrid_bm25_rrf_mmr"
-                if semantic_scores_by_tier[item["document"]["tier"]]
-                else "tiered_fielded_bm25_rrf_mmr"),
+                if (lexical_enabled and semantic_enabled and
+                    semantic_scores_by_tier[item["document"]["tier"]]) else
+                "tiered_semantic_rrf_mmr"
+                if semantic_enabled and not lexical_enabled else
+                "tiered_fielded_bm25_rrf_mmr"),
             "channel_ranks": item["channel_ranks"],
             "rrf_score": round(item["score"], 8),
             "diversity_score": item["diversity_score"],

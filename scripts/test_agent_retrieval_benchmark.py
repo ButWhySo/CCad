@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 from benchmark_agent_retrieval import (  # noqa: E402
     aggregate_metrics,
     evaluate_case,
+    memory_channels_for_mode,
     project_channels_for_mode,
     run_benchmark,
 )
@@ -32,11 +33,28 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertEqual(project_channels_for_mode("design_intent", True, "hybrid"),
                          (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL,
                           RetrievalChannel.SEMANTIC))
+        self.assertEqual(project_channels_for_mode("project_entity", True, "full"),
+                         (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL,
+                          RetrievalChannel.SEMANTIC, RetrievalChannel.GRAPH,
+                          RetrievalChannel.SPATIAL))
         self.assertEqual(project_channels_for_mode("exact_cad", False, "semantic"), ())
         self.assertEqual(project_channels_for_mode("design_intent", True, "task_policy"),
                          (RetrievalChannel.SEMANTIC, RetrievalChannel.LEXICAL))
         with self.assertRaisesRegex(ValueError, "project_retrieval_mode_invalid"):
             project_channels_for_mode("design_intent", True, "invented")
+
+    def test_memory_modes_execute_only_requested_channels(self):
+        self.assertEqual(memory_channels_for_mode(True, "lexical"),
+                         (RetrievalChannel.LEXICAL,))
+        self.assertEqual(memory_channels_for_mode(True, "semantic"),
+                         (RetrievalChannel.SEMANTIC,))
+        self.assertEqual(memory_channels_for_mode(True, "hybrid"),
+                         (RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC))
+        self.assertEqual(memory_channels_for_mode(False, "semantic"), ())
+        self.assertEqual(memory_channels_for_mode(False, "hybrid"),
+                         (RetrievalChannel.LEXICAL,))
+        with self.assertRaisesRegex(ValueError, "memory_retrieval_mode_invalid"):
+            memory_channels_for_mode(True, "exact")
 
     def test_ranked_metrics_use_relevant_ids_and_cutoff(self):
         metrics = evaluate_case(
@@ -74,7 +92,7 @@ class RetrievalMetricsTests(unittest.TestCase):
             report = run_benchmark(corpus, split="held_out", work_dir=Path(temp),
                                    warmups=0, repetitions=2)
         self.assertEqual(report["dataset_version"], corpus["dataset_version"])
-        self.assertEqual(report["benchmark_version"], "1.3.0")
+        self.assertEqual(report["benchmark_version"], "1.4.0")
         self.assertEqual(report["split"], "held_out")
         self.assertGreater(report["summary"]["case_count"], 0)
         history = next(row for row in report["cases"]
@@ -82,7 +100,7 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertTrue(history["result_ids"])
         self.assertEqual(history["metrics"]["recall_at_1"], 1.0)
         self.assertIn("historical_turn_lexical", history["channels_available_on_hits"])
-        self.assertTrue(any(row["task"] == "memory" for row in report["cases"]))
+        self.assertTrue(any(row["task"] == "memory_retrieval" for row in report["cases"]))
         self.assertTrue(all(row["status"] in {"measured", "unavailable"}
                             for row in report["cases"]))
         semantic_allowed = [row for row in report["cases"]
@@ -101,7 +119,8 @@ class RetrievalMetricsTests(unittest.TestCase):
                              for row in report["cases"] for identity in row["result_ids"]))
         project_cases = [row for row in report["cases"]
                          if row["task"] in {"exact_cad", "lexical_engineering",
-                                            "graph_relationship", "spatial_geometry"}]
+                                            "graph_relationship", "spatial_geometry",
+                                            "project_entity"}]
         self.assertTrue(all(row["source_revision"] and row["result_ids"] is not None
                             for row in project_cases))
         self.assertTrue(all(row["timing_ms"]["p50"] >= 0 for row in report["cases"]))
@@ -131,6 +150,23 @@ class RetrievalMetricsTests(unittest.TestCase):
         self.assertEqual(report["summary"]["measured_case_count"],
                          len(report["cases"]) - len(excluded))
         self.assertIn("semantic_paraphrase", report["project_mode_quality_by_task"])
+
+    def test_memory_semantic_mode_excludes_policy_disallowed_cases(self):
+        corpus = json.loads((ROOT / "scripts" / "fixtures" /
+                             "agent_retrieval_dataset_v1.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as temp:
+            report = run_benchmark(corpus, split="held_out", work_dir=Path(temp),
+                                   warmups=0, repetitions=1,
+                                   memory_retrieval_mode="semantic")
+        rows = [row for row in report["cases"] if row["task"] == "memory_retrieval"]
+        self.assertTrue(rows)
+        self.assertTrue(all(row["memory_retrieval_mode"] == "semantic" for row in rows))
+        self.assertTrue(all(row["status"] == ("measured" if row["semantic_search_allowed"]
+                                               else "excluded_by_policy") for row in rows))
+        self.assertTrue(all(row["requested_channels"] == (["semantic"]
+                                                            if row["semantic_search_allowed"]
+                                                            else []) for row in rows))
+        self.assertIn("memory_retrieval", report["memory_mode_quality_by_task"])
 
 
 if __name__ == "__main__":

@@ -1,5 +1,24 @@
 # Implemented Features
 
+## Sprint 1047 — memory and project-entity retrieval ablations
+
+Retrieval dataset 1.2.0 adds separate project-entity and memory-retrieval cases
+to calibration and held-out splits. Memory retrieval accepts explicit lexical or
+semantic channel selection before ranking, while an omitted channel list keeps
+the existing hybrid behavior; typed adapter requests now control which memory
+rankers actually run. The benchmark compares lexical, semantic, and hybrid memory
+modes and adds a complete exact+lexical+semantic+graph+spatial ProjectIndex mode.
+Across 32 local reports using the pinned EmbeddingGemma and Nomic model digests,
+each project-entity case was retrieved under lexical and semantic modes, but one
+case per split is too small to establish generalization. Semantic-only memory
+ranking did not consistently beat lexical ranking and once ranked a distractor
+first. No default, threshold, or model-winner change is justified. Full reports
+are workspace-only under `artifacts/evidence/sprint-1047-memory-retrieval-ablation/`.
+Focused retrieval tests pass, changed-module Pyright reports zero diagnostics,
+and Qt/MinGW Release plus full CTest pass 127/127. Final evidence manifest:
+`artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256
+`833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`.
+
 ## Sprint 1046 — execution-level retrieval channel ablations
 
 `ProjectIndex.retrieve` now honors requested exact, lexical, semantic, graph, and

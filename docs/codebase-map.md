@@ -2685,6 +2685,26 @@ semantic-only recall@3 is 0.333 for both models versus lexical-only 0.667; seman
 and hybrid modes both return 2/2 hard negatives. Therefore this evidence supports
 neither semantic promotion nor a threshold choice.
 
+Sprint 1047 expands the versioned retrieval dataset to 1.2.0 with distinct
+`project_entity` and `memory_retrieval` tasks in calibration and held-out splits.
+`MemoryManager.retrieve` and `retrieve_with_metadata` now accept explicit lexical
+and/or semantic channels and execute only those requested before ranking; callers
+that omit channels retain the prior hybrid behavior. `MemoryManagerRetriever`
+passes typed request channels through and ignores unrelated project channels while
+rejecting requests with no supported memory channel. The benchmark now exposes
+memory lexical, semantic, and hybrid modes, and a ProjectIndex `full` mode that
+executes exact, lexical, semantic, graph, and spatial retrieval together. The
+32 local reports live under `artifacts/evidence/sprint-1047-memory-retrieval-ablation/`
+and identify the installed model digests. The new project-entity cases number one
+per split, and semantic-only did not demonstrate a general advantage; the tiny
+memory sample also fails to show a consistent semantic ranking improvement.
+These are scope-limited measurements, not a semantic-default or threshold decision.
+Dataset, benchmark, memory-manager, and typed retrieval contracts pass; changed-module
+Pyright has zero diagnostics. Official Qt/MinGW Release verification and
+full CTest pass 127/127. Final nonvisual manifest:
+`artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256
+`833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`.
+
 ## Sprint 1043 live provider response and dispatch reporting
 
 `router_node()` emits content-free `provider_request_state` events at provider

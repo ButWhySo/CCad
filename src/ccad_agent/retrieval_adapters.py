@@ -239,8 +239,14 @@ class MemoryManagerRetriever:
         if (request.thread_id and request.thread_id !=
                 self.manager.identities.get("ltm", "")):
             return RetrievalResult(RetrievalStatus.FAILED, reason="thread_scope_mismatch")
+        supported_channels = tuple(channel for channel in request.channels
+                                   if channel in self.channels)
+        if not supported_channels:
+            return RetrievalResult(RetrievalStatus.FAILED,
+                                   reason="unsupported_retrieval_channel")
         entries, provenance_rows = self.manager.retrieve_with_metadata(
-            request.query, limit=request.candidate_budget)
+            request.query, limit=request.candidate_budget,
+            channels=tuple(channel.value for channel in supported_channels))
         by_id = {str(row.get("entry_id")): row for row in provenance_rows
                  if isinstance(row, dict)}
         hits = []
@@ -257,7 +263,7 @@ class MemoryManagerRetriever:
                 evidence.add(RetrievalChannel.LEXICAL)
             if has_semantic:
                 evidence.add(RetrievalChannel.SEMANTIC)
-            channel = next((item for item in request.channels if item in evidence), None)
+            channel = next((item for item in supported_channels if item in evidence), None)
             if channel is None:
                 continue
             channel = RetrievalChannel(channel)
@@ -307,7 +313,7 @@ class MemoryManagerRetriever:
             RetrievalStatus.UNAVAILABLE if enabled and errors else
             RetrievalStatus.DISABLED),
             RetrievalChannel.SEMANTIC: semantic_status}
-        if (enabled and RetrievalChannel.SEMANTIC in request.channels and
+        if (enabled and RetrievalChannel.SEMANTIC in supported_channels and
                 semantic_status == RetrievalStatus.UNAVAILABLE):
             status = RetrievalStatus.PARTIAL if hits else RetrievalStatus.UNAVAILABLE
         return RetrievalResult(status, tuple(hits), reason="storage_unavailable" if errors else "",

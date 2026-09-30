@@ -1,5 +1,19 @@
 # CCad Agent production TODO
 
+### Sprint 1047 — memory and project-entity retrieval ablations
+
+- [x] Expand the versioned corpus to dataset 1.2.0 with separate project-entity and memory-retrieval cases in calibration and held-out splits; preserve distinct identities and hard distractors.
+- [x] Pass selected lexical/semantic channels into the memory manager before ranking; default retrieval remains hybrid, while lexical-only avoids embedding calls and semantic-only does not compute lexical scores.
+- [x] Add memory lexical, semantic, and hybrid modes plus a complete deterministic+semantic project mode; policy-disallowed semantic cases are excluded, not scored as misses.
+- [x] Execute 32 real local-model runs across two splits, two installed models, five project modes, and three memory modes; pin EmbeddingGemma digest `85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1` and Nomic digest `0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f` in reports.
+- [x] Keep semantic retrieval disabled as a default/promotion decision: project-entity cases are only one per split and lexical already retrieves them; memory cases are only one calibration and two held-out, and semantic-only does not consistently outrank lexical. Broader corpus, hard-negative, and model/task-scoped acceptance work remains open.
+- [x] Add pre-implementation contracts for corpus split integrity, channel selection, execution-time channel propagation, and policy exclusion; focused dataset, benchmark, memory-manager, and typed retrieval tests pass.
+- [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release verification, and full CTest (127/127); inspect logs and final nonvisual manifest `artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256 `833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`. The final manifest reuses the earlier full-suite pass because subsequent code change only advanced benchmark metadata; focused benchmark contracts were rerun after that change.
+- [x] Run redacted tracked-repository and staged-diff secret scans; tracked matches are four existing synthetic test sentinels in three test files, while staged additions contain no high-confidence credential patterns.
+- [ ] Commit, push, and verify the exact remote branch SHA.
+
+References checked: Google’s [EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) and Nomic’s [official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) define retrieval-specific query/document embedding behavior. Current integration follows the previously recorded task-prompt protocol; this slice measures retrieval relevance and does not change model prompts.
+
 ### Sprint 1046 — retrieval channel ablations
 
 - [x] Make `ProjectIndex.retrieve` honor requested exact, lexical, semantic, graph, and spatial channels before ranking; preserve the default all-channel behavior.
@@ -7222,7 +7236,8 @@ Sprint 1038's duplicate calibration is useful but deliberately small and conserv
 
 - [ ] Expand the still-small source-grounded calibration and held-out sets across all semantic retrieval classes below; keep memory duplicate classification separate from retrieval relevance. Sprint 1045 adds component-function/design-intent cases; sample remains limited.
 - [x] Evaluate hard negatives with semantic retrieval enabled and score false-positive cost per case/model, not only recall. Sprint 1045 observed 2/2 false-positive hard negatives per split/model.
-- [x] Compare exact-only, lexical-only, semantic-only, and hybrid execution on eligible held-out cases; Sprint 1046 uses pre-ranking channel control and records each mode/model/split separately. Semantic-only held-out recall@3 is below lexical-only for both installed models, and both semantic-bearing modes return 2/2 hard negatives; do not promote semantic retrieval.
+- [x] Compare exact-only, lexical-only, semantic-only, and hybrid execution for ProjectIndex cases; Sprint 1046 used pre-ranking channel control and recorded each mode/model/split separately. Sprint 1047 adds project-entity and memory retrieval modes plus the full deterministic+semantic ProjectIndex stack. Semantic-only held-out recall@3 was below lexical-only for the Sprint 1046 project corpus; both semantic-bearing modes returned 2/2 hard negatives, so do not promote semantic retrieval.
+- [x] Add separate memory-retrieval and project-entity cases to both calibration and held-out corpus splits; Sprint 1047 reports are small-sample coverage checks, not generalized quality claims.
 - [ ] Scope any acceptance threshold by model digest, task, corpus, and evaluation version; do not introduce a universal cosine cutoff.
 - [ ] Claim useful semantic gain only when held-out incremental recall and hard-negative false-positive cost both support it.
 

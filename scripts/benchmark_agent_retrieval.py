@@ -46,10 +46,11 @@ TASK_CHANNELS = {
                            RetrievalChannel.LEXICAL),
     "spatial_geometry": (RetrievalChannel.SPATIAL, RetrievalChannel.GRAPH,
                          RetrievalChannel.EXACT),
-    "memory": (RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC),
+    "project_entity": (RetrievalChannel.SEMANTIC, RetrievalChannel.LEXICAL),
+    "memory_retrieval": (RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC),
 }
 PROJECT_ABLATION_TASKS = frozenset(("semantic_paraphrase", "component_function",
-                                    "design_intent", "hard_negative"))
+                                    "design_intent", "hard_negative", "project_entity"))
 
 
 def project_channels_for_mode(task: str, semantic_allowed: bool,
@@ -67,10 +68,29 @@ def project_channels_for_mode(task: str, semantic_allowed: bool,
         "semantic": ((RetrievalChannel.SEMANTIC,) if semantic_allowed else ()),
         "hybrid": (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL,
                    *((RetrievalChannel.SEMANTIC,) if semantic_allowed else ())),
+        "full": (RetrievalChannel.EXACT, RetrievalChannel.LEXICAL,
+                 *((RetrievalChannel.SEMANTIC,) if semantic_allowed else ()),
+                 RetrievalChannel.GRAPH, RetrievalChannel.SPATIAL),
     }
     if mode not in fixed:
         raise ValueError("project_retrieval_mode_invalid")
     return fixed[mode]
+
+
+def memory_channels_for_mode(semantic_allowed: bool,
+                             mode: str) -> tuple[RetrievalChannel, ...]:
+    """Choose real memory channels before retrieval, respecting case policy."""
+    if mode == "task_policy":
+        return (RetrievalChannel.LEXICAL,
+                *((RetrievalChannel.SEMANTIC,) if semantic_allowed else ()))
+    if mode == "lexical":
+        return (RetrievalChannel.LEXICAL,)
+    if mode == "semantic":
+        return (RetrievalChannel.SEMANTIC,) if semantic_allowed else ()
+    if mode == "hybrid":
+        return (RetrievalChannel.LEXICAL,
+                *((RetrievalChannel.SEMANTIC,) if semantic_allowed else ()))
+    raise ValueError("memory_retrieval_mode_invalid")
 
 
 class TimedEmbeddingBackend:
@@ -430,11 +450,17 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
                   warmups: int = 3, repetitions: int = 30,
                   local_semantic: bool = False, ollama_url: str = "http://127.0.0.1:11434",
                   embedding_model: str = "embeddinggemma",
-                  project_retrieval_mode: str = "task_policy") -> dict[str, Any]:
+                  project_retrieval_mode: str = "task_policy",
+                  memory_retrieval_mode: str = "task_policy") -> dict[str, Any]:
     if split not in {"calibration", "held_out"}:
         raise ValueError("benchmark_split_invalid")
     if warmups < 0 or repetitions < 1 or repetitions > 1000:
         raise ValueError("benchmark_run_bounds_invalid")
+    if memory_retrieval_mode not in {"task_policy", "lexical", "semantic", "hybrid"}:
+        raise ValueError("memory_retrieval_mode_invalid")
+    if project_retrieval_mode not in {"task_policy", "exact", "lexical", "semantic",
+                                      "hybrid", "full"}:
+        raise ValueError("project_retrieval_mode_invalid")
     work_dir.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
     fixture_snapshots = {name: _snapshot(name) for name in ("power_small", "controller_large")}
@@ -479,7 +505,8 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
         if failures or not semantic_state.get("ready"):
             raise RuntimeError("local_semantic_backend_not_ready")
         recovery_case = next(case for case in dataset["cases"]
-                             if case["split"] == split and case["task"] == "memory")
+                             if case["split"] == split and
+                             case["task"] == "memory_retrieval")
         semantic_recovery = _measure_semantic_recovery(
             manager, ollama_url=ollama_url, embedding_model=embedding_model,
             query=recovery_case["query"])
@@ -494,11 +521,12 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     latencies = []
     for case in cases:
         task = case["task"]
+        is_memory = task == "memory_retrieval"
         channels = project_channels_for_mode(
             task, bool(case["semantic_search_allowed"]), project_retrieval_mode)
-        memory_channels = ((RetrievalChannel.LEXICAL, RetrievalChannel.SEMANTIC)
-                           if case["semantic_search_allowed"] else
-                           (RetrievalChannel.LEXICAL,))
+        memory_channels = (memory_channels_for_mode(
+            bool(case["semantic_search_allowed"]), memory_retrieval_mode)
+            if is_memory else ())
         timings = []
         result_ids: list[str] = []
         source_revision = ""
@@ -513,7 +541,15 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
             nonlocal result_ids, source_revision, status, retrieval_status
             nonlocal channel_names, context_chars, context_bytes, retrieval_calls
             retrieval_calls += 1
-            if task in {"memory"}:
+            if is_memory:
+                if not memory_channels:
+                    result_ids = []
+                    source_revision = "memory-fixture-v1"
+                    retrieval_status = "not_requested_policy"
+                    status = "excluded_by_policy"
+                    channel_names = []
+                    context_chars = context_bytes = 0
+                    return
                 request = RetrievalRequest(
                     query=case["query"], project_id="retrieval-benchmark",
                     thread_id="retrieval-benchmark-thread", requested_revision="memory-fixture-v1",
@@ -595,14 +631,16 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
             "status": status, "retrieval_status": retrieval_status,
             "semantic_search_allowed": case["semantic_search_allowed"],
             "project_retrieval_mode": (project_retrieval_mode
-                                        if task not in {"memory", "historical_turn_record"}
+                                        if task not in {"memory_retrieval", "historical_turn_record"}
                                         else "not_applicable"),
+            "memory_retrieval_mode": (memory_retrieval_mode if is_memory
+                                      else "not_applicable"),
             "project_mode_comparison_eligible": task in PROJECT_ABLATION_TASKS,
             "semantic_backend_status": semantic_state.get("status", "disabled"),
             "requested_channels": ([channel.value for channel in channels]
-                                   if task not in {"memory", "historical_turn_record"}
+                                   if task not in {"memory_retrieval", "historical_turn_record"}
                                     else ([channel.value for channel in memory_channels]
-                                          if task == "memory" else
+                                          if is_memory else
                                           ["historical_turn_lexical"])),
             "channels_available_on_hits": channel_names,
             "source_revision": source_revision,
@@ -646,10 +684,11 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
     if local_semantic:
         semantic_state = manager.semantic_state()
     return {
-        "schema_version": 1, "benchmark_version": "1.3.0",
+        "schema_version": 1, "benchmark_version": "1.4.0",
         "dataset_id": dataset["dataset_id"], "dataset_version": dataset["dataset_version"],
         "dataset_sha256": hashlib.sha256(payload).hexdigest(), "split": split,
         "project_retrieval_mode": project_retrieval_mode,
+        "memory_retrieval_mode": memory_retrieval_mode,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "git_commit": git_commit, "platform": platform.platform(),
         "runtime": {"python": platform.python_version(), "backend": "CCad in-process retrieval",
@@ -675,6 +714,9 @@ def run_benchmark(dataset: dict[str, Any], *, split: str, work_dir: Path,
         "project_mode_quality_by_task": aggregate_metrics([
             row for row in reports if row["project_mode_comparison_eligible"] and
             row["semantic_search_allowed"]]),
+        "memory_mode_quality_by_task": aggregate_metrics([
+            row for row in reports if row["task"] == "memory_retrieval" and
+            row["status"] not in {"excluded_by_policy", "unavailable", "failed"}]),
         "cases": reports,
         "systems": {"project_index_build_ms_by_fixture": {
                         key: round(value, 6) for key, value in build_times.items()},
@@ -710,9 +752,14 @@ def main() -> int:
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--embedding-model", default="embeddinggemma")
     parser.add_argument("--project-retrieval-mode",
-                        choices=("task_policy", "exact", "lexical", "semantic", "hybrid"),
+                        choices=("task_policy", "exact", "lexical", "semantic", "hybrid",
+                                 "full"),
                         default="task_policy",
                         help="Execute selected ProjectIndex channels; case policy can exclude semantics")
+    parser.add_argument("--memory-retrieval-mode",
+                        choices=("task_policy", "lexical", "semantic", "hybrid"),
+                        default="task_policy",
+                        help="Execute selected memory channels before ranking")
     args = parser.parse_args()
     dataset = json.loads(args.dataset.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory(prefix="ccad-retrieval-benchmark-") as temp:
@@ -721,7 +768,8 @@ def main() -> int:
                                 local_semantic=args.local_semantic,
                                 ollama_url=args.ollama_url,
                                 embedding_model=args.embedding_model,
-                                project_retrieval_mode=args.project_retrieval_mode)
+                                project_retrieval_mode=args.project_retrieval_mode,
+                                memory_retrieval_mode=args.memory_retrieval_mode)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
                            encoding="utf-8")
@@ -729,6 +777,7 @@ def main() -> int:
                       "dataset_version": report["dataset_version"],
                       "split": report["split"], "case_count": report["summary"]["case_count"],
                       "project_retrieval_mode": report["project_retrieval_mode"],
+                      "memory_retrieval_mode": report["memory_retrieval_mode"],
                       "false_negative_case_count":
                           report["summary"]["false_negative_case_count"]},
                      separators=(",", ":")))
