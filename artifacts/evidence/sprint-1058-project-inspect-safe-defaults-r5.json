@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1058-project-inspect-safe-defaults-r5",
+    "feature":  "Summary-only default and bounded follow-up IDs for native project.inspect",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T20:28:18.7809048Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.29 log=artifacts/evidence/sprint-1058-project-inspect-safe-defaults-r5/preflight.log",
+                      "finished_utc":  "2026-09-30T20:28:20.1854899Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=653.94 log=artifacts/evidence/sprint-1058-project-inspect-safe-defaults-r5/build.log",
+                      "finished_utc":  "2026-09-30T20:39:14.1384813Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=316.38 log=artifacts/evidence/sprint-1058-project-inspect-safe-defaults-r5/ctest.log",
+                      "finished_utc":  "2026-09-30T20:44:30.5205602Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1058-project-inspect-safe-defaults-r5/build.log",
+                                         "sha256":  "B60E1A46EC8813CE0D4D064E9510EF478BF017CB4B4984199A121DB3700EB06B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1058-project-inspect-safe-defaults-r5/ctest.log",
+                                         "sha256":  "024407221DC08662D846A165B0A431D222A3CFCBD6F70A658B6EE5007DD96CAB"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1058-project-inspect-safe-defaults-r5/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T20:44:30.6665532Z"
+}

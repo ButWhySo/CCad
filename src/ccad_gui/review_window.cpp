@@ -980,7 +980,7 @@ QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}
           {"max_bytes", QJsonObject{{"type", "integer"}, {"minimum", 1024}, {"maximum", 32768}}},
           {"if_revision", QJsonObject{{"type", "string"}, {"maxLength", 128}}}}}};
   append(agentMethodEntry("project.inspect", "project", "Bounded Project Snapshot",
-                          "Return a deterministic, revision-bound snapshot of selected project, PCB, schematic, net, or selection data. Filter by exact object ID, reference, net ID, layer ID, or object type; every collection is capped and reports counts and omissions. Use this before broad project.state reads.",
+                          "Return a deterministic, revision-bound snapshot of selected project, PCB, schematic, net, or selection data. An unfiltered request returns summary only; specify sections and filters for object data. Collections report counts, omissions, and bounded follow-up object IDs. Use this before broad project.state reads.",
                           true, false, false, false, false, inspect_schema,
                           "Snapshot revision/digest, safe summary, selected typed sections, and per-section counts/omissions.",
                           QJsonObject{{"scope", "pcb"}, {"layer_ids", QJsonArray{"F.Cu"}},
@@ -7417,8 +7417,10 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
       }
     }
   }
-  const auto section_requested = [&requested_sections](const QString& key) {
-    return requested_sections.isEmpty() || requested_sections.contains(key);
+  const bool summary_only = requested_sections.isEmpty() && object_ids.isEmpty() &&
+      refdes.isEmpty() && net_ids.isEmpty() && layer_ids.isEmpty() && object_types.isEmpty();
+  const auto section_requested = [&requested_sections, &summary_only](const QString& key) {
+    return requested_sections.contains(key) || (!summary_only && requested_sections.isEmpty());
   };
   const auto scope_allows = [&scope](const QString& key) {
     const bool is_board = key.startsWith("board.");
@@ -7446,6 +7448,7 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
       std::string_view(schematic_revision_input.constData(),
                       static_cast<std::size_t>(schematic_revision_input.size())))));
   response.insert("scope", scope);
+  response.insert("inspection_mode", summary_only ? "summary" : "filtered_objects");
   response.insert("active_editor", editor_tabs_ != nullptr &&
                   editor_tabs_->currentWidget() == schematic_view_ ? "schematic" : "pcb");
   response.insert("summary", projectObjectCountsObject(project_cache_));
@@ -7466,13 +7469,20 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
   }
   QJsonArray omissions;
   QJsonObject section_counts;
+  int follow_up_budget = 64;
   int remaining = max_objects;
+  const auto stable_object_id = [](const QJsonObject& item) {
+    for (const QString& key : {QStringLiteral("id"), QStringLiteral("object_id"),
+                               QStringLiteral("reference"), QStringLiteral("ref")}) {
+      const QString id = item.value(key).toString();
+      if (!id.isEmpty()) return id;
+    }
+    return QString{};
+  };
   const auto append_array = [&](const QString& key, const QString& path,
                                 const QJsonArray& source_array, QJsonObject* destination) {
     const QString collection = key;
-    const bool has_filters = !object_ids.isEmpty() || !refdes.isEmpty() ||
-        !net_ids.isEmpty() || !layer_ids.isEmpty() || !object_types.isEmpty();
-    if (source_array.isEmpty() && requested_sections.isEmpty() && !has_filters) return;
+    if (summary_only) return;
     if (!object_types.isEmpty()) {
       const QStringList aliases = type_aliases.value(collection);
       if (!object_types.contains(collection) &&
@@ -7514,9 +7524,18 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
                                            {"omitted", omitted_count},
                                            {"filtered", total - matched}});
     if (omitted_count > 0) {
+      QJsonArray follow_up_ids;
+      for (int i = take; i < candidates.size() && follow_up_budget > 0; ++i) {
+        const QString id = stable_object_id(candidates.at(i).toObject());
+        if (!id.isEmpty()) {
+          follow_up_ids.append(id);
+          --follow_up_budget;
+        }
+      }
       omissions.append(QJsonObject{{"section", path}, {"total", total},
                                    {"matched", matched}, {"included", take},
-                                   {"omitted", omitted_count}});
+                                   {"omitted", omitted_count},
+                                   {"follow_up_object_ids", follow_up_ids}});
     }
   };
   for (const QString& key : board_array_keys) {
@@ -7555,6 +7574,7 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
       for (const QString& key : keys) {
         QJsonArray values = collection.value(key).toArray();
         if (values.isEmpty()) continue;
+        const QString removed_id = stable_object_id(values.last().toObject());
         values.removeLast();
         collection.insert(key, values);
         current_sections.insert(domain, collection);
@@ -7576,6 +7596,12 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
           if (omission.value("section").toString() == path) {
             omission.insert("included", included);
             omission.insert("omitted", omitted);
+            QJsonArray follow_up = omission.value("follow_up_object_ids").toArray();
+            if (!removed_id.isEmpty() && follow_up_budget > 0) {
+              follow_up.append(removed_id);
+              --follow_up_budget;
+            }
+            omission.insert("follow_up_object_ids", follow_up);
             updated_omissions.append(omission);
             found = true;
           } else {
@@ -7585,7 +7611,8 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
         if (!found) {
           updated_omissions.append(QJsonObject{{"section", path},
               {"total", count.value("total")}, {"matched", count.value("matched")},
-              {"included", included}, {"omitted", omitted}});
+              {"included", included}, {"omitted", omitted},
+              {"follow_up_object_ids", QJsonArray{}}});
         }
         response.insert("omissions", updated_omissions);
         removed = true;

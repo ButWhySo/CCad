@@ -178,6 +178,11 @@ int main(int argc, char** argv) {
           .value("max_objects").toObject().value("type").toString() != "integer") {
     return 32;
   }
+  const QJsonObject summary_only_inspect = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect", "{}").toUtf8()).object()
+      .value("result").toObject();
+  if (summary_only_inspect.value("inspection_mode").toString() != "summary" ||
+      !summary_only_inspect.value("sections").toObject().isEmpty()) return 47;
   const QJsonObject inspect = QJsonDocument::fromJson(window.runAgentUiQueryJson(
       "project.inspect",
       "{\"scope\":\"schematic\",\"sections\":[\"components\"],"
@@ -246,11 +251,18 @@ int main(int argc, char** argv) {
     return 37;
   }
   const QJsonObject bounded_envelope = QJsonDocument::fromJson(window.runAgentUiQueryJson(
-      "project.inspect", "{\"scope\":\"project\",\"max_objects\":1,"
+      "project.inspect", "{\"scope\":\"project\",\"sections\":[\"board.layers\"],"
+      "\"max_objects\":1,"
       "\"max_bytes\":4096}").toUtf8()).object();
   if (!bounded_envelope.value("ok").toBool()) return 45;
   const QJsonObject bounded_inspect = bounded_envelope.value("result").toObject();
   if (bounded_inspect.value("omissions").toArray().isEmpty()) return 35;
+  bool has_follow_up_ids = false;
+  for (const QJsonValue& omission : bounded_inspect.value("omissions").toArray()) {
+    has_follow_up_ids = has_follow_up_ids ||
+        !omission.toObject().value("follow_up_object_ids").toArray().isEmpty();
+  }
+  if (!has_follow_up_ids) return 48;
   if (bounded_inspect.value("serialized_bytes").toInt() > 4096) return 46;
   const QJsonObject invalid_inspect = QJsonDocument::fromJson(
       window.runAgentUiQueryJson("project.inspect", "{\"scope\":\"invalid\"}")

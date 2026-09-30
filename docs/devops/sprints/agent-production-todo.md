@@ -1,5 +1,14 @@
 # CCad Agent production TODO
 
+### Sprint 1058 — safer bounded project inspection (in progress)
+
+- [x] Make unfiltered `project.inspect` summary-only; require explicit filters or sections to return design objects.
+- [x] Return bounded stable-ID follow-up candidates with object-limit and byte-limit omissions.
+- [x] Contract-test summary-only defaults and omission follow-ups in the native GUI-map test.
+- [x] Run the official Qt MinGW Release/full CTest gate: 126/126 pass; clangd did not return a reliable completion result in this environment.
+- [x] Record the non-visual gate manifest and SHA-256 in progress documentation.
+- [ ] Commit and push only the verified source/tests/docs slice; hosted CI and merge remain separate gates.
+
 ### Sprint 1057 — revision-bound project inspection (local gate passed)
 
 - [x] Expose read-only `project.inspect` from the native Agent method catalog and route it through the live typed project model.
@@ -5853,10 +5862,11 @@ AgentProjectSnapshot
 
 - [ ] Sort stable-ID arrays deterministically.
 - [ ] Return counts and omission metadata whenever bounded output truncates data.
-- [ ] Never silently dump the entire project because the caller omitted a filter.
-- [ ] For large designs return compact summary + relevant windows + handles for targeted follow-up.
+- [x] Never silently dump the entire project because the caller omitted a filter.
+- [x] For large designs return a compact unfiltered summary and bounded omitted-object IDs for targeted follow-up.
 - [ ] Include legal/recommended next capabilities when useful, but do not fabricate a next action.
 - [x] Build each synchronous snapshot from one live serialized project revision; refuse a caller-supplied stale revision.
+- [x] Make an unfiltered request return summary only instead of implicitly selecting every design collection.
 - [ ] Keep derived index/context data on that same revision before including it in a snapshot.
 - [ ] Add a low-cost `project.inspect_object`/existing targeted query path for follow-up rather than regenerating a large snapshot.
 - [ ] Benchmark this against the previous repeated-query workflow on identical questions.
