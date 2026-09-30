@@ -7,7 +7,8 @@
 - [x] Contract-test summary-only defaults and omission follow-ups in the native GUI-map test.
 - [x] Run the official Qt MinGW Release/full CTest gate: 126/126 pass; clangd did not return a reliable completion result in this environment.
 - [x] Record the non-visual gate manifest and SHA-256 in progress documentation.
-- [ ] Commit and push only the verified source/tests/docs slice; hosted CI and merge remain separate gates.
+- [x] Commit and push only the verified source/tests/docs slice (`bcc2a385697d70144b7ad5ce56c23e622287c069`).
+- [ ] Run hosted CI for the exact pushed SHA and merge only after it passes; PR creation is currently denied by the GitHub integration (HTTP 403).
 
 ### Sprint 1057 — revision-bound project inspection (local gate passed)
 
