@@ -10,7 +10,7 @@
 - [x] Add pre-implementation contracts for corpus split integrity, channel selection, execution-time channel propagation, and policy exclusion; focused dataset, benchmark, memory-manager, and typed retrieval tests pass.
 - [x] Run changed-module Pyright (0 diagnostics), official Qt/MinGW Release verification, and full CTest (127/127); inspect logs and final nonvisual manifest `artifacts/evidence/sprint-1047-memory-retrieval-ablation-final.json`, SHA-256 `833B2BAC2C7050AC9A267ED19F76F9A0259D63783B8E7BAD4C9E3A37AAD67247`. The final manifest reuses the earlier full-suite pass because subsequent code change only advanced benchmark metadata; focused benchmark contracts were rerun after that change.
 - [x] Run redacted tracked-repository and staged-diff secret scans; tracked matches are four existing synthetic test sentinels in three test files, while staged additions contain no high-confidence credential patterns.
-- [ ] Commit, push, and verify the exact remote branch SHA.
+- [x] Commit `21f3a8c38608e4ac4ed46bd7e0bed8e1c4df2349`, push branch `sprint-1047-memory-retrieval-ablation`, and confirm the exact remote SHA matches. Hosted CI/main merge remains a separate integration gate.
 
 References checked: Google’s [EmbeddingGemma model card](https://ai.google.dev/gemma/docs/embeddinggemma/model_card) and Nomic’s [official embedding API](https://github.com/nomic-ai/nomic/blob/main/nomic/embed.py) define retrieval-specific query/document embedding behavior. Current integration follows the previously recorded task-prompt protocol; this slice measures retrieval relevance and does not change model prompts.
 
