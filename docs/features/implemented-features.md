@@ -15,7 +15,9 @@ revision, stale-plan rejection, and cancellation. Qt/MinGW Release and full
 CTest pass 128/128. Manifest:
 `artifacts/evidence/sprint-1050-approval-expiry.json` (SHA-256
 `7A4ADA67A3B25C8B657285E53E2D676A03E8B434EA988A9A8F094025B1A142C3`).
-Hosted CI and merge are pending.
+Commit `a1ef20d05469fab4c3796f5e3ef64fd0348fbd1a` is on `main`; hosted CI
+run `36677881521` passed all five jobs on that exact SHA. The merged feature
+branch was pruned.
 
 ## Sprint 1049 — scoped retrieval evaluation and threshold analysis
 

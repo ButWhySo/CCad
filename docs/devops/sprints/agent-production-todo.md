@@ -8,7 +8,7 @@
 - [x] Run the official nonvisual Qt/MinGW Release build and full CTest (128/128); inspect logs and manifest `artifacts/evidence/sprint-1050-approval-expiry.json`, SHA-256 `7A4ADA67A3B25C8B657285E53E2D676A03E8B434EA988A9A8F094025B1A142C3`.
 - [x] Update the codebase map, feature inventory, progress, and this TODO; no GUI behavior changed.
 - [x] Run redacted tracked-repository and staged-diff scans; both report no high-confidence credential patterns.
-- [ ] Commit and push only scoped source/tests/docs/manifest, merge after green CI, verify exact remote SHA/hosted CI, and prune only this merged branch.
+- [x] Commit `a1ef20d05469fab4c3796f5e3ef64fd0348fbd1a`; push and fast-forward merge to `main`; hosted CI run `36677881521` passed all five jobs on the exact SHA. The merged Sprint 1050 branch was removed after verification.
 
 ### Sprint 1049 — R7 expanded retrieval calibration
 
@@ -173,7 +173,7 @@ References: [Google EmbeddingGemma model card](https://ai.google.dev/gemma/docs/
 - [x] Pass Qt/MinGW Release build and full CTest (123/123) in the inspected `sprint-1037-agent-safety-r4` verifier run.
 - [x] Pass the mapped GUI sequence; inspect four distinct before/staged/undo/redo screenshots and stdout/stderr in `sprint-1037-agent-safety-r4`.
 - [x] Update handover/features/progress and check only verified items; redacted tracked-repository and staged-diff scans report no high-confidence credential patterns in Sprint 1050.
-- [ ] Commit and push scoped source, tests, docs, and manifest.
+- [x] Commit and push scoped source, tests, docs, and manifest as `a1ef20d05469fab4c3796f5e3ef64fd0348fbd1a`; exact-SHA hosted CI passed in run `36677881521`.
 
 ### Sprint 1036 follow-up — Langfuse v4 metadata attribute contract
 
