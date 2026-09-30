@@ -67,6 +67,13 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
                 if parameter.get("secret"):
                     self.assertEqual(parameter["type"], "string")
 
+    def test_langfuse_status_describes_live_turn_delivery_state(self):
+        status = self.by_name["agent.langfuse_status"]["response"]["fields"]
+        self.assertIn("turn_state", status)
+        self.assertIn("last_export", status)
+        self.assertIn("trace_id", status)
+        self.assertIn("exported_span_count", status)
+
 
 if __name__ == "__main__":
     unittest.main()

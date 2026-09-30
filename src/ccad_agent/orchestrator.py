@@ -76,6 +76,7 @@ from conversation_store import (ConversationStore, ConversationStoreError,
                                 budgeted_history_window)
 from tool_audit_metadata import (checkpoint_resume_value,
                                  checkpointed_tool_output,
+                                 safe_approval_metadata,
                                  tool_output_from_response)
 from model_catalog import (fetch_anthropic_models as _fetch_anthropic_models,
                            fetch_cerebras_models as _fetch_cerebras_models,
@@ -3612,7 +3613,7 @@ def handle_human_message(req):
                     "project_revision", ""))
         except (ConversationStoreError, ValueError):
             pass
-        export_state = telemetry_runtime.flush_turn()
+        export_state = telemetry_runtime.flush_turn(terminal_state="failed")
         emit({"jsonrpc": "2.0", "method": "observability_state",
               "params": export_state})
         trace = telemetry_runtime.current_trace()
@@ -3628,13 +3629,18 @@ def handle_human_message(req):
             "retry_after_seconds": provider_retry_after_seconds(error),
         }})
         return
-    export_state = telemetry_runtime.flush_turn()
-    emit({"jsonrpc": "2.0", "method": "observability_state",
-          "params": export_state})
     session_messages = bound_session_history(final_state["messages"])
     last_msg = session_messages[-1]
     has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
     has_legacy_tool = "<TOOL>" in str(getattr(last_msg, "content", ""))
+    waiting_for_tool_result = bool(
+        has_tool_calls and not has_legacy_tool
+        and checkpoint_saver is not None and broker_wait_enabled)
+    export_state = telemetry_runtime.flush_turn(
+        finish=not waiting_for_tool_result,
+        terminal_state="awaiting_tool_result" if waiting_for_tool_result else "completed")
+    emit({"jsonrpc": "2.0", "method": "observability_state",
+          "params": export_state})
     try:
         persist_turn_messages(requested_thread, turn_id,
                               final_state.get("messages", []),
@@ -3734,14 +3740,26 @@ if __name__ == "__main__":
     threading.Thread(target=read_protocol_lines, name="ccad-agent-stdin", daemon=True).start()
 
     while True:
-        if telemetry_runtime.finish_agent_turn():
+        # Close early-return turns when the next request arrives. A graph
+        # suspended at its broker interrupt keeps its root/session alive until
+        # the matching tool result resumes or cancels it.
+        if telemetry_runtime.status().get("turn_state") == "active" and \
+                telemetry_runtime.run_in_turn_context(
+                    telemetry_runtime.finish_agent_turn, "abandoned"):
             emit({"jsonrpc": "2.0", "method": "observability_state",
-                  "params": telemetry_runtime.flush_turn()})
+                  "params": telemetry_runtime.run_in_turn_context(
+                      telemetry_runtime.flush_turn)})
         try:
             line = deferred_queue.get_nowait()
         except queue.Empty:
             line = inbound_queue.get()
         if line is None:
+            if telemetry_runtime.run_in_turn_context(
+                    telemetry_runtime.finish_agent_turn, "cancelled"):
+                emit({"jsonrpc": "2.0", "method": "observability_state",
+                      "params": telemetry_runtime.run_in_turn_context(
+                          telemetry_runtime.flush_turn,
+                          terminal_state="cancelled")})
             break
         line = line.strip()
         if not line:
@@ -3806,14 +3824,39 @@ if __name__ == "__main__":
                         "result_present": result is not None,
                         "error_present": error is not None,
                     }})
+                    safe_audit = safe_approval_metadata(req.get("audit"))
                     resume_value = checkpoint_resume_value(
-                        result, error, received_call_id, req.get("audit"))
+                        result, error, received_call_id, safe_audit)
                     emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
                         "run_state": "running", "secret_value_visible": False,
                     }})
-                    resumed = resume_checkpointed_run(thread_id, resume_value)
+                    def resume_approved_tool():
+                        with telemetry_runtime.observation(
+                                "approval.resolve", "span", {
+                                    "decision": safe_audit.get(
+                                        "approval_decision", "unavailable"),
+                                    "call_id_hash": hashlib.sha256(
+                                        received_call_id.encode()).hexdigest()[:16],
+                                    "result_present": str(result is not None).lower(),
+                                    "error_present": str(error is not None).lower(),
+                                }):
+                            return resume_checkpointed_run(thread_id, resume_value)
+
+                    resumed = telemetry_runtime.run_in_turn_context(resume_approved_tool)
                     resumed_snapshot = executor.get_state(
                         {"configurable": {"thread_id": thread_id}})
+                    turn_is_terminal = not bool(resumed_snapshot.next)
+                    if turn_is_terminal:
+                        terminal_state = (
+                            "cancelled" if safe_audit.get("approval_decision") == "cancelled"
+                            else "completed")
+                    else:
+                        terminal_state = "awaiting_tool_result"
+                    export_state = telemetry_runtime.run_in_turn_context(
+                        telemetry_runtime.flush_turn,
+                        finish=turn_is_terminal, terminal_state=terminal_state)
+                    emit({"jsonrpc": "2.0", "method": "observability_state",
+                          "params": export_state})
                     try:
                         assistant_text, resumed_turn_id = persist_resumed_turn(
                             thread_id, resumed, terminal=not bool(resumed_snapshot.next))
@@ -3880,8 +3923,29 @@ if __name__ == "__main__":
                             if expected_call_id:
                                 break
                         if snapshot.next and expected_call_id == call_id:
-                            resumed = resume_checkpointed_run(
-                                thread_id, {"error": {"code": -32800, "message": reason}})
+                            call_id_text = str(call_id or "")
+                            def resume_cancelled_tool():
+                                with telemetry_runtime.observation(
+                                        "approval.resolve", "span", {
+                                            "decision": "cancelled",
+                                            "call_id_hash": hashlib.sha256(
+                                                call_id_text.encode()).hexdigest()[:16],
+                                        }):
+                                    return resume_checkpointed_run(
+                                        thread_id, {"error": {"code": -32800,
+                                                              "message": reason}})
+
+                            resumed = telemetry_runtime.run_in_turn_context(
+                                resume_cancelled_tool)
+                            resumed_snapshot = executor.get_state(
+                                {"configurable": {"thread_id": thread_id}})
+                            telemetry_runtime.run_in_turn_context(
+                                telemetry_runtime.flush_turn,
+                                finish=not bool(resumed_snapshot.next),
+                                terminal_state=("awaiting_tool_result"
+                                                if resumed_snapshot.next else "cancelled"))
+                            emit({"jsonrpc": "2.0", "method": "observability_state",
+                                  "params": telemetry_runtime.status()})
                             emit({"jsonrpc": "2.0", "method": "tool_canceled", "params": {
                                 "call_id": call_id, "thread_id": thread_id, "reason": reason,
                             }})
@@ -3904,7 +3968,14 @@ if __name__ == "__main__":
                     "call_id": call_id, "reason": str(reason),
                 }})
             elif method == "human_message":
-                handle_human_message(req)
+                if telemetry_runtime.status().get("turn_state") == "awaiting_tool_result":
+                    emit({"jsonrpc": "2.0", "method": "message", "params": {
+                        "text": "This conversation is waiting for its pending tool result. Resolve or cancel it before starting another turn.",
+                        "kind": "agent_turn_waiting_for_tool",
+                        "provider_request_sent": False,
+                        "secret_value_visible": False}})
+                else:
+                    telemetry_runtime.run_in_turn_context(handle_human_message, req)
             elif method in ("agent.langfuse_status", "agent.observability_status"):
                 emit({"jsonrpc": "2.0", "method": "observability_state",
                       "params": observability_state()})

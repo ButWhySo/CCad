@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1053-langfuse-tool-continuation-r8",
+    "feature":  "Preserve Langfuse root trace across approval pause and resume, expose truthful live state in settings, and verify isolated local ingestion.",
+    "validation_mode":  "gui",
+    "interaction_plan":  "scripts/interaction_plans/sprint1053-langfuse-turn-state.json",
+    "target_sequence":  "sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-30T11:56:02.0723940Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.91 log=artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/preflight.log",
+                      "finished_utc":  "2026-09-30T11:56:03.1002482Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=149.58 log=artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/build.log",
+                      "finished_utc":  "2026-09-30T11:58:32.6958305Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=194.2 log=artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/ctest.log",
+                      "finished_utc":  "2026-09-30T12:01:46.9022092Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=17.88 log=artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/ui_harness.log",
+                      "finished_utc":  "2026-09-30T12:02:04.7840034Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=7; screenshots=4",
+                      "finished_utc":  "2026-09-30T12:02:04.9315495Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-30T12:02:04.9635539Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/build.log",
+                                         "sha256":  "4E2907C3A06A1BA056DE4BCEF8CF5C4DC709335AC81C129FC77BD4E480DF49C5"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/ctest.log",
+                                         "sha256":  "D6172BACB8B18EA2C410AA412BE82E5D20C2A5B109E82E01DFA371D474D3BC6F"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8.stdout.log",
+                                         "sha256":  "EA70F42D1F93130B094DEBE36A9945E867532A6FCA76FC592D6EAE1A226615F8"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8-initial-action_settingsBtn.png",
+                                         "sha256":  "88BCDD4A7DF5F510AEF0354FBAE750048C7FD31A887BA4A85405206D481F9228"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8-initial-cancelSettingsButton-after.png",
+                                         "sha256":  "9E6B6A76505F62DB7ED1D1A08DBAAE7BC64E196DAF00E0CDB0014C3FD9BFC7F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8-initial-categoryList-after.png",
+                                         "sha256":  "100DFFE7E4A412FABD2669E1DDB1E52EB3356A89536D327222B23F2FB8F00A49"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8-initial-label_langfuseStatus.png",
+                                         "sha256":  "568399018FFEBF5DAC04EA91EED00BEA68296B2C37F1CB2797B5C37222A17856"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/sprint1053-langfuse-turn-state-sprint-1053-langfuse-tool-continuation-r8-target-sequence.json",
+                                         "sha256":  "D14A1A4BA2BC8972B5F8EDD30B22316948387FB26EF0CFA25D72DC8520B5D7CA"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8/ui_harness.log",
+                                         "sha256":  "5D7095F844FA9028849A36E053EC57D5B27E07C453427BC34107CE378EF0C2A8"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T12:02:05.0535517Z"
+}

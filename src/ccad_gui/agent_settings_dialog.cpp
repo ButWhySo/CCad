@@ -366,10 +366,13 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
       agent_panel_->setObservabilityStateCallback([this](const QJsonObject& state) {
           if (!langfuse_status_label_) return;
           if (!state["enabled"].toBool(false)) {
-              langfuse_status_label_->setText("Langfuse: disabled");
+              langfuse_status_label_->setText(
+                  "Langfuse: disabled | turn " +
+                  state["turn_state"].toString("idle"));
           } else if (state["exporter_initialized"].toBool(false)) {
               QString status = "Langfuse: ready | export " +
                   state["last_export"].toString("not_run") +
+                  " | turn " + state["turn_state"].toString("idle") +
                   " | last test " + state["last_test"].toString("not_run");
               if (state.contains("exported_span_count")) {
                   status += " | spans " +
@@ -381,7 +384,8 @@ AgentSettingsDialog::AgentSettingsDialog(AgentPanel* agent_panel, QWidget* paren
               langfuse_status_label_->setText(status);
           } else {
               langfuse_status_label_->setText(
-                  "Langfuse: " + state["reason"].toString("not configured"));
+                  "Langfuse: " + state["reason"].toString("not configured") +
+                  " | turn " + state["turn_state"].toString("idle"));
           }
       });
   }

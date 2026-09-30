@@ -1641,6 +1641,8 @@ int main(int argc, char** argv) {
         return;
       }
       const bool provider_target_sequence = name.startsWith("sprint972-provider");
+      const bool langfuse_turn_state_target_sequence =
+          name.startsWith("sprint1053-langfuse-turn-state");
       const bool gemini_count_target_sequence =
           name.startsWith("sprint1007-gemini-exact-count");
       const bool memory_secret_target_sequence =
@@ -1677,6 +1679,11 @@ int main(int argc, char** argv) {
                         "control:memoryEntries", "control:memoryTitle",
                         "control:memoryContent", "action:closeMemoryManager",
                         "action:cancelSettingsButton"}
+          : langfuse_turn_state_target_sequence
+          ? QStringList{"tab:agent", "action:settingsBtn", "control:categoryList",
+                        "control:langfuseEnabledCb", "control:langfuseBaseUrlInput",
+                        "control:langfuseEnvironmentInput", "control:langfuseServiceNameInput",
+                        "label:langfuseStatus", "action:cancelSettingsButton"}
           : gemini_count_target_sequence
           ? QStringList{"action:settingsBtn", "control:categoryList",
                         "control:geminiExactInputCounting", "control:providerCombo",
@@ -1721,7 +1728,8 @@ int main(int argc, char** argv) {
           ? QStringList{}
           : memory_target_sequence ||
           semantic_memory_target_sequence || provider_target_sequence ||
-          gemini_count_target_sequence || memory_secret_target_sequence
+          gemini_count_target_sequence || memory_secret_target_sequence ||
+          langfuse_turn_state_target_sequence
           ? QStringList{"action:settingsBtn"}
           : QStringList{
           "action:grid",          "action:polar_coord",   "action:unit_inch",
@@ -1751,6 +1759,11 @@ int main(int argc, char** argv) {
                                                     "action:primaryButton",
                                                     "action:testProviderBtn"};
       QStringList scoped_click_before_capture_ids = click_before_capture_ids;
+      if (langfuse_turn_state_target_sequence)
+        scoped_click_before_capture_ids << "tab:agent"
+                                        << "control:langfuseBaseUrlInput"
+                                        << "control:langfuseEnvironmentInput"
+                                        << "control:langfuseServiceNameInput";
       if (undo_redo_target_sequence) {
         scoped_click_before_capture_ids << "action:grid"
                                         << "tab:schematic" << "tab:pcb"
@@ -1783,6 +1796,7 @@ int main(int argc, char** argv) {
                             undo_redo_target_sequence,
                             provider_target_sequence,
                             gemini_count_target_sequence,
+                            langfuse_turn_state_target_sequence,
                             &memory_target_actions_ok, &initial_memory_toggle_state,
                             &gemini_checkbox_changed,
                             &visibleMemoryCheckbox,
@@ -1852,6 +1866,10 @@ int main(int argc, char** argv) {
           }
           if (id == "control:geminiExactInputCounting" ||
               id == "control:providerCombo" || id == "control:modelCombo" ||
+              id == "control:langfuseEnabledCb" ||
+              id == "control:langfuseBaseUrlInput" ||
+              id == "control:langfuseEnvironmentInput" ||
+              id == "control:langfuseServiceNameInput" ||
               id == "control:apiKeyInput" || id == "control:mcpServersTable" ||
               id == "action:addMcpServerBtn" || id == "action:removeMcpServerBtn" ||
               id == "control:stmCb" || id == "control:ltmCb" ||
@@ -1873,6 +1891,8 @@ int main(int argc, char** argv) {
             int category = 1;
             if (gemini_count_target_sequence) {
               category = id == "control:geminiExactInputCounting" ? 4 : 1;
+            } else if (langfuse_turn_state_target_sequence) {
+              category = 5;
             } else if (provider_target_sequence) {
               category = (id == "control:apiKeyInput" ||
                           id == "action:testProviderBtn") ? 4 : 1;
@@ -1928,8 +1948,9 @@ int main(int argc, char** argv) {
             }
             static int provider_category_click = 0;
             const int category_row = gemini_count_target_sequence ? 4 :
+                (langfuse_turn_state_target_sequence ? 5 :
                 (provider_target_sequence
-                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2);
+                ? ((provider_category_click++ % 2) == 0 ? 1 : 4) : 2));
             const QString payload = id == "control:categoryList"
                 ? QString("{\"id\":%1,\"row\":%2}").arg(jsonStringLocal(id)).arg(category_row)
                 : (id == "control:memoryEntries"
@@ -1948,6 +1969,7 @@ int main(int argc, char** argv) {
                 id == "control:geminiExactInputCounting")
               gemini_checkbox_changed = true;
             if (memory_target_sequence || memory_secret_target_sequence ||
+                langfuse_turn_state_target_sequence ||
                 provider_target_sequence || gemini_count_target_sequence) {
               const QJsonDocument click_doc = QJsonDocument::fromJson(click_result.toUtf8());
               const bool performed = click_doc.isObject() &&
@@ -1959,6 +1981,17 @@ int main(int argc, char** argv) {
             entries << QString("{\"pass\":%1,\"id\":%2,\"interaction\":\"ui.click\",\"result\":%3}")
                            .arg(jsonStringLocal(pass_name), jsonStringLocal(id), click_result.trimmed());
             QApplication::processEvents();
+            if (langfuse_turn_state_target_sequence &&
+                id == "control:langfuseServiceNameInput") {
+              const QString key_result = window->runAgentUiQueryJson(
+                  "ui.key", "{\"key\":\"Tab\"}");
+              const bool key_sent = key_result.contains("\"performed\":true");
+              memory_target_actions_ok = memory_target_actions_ok && key_sent;
+              entries << QString("{\"interaction\":\"ui.key\",\"target\":%1,"
+                                 "\"performed\":%2,\"result\":%3}")
+                  .arg(jsonStringLocal(id), key_sent ? "true" : "false",
+                       key_result.trimmed());
+            }
             if (provider_target_sequence && id == "action:testProviderBtn") {
               QString status;
               for (int attempt = 0; attempt < 50; ++attempt) {
@@ -2184,6 +2217,27 @@ int main(int argc, char** argv) {
           }
           const QString target_json = window->uiTargetJsonById(id);
           const bool found = target_json.contains("\"found\":true");
+          if (langfuse_turn_state_target_sequence && id == "label:langfuseStatus") {
+            QString visible_status;
+            for (int attempt = 0; attempt < 30; ++attempt) {
+              for (QWidget* top_level : QApplication::topLevelWidgets()) {
+                auto* status_label = top_level->findChild<QLabel*>("label:langfuseStatus");
+                if (status_label && status_label->isVisible()) {
+                  visible_status = status_label->text();
+                  break;
+                }
+              }
+              if (visible_status.contains("Langfuse: disabled | turn idle")) break;
+              QThread::msleep(100);
+              QApplication::processEvents();
+            }
+            const bool status_is_truthful = found &&
+                visible_status.contains("Langfuse: disabled | turn idle");
+            memory_target_actions_ok = memory_target_actions_ok && status_is_truthful;
+            entries << QString("{\"langfuse_status_visible\":%1,\"text\":%2}")
+                .arg(status_is_truthful ? "true" : "false",
+                     jsonStringLocal(visible_status));
+          }
           if (undo_redo_target_sequence &&
               (id == "action:undo" || id == "action:redo")) {
             QAction* action = window->findChild<QAction*>(id);
@@ -2229,10 +2283,14 @@ int main(int argc, char** argv) {
           QString screenshot_path;
           if (found && x.has_value() && y.has_value() &&
               !undo_redo_target_sequence &&
+              (!langfuse_turn_state_target_sequence ||
+               id == "action:settingsBtn" || id == "label:langfuseStatus") &&
               (!conversation_history_target_sequence ||
                id == "action:agent_new_chat" || id == "action:agent_submit_chat") &&
               (!memory_secret_target_sequence ||
                id == "action:agent_memory_manage") &&
+              (!langfuse_turn_state_target_sequence ||
+               id == "action:settingsBtn" || id == "label:langfuseStatus") &&
               (!semantic_memory_target_sequence || id == "action:settingsBtn" ||
                id == "action:primaryButton" || id == "action:cancelSettingsButton")) {
             QCursor::setPos(*x, *y);
@@ -2260,7 +2318,7 @@ int main(int argc, char** argv) {
             if ((conversation_history_target_sequence || semantic_memory_target_sequence ||
                  memory_kind_target_sequence ||
                  memory_secret_target_sequence ||
-                 gemini_count_target_sequence) &&
+                 gemini_count_target_sequence || langfuse_turn_state_target_sequence) &&
                 id == "action:settingsBtn") {
               QWidget* active = QApplication::activeWindow();
               if (active && active->isVisible()) capture_window = active;
@@ -2278,6 +2336,9 @@ int main(int argc, char** argv) {
             painter.end();
             screenshot.save(screenshot_path);
           } else if (!undo_redo_target_sequence && !conversation_history_target_sequence &&
+                     (!langfuse_turn_state_target_sequence ||
+                      id == "control:categoryList" ||
+                      id == "action:cancelSettingsButton") &&
                      ((scoped_click_before_capture_ids.contains(id) &&
                       (!memory_secret_target_sequence ||
                        id == "action:closeMemoryManager" ||
@@ -2442,6 +2503,7 @@ int main(int argc, char** argv) {
           !undo_redo_target_sequence &&
           !conversation_history_target_sequence &&
           !memory_secret_target_sequence &&
+          !langfuse_turn_state_target_sequence &&
           !memory_kind_target_sequence &&
           !memory_importance_target_sequence)
         runPass("resized");
@@ -2604,6 +2666,7 @@ int main(int argc, char** argv) {
       output.write(bytes.constData(), bytes.size());
       if (!output || (editor_context_target_sequence && !editor_context_target_actions_ok) ||
                       ((memory_target_sequence || memory_secret_target_sequence ||
+                       langfuse_turn_state_target_sequence ||
                        provider_target_sequence ||
                        gemini_count_target_sequence ||
                        undo_redo_target_sequence ||

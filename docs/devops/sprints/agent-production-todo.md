@@ -1,11 +1,24 @@
 # CCad Agent production TODO
 
+### Sprint 1053 — preserve one trace across approval and tool resume (in progress)
+
+- [x] Keep the per-turn Langfuse root open while a graph awaits human tool approval; resume approval, native tool dispatch, and graph continuation under the original trace context.
+- [x] Isolate paused-turn context from unrelated protocol/status requests, and close roots with truthful completed, failed, cancelled, abandoned, or reconfigured state.
+- [x] Reset live trace ID/export counts at turn start; expose current turn state and trace/export fields through `agent.langfuse_status` and Settings.
+- [x] Add regression coverage for approval/dispatch ancestry, waiting-turn rejection, fresh trace state, disabled tracing, local Langfuse v4 OTLP ingestion, and Settings status schema.
+- [x] Changed-module Pyright is clean; focused tracing/runtime/catalog/UI contracts and Langfuse v4 local ingestion pass.
+- [x] Run the isolated Qt/MinGW Release build and full CTest (126/126), then the app-owned mapped Settings → Observability sequence; inspect its four meaningful screenshots and both logs. Passing manifest: `artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8.json` (SHA-256 `08D07370264982B3237026CB37B4D771FC74B47E472D1B31F468FB00238AB985`).
+- [x] Run redacted repository and staged-diff secret scans and complete the sprint evidence manifest before commit or merge. The 912-file tracked-text scan found one existing synthetic GitHub-shaped token in a test fixture; the 17-file staged diff has zero credential-pattern matches.
+- [ ] Verify the next real opted-in Agent turn in Langfuse via exact trace-ID observation readback. Cloud project access is not assumed, so local OTLP acceptance remains distinct from Cloud receipt.
+
+Check a box only after implementation and its required evidence exist.
+
 ### Sprint 1052 — truthful memory-retrieval trace metadata (Tier 1)
 
 - [x] Emit bounded Langfuse `memory.retrieve` metadata for retrieval/cache status, lexical and semantic channel state, safe counts, and hashed exposure provenance; keep all metadata scalar strings and exclude memory content, IDs, and raw failure reasons.
 - [x] Add no-network metadata privacy/type contracts and verify flattened attributes through the real Langfuse SDK with an in-memory OpenTelemetry exporter.
 - [x] Run changed-module Pyright (0 diagnostics), Qt/MinGW Release, full CTest (126/126), and official nonvisual evidence gate; manifest `artifacts/evidence/sprint-1052-memory-retrieval-observability.json`, SHA-256 `5DF6C86B758825A8A9ACEDD746FE684760E07C3B9EE3784481138A273C7C774F`.
-- [ ] Verify pushed exact-SHA hosted CI and keep only the verified `main` branch ref; retain the detached prior worktree because it contains untracked user evidence.
+- [x] Verify pushed exact-SHA hosted CI: `main` SHA `32402327f8afa52e17e0f6922ea51f769c7b743a`, run `36690506400`, all five jobs passed; delete merged Sprint 1052 local/remote refs. Keep detached prior worktree because it contains untracked user evidence.
 
 ### Sprint 1051 — integration delivery follow-up
 

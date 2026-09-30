@@ -22,24 +22,40 @@ for node in ast.walk(TREE):
         human_dispatch = node.body
         break
 assert len(human_dispatch) == 1
-call = human_dispatch[0]
-assert isinstance(call, ast.Expr) and isinstance(call.value, ast.Call)
-assert isinstance(call.value.func, ast.Name)
-assert call.value.func.id == "handle_human_message"
-assert len(call.value.args) == 1
+dispatch_body = human_dispatch[0]
+assert isinstance(dispatch_body, (ast.If, ast.Expr))
+dispatch_calls = [
+    node for node in ast.walk(dispatch_body)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Attribute)
+    and isinstance(node.func.value, ast.Name)
+    and node.func.value.id == "telemetry_runtime"
+    and node.func.attr == "run_in_turn_context"
+]
+assert len(dispatch_calls) == 1
+dispatch_call = dispatch_calls[0]
+assert len(dispatch_call.args) == 2
+assert isinstance(dispatch_call.args[0], ast.Name)
+assert dispatch_call.args[0].id == "handle_human_message"
 
 class LoopControl(ast.NodeVisitor):
     def __init__(self):
         self.loop_depth = 0
         self.invalid = []
 
-    def visit_For(self, node):
+    def visit_loop(self, node):
         self.loop_depth += 1
         self.generic_visit(node)
         self.loop_depth -= 1
 
-    visit_While = visit_For
-    visit_AsyncFor = visit_For
+    def visit_For(self, node):
+        self.visit_loop(node)
+
+    def visit_While(self, node):
+        self.visit_loop(node)
+
+    def visit_AsyncFor(self, node):
+        self.visit_loop(node)
 
     def visit_Continue(self, node):
         if self.loop_depth == 0:

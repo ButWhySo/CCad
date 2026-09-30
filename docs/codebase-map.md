@@ -2856,3 +2856,25 @@ shape; `scripts/test_agent_turn_trace_hierarchy.py` passes the exact metadata
 through the real Langfuse SDK and verifies the exported local span attributes
 and parent hierarchy. This validates SDK/local exporter output, not Cloud
 receipt. See the Sprint 1052 evidence manifest for build and CTest results.
+The exact pushed main SHA `32402327f8afa52e17e0f6922ea51f769c7b743a` passed
+all five hosted CI jobs in run `36690506400`; local and remote sprint refs were
+deleted after merge verification.
+
+## Sprint 1053 — preserve trace context across tool approval
+
+`TelemetryRuntime.run_in_turn_context()` in `src/ccad_agent/telemetry.py`
+isolates the contextvars context owned by one Agent turn. `orchestrator.py`
+keeps the `agent.turn` root open while a checkpoint awaits approval, resumes
+approval and tool execution under that context, and closes it only at a
+terminal graph state, failure, cancellation, abandonment, or reconfiguration.
+Unrelated protocol requests run outside a paused root; a new turn clears the
+previous trace ID and export count before publishing current status. The
+Settings status label and `agent.langfuse_status` method catalog expose the
+current lifecycle. Focused local tests and Pyright pass; Qt/MinGW Release and
+full CTest pass 126/126. The app-owned Settings sequence records seven mapped
+mouse/keyboard interactions and four distinct inspected screenshots. Passing
+manifest `artifacts/evidence/sprint-1053-langfuse-tool-continuation-r8.json`
+(SHA-256 `08D07370264982B3237026CB37B4D771FC74B47E472D1B31F468FB00238AB985`).
+The UI test keeps tracing disabled and does not send a Cloud trace. Verify the
+fresh Cloud observation by trace ID only when project access exists; local
+OTLP receiver acceptance is not proof of Cloud ingestion.

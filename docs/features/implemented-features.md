@@ -1,5 +1,25 @@
 # Implemented Features
 
+## Sprint 1053 — Agent-turn trace continuity (local gate passed)
+
+The Langfuse root observation now remains open when LangGraph pauses for a
+human approval, and approval resolution plus resumed tool/graph work re-enter
+that turn's saved OpenTelemetry context. Separate protocol requests do not
+inherit the pending trace. Terminal paths close the root with an explicit
+state, while live status clears stale trace identifiers at a new turn and
+reports the current turn lifecycle through the method catalog and Settings.
+Local hierarchy and Langfuse v4 OTLP receiver contracts pass, and changed-
+module Pyright reports 0 diagnostics. Qt/MinGW Release and full CTest pass
+126/126; the app-owned Settings → Observability sequence passed seven mapped
+mouse/keyboard interactions, and all four distinct screenshots plus stdout
+and stderr were inspected. Manifest `artifacts/evidence/sprint-1053-langfuse-
+tool-continuation-r8.json`, SHA-256
+`08D07370264982B3237026CB37B4D771FC74B47E472D1B31F468FB00238AB985`.
+This proves local SDK/OTLP delivery only. Redacted tracked-source and staged-
+diff scans passed after classifying the sole token-shaped repository match as
+an existing synthetic test fixture. A fresh Langfuse Cloud readback,
+commit/merge, and hosted CI remain open.
+
 ## Sprint 1052 — safe memory-retrieval tracing
 
 Each `memory.retrieve` Langfuse observation now reports bounded retrieval and
@@ -11,6 +31,10 @@ retrieval failure reasons are excluded. The real Langfuse SDK with a local
 in-memory OpenTelemetry exporter verifies the emitted flattened attributes.
 This proves the local instrumentation contract, not receipt by a configured
 Langfuse Cloud project.
+
+Delivery verification: main SHA `32402327f8afa52e17e0f6922ea51f769c7b743a`
+passed all five hosted CI jobs in run `36690506400`; merged sprint refs were
+deleted after verifying reachability from main.
 
 ## Sprint 1051 — integrated editor-aware context and transcript provenance
 

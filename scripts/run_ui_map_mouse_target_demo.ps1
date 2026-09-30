@@ -74,7 +74,7 @@ foreach ($runtimeKey in $runtimeEnvNames) {
 $providerSecretNames = @('OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY',
   'GOOGLE_API_KEY','OPENROUTER_API_KEY','CEREBRAS_API_KEY',
   'CCAD_OPENAI_COMPATIBLE_API_KEY','CCAD_LOCAL_MODEL_API_KEY',
-  'CCAD_OLLAMA_API_KEY')
+  'CCAD_OLLAMA_API_KEY','LANGFUSE_PUBLIC_KEY','LANGFUSE_SECRET_KEY')
 $priorProviderSecrets = @{}
 foreach ($secretName in $providerSecretNames) {
   $priorProviderSecrets[$secretName] = [Environment]::GetEnvironmentVariable($secretName, 'Process')
@@ -300,6 +300,30 @@ if ($Name.StartsWith("sprint1043-agent-live-tool-turn")) {
   }
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
     ($liveConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
+}
+if ($Name.StartsWith("sprint1053-langfuse-turn-state")) {
+  $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) (
+    "ccad-sprint1053-langfuse-state-" + [Guid]::NewGuid().ToString("N"))
+  $configDir = Join-Path $isolatedMemoryProfile "CCad"
+  New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+  $env:APPDATA = $isolatedMemoryProfile
+  $env:CCAD_AGENT_CONVERSATION_DB = Join-Path $isolatedMemoryProfile "agent_conversations.sqlite3"
+  $env:CCAD_AGENT_CHECKPOINT_DB = Join-Path $isolatedMemoryProfile "agent_checkpoints.sqlite"
+  $env:CCAD_AGENT_THREAD_ID = "sprint1053-langfuse-state"
+  $env:CCAD_AGENT_DEFER_PROVIDER_INIT = "1"
+  $env:CCAD_TRACE_EXPORT_ENABLED = "false"
+  $env:CCAD_TRACE_BACKEND = "none"
+  foreach ($secretName in $providerSecretNames) {
+    [Environment]::SetEnvironmentVariable($secretName, $null, 'Process')
+  }
+  $testConfig = [ordered]@{
+    provider = "openai"
+    model = "gpt-5.1"
+    memory = @{ stm = $false; ltm = $false; episodic = $false }
+    observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
+  }
+  [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
+    ($testConfig | ConvertTo-Json -Depth 8), [Text.UTF8Encoding]::new($false))
 }
 if ($Name.StartsWith("sprint971-memory")) {
   $isolatedMemoryProfile = Join-Path ([IO.Path]::GetTempPath()) ("ccad-sprint971-" + [Guid]::NewGuid().ToString("N"))

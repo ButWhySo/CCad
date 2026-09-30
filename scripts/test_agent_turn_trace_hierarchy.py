@@ -21,9 +21,20 @@ from context_broker import memory_retrieval_trace_metadata
 
 
 def main() -> None:
+    orchestrator_source = (ROOT / "src" / "ccad_agent" / "orchestrator.py").read_text(
+        encoding="utf-8")
+    assert "finish=not waiting_for_tool_result" in orchestrator_source
+    assert 'status().get("turn_state") == "active"' in orchestrator_source
+    assert '"approval.resolve", "span"' in orchestrator_source
+    assert 'turn_is_terminal = not bool(resumed_snapshot.next)' in orchestrator_source
+
     disabled_runtime = TelemetryRuntime()
     disabled_runtime._last_trace_id = "stale-trace"
     assert not disabled_runtime.start_agent_turn("thread-disabled")
+    assert disabled_runtime.status()["turn_state"] == "active"
+    assert disabled_runtime.status()["trace_id"] == "unavailable"
+    assert not disabled_runtime.finish_agent_turn("failed")
+    assert disabled_runtime.status()["turn_state"] == "failed"
     assert disabled_runtime.current_trace()["trace_id"] == "unavailable"
 
     exporter = InMemorySpanExporter()
@@ -46,12 +57,17 @@ def main() -> None:
     test_exporter.last_span_count = 0
     runtime._development_logging = False
 
-    assert runtime.start_agent_turn(
+    assert runtime.run_in_turn_context(
+        runtime.start_agent_turn,
         "thread-contract",
         {"workflow": "contract", "turn_id": "turn-contract"},
         input_data={"prompt_sha256": "a" * 64, "prompt_chars": 12},
     )
     root_trace = runtime.current_trace()["trace_id"]
+    active_status = runtime.status()
+    assert active_status["turn_state"] == "active", active_status
+    assert active_status["trace_id"] == root_trace, active_status
+    assert active_status["last_export"] == "pending", active_status
     retrieval_metadata = memory_retrieval_trace_metadata({
         "cache_hit": False, "memory_chars": 42, "memory_token_budget": 1000,
         "memories": [{"id": "private-memory-id", "content": "private memory text"}],
@@ -64,24 +80,51 @@ def main() -> None:
         "memory_retrieval": [{"entry_id": "private-memory-id",
                                "inclusion_channels": ["automatic_retrieval"]}],
     })
-    with runtime.observation("context.assemble", "chain"):
-        with runtime.observation("memory.retrieve", "retriever",
-                                 retrieval_metadata):
+    def assemble_context() -> None:
+        with runtime.observation("context.assemble", "chain"):
+            with runtime.observation("memory.retrieve", "retriever",
+                                     retrieval_metadata):
+                pass
+            with runtime.observation("context.package", "span"):
+                pass
+        with runtime.session("thread-contract"), runtime.observation(
+                "agent-turn", "agent"):
             pass
-        with runtime.observation("context.package", "span"):
-            pass
-    with runtime.session("thread-contract"), runtime.observation("agent-turn", "agent"):
-        pass
-    flushed = runtime.flush_turn()
+
+    runtime.run_in_turn_context(assemble_context)
+    # A LangGraph checkpoint can return control to Qt while waiting for tool
+    # approval. Flushing that partial run must not end its root: the later
+    # broker execution and graph resume belong to the same user turn.
+    paused = runtime.run_in_turn_context(runtime.flush_turn, finish=False)
+    assert paused["turn_state"] == "awaiting_tool_result", paused
+    assert paused["trace_id"] == root_trace
+    assert runtime.current_trace()["trace_id"] == root_trace
+
+    # Unrelated main-loop requests run outside a paused turn and cannot become
+    # accidental children of its still-open root.
+    with runtime.observation("unrelated.status.request", "span") as unrelated:
+        assert unrelated is not None
+        unrelated_trace = str(unrelated.trace_id)
+    assert unrelated_trace != root_trace
+
+    def resume_tool_and_close() -> dict[str, Any]:
+        with runtime.observation("approval.resolve", "span", {"decision": "approved"}):
+            with runtime.observation("dispatch-native-tool", "tool", {"result": "performed"}):
+                pass
+        return runtime.flush_turn()
+
+    flushed = runtime.run_in_turn_context(resume_tool_and_close)
+    assert flushed["turn_state"] == "completed", flushed
     assert flushed["last_export"] == "queued"
     assert flushed["trace_id"] == root_trace
-    assert not runtime.finish_agent_turn()
+    assert runtime.current_trace()["trace_id"] == root_trace
     assert provider.force_flush(timeout_millis=3000)
 
     spans = exporter.get_finished_spans()
     by_name = {span.name: span for span in spans}
     expected = {"agent.turn", "context.assemble", "memory.retrieve",
-                "context.package", "agent-turn"}
+                "context.package", "agent-turn", "approval.resolve",
+                "dispatch-native-tool", "unrelated.status.request"}
     assert expected <= by_name.keys(), sorted(by_name)
     trace_id = int(root_trace, 16)
 
@@ -91,7 +134,9 @@ def main() -> None:
         return context
 
     contexts = {name: span_context(name) for name in expected}
-    assert {context.trace_id for context in contexts.values()} == {trace_id}
+    assert contexts["unrelated.status.request"].trace_id != trace_id
+    assert {context.trace_id for name, context in contexts.items()
+            if name != "unrelated.status.request"} == {trace_id}
 
     def parent_span_id(name: str) -> int:
         parent = by_name[name].parent
@@ -102,6 +147,9 @@ def main() -> None:
     assert parent_span_id("memory.retrieve") == contexts["context.assemble"].span_id
     assert parent_span_id("context.package") == contexts["context.assemble"].span_id
     assert parent_span_id("agent-turn") == contexts["agent.turn"].span_id
+    assert parent_span_id("approval.resolve") == contexts["agent.turn"].span_id
+    assert parent_span_id("dispatch-native-tool") == contexts["approval.resolve"].span_id
+    assert by_name["unrelated.status.request"].parent is None
 
     memory_attrs = by_name["memory.retrieve"].attributes or {}
     assert memory_attrs["langfuse.observation.metadata.retrieval_status"] == "ready"
@@ -114,13 +162,15 @@ def main() -> None:
 
     root = by_name["agent.turn"]
     root_attrs = root.attributes or {}
-    assert json.loads(root_attrs["langfuse.observation.input"]) == {
+    assert json.loads(str(root_attrs["langfuse.observation.input"])) == {
         "prompt_sha256": "a" * 64, "prompt_chars": 12,
     }, root_attrs
-    assert json.loads(root_attrs["langfuse.observation.output"]) == {
-        "terminal_state": "closed",
+    assert json.loads(str(root_attrs["langfuse.observation.output"])) == {
+        "terminal_state": "completed",
     }, root_attrs
     for span in spans:
+        if span.name == "unrelated.status.request":
+            continue
         attrs = span.attributes or {}
         assert attrs.get("langfuse.session.id", attrs.get("session.id")) == "thread-contract", (span.name, attrs)
         assert attrs["langfuse.trace.name"] == "ccad.agent.turn", (span.name, attrs)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import contextvars
 import hashlib
 import os
 import sys
@@ -105,6 +106,8 @@ class TelemetryRuntime:
         self._observation_count = 0
         self._turn_scope = None
         self._turn_observation = None
+        self._turn_context = None
+        self._turn_state = "idle"
         self._development_logging = os.environ.get("CCAD_TRACE_DEBUG", "").lower() in {"1", "true", "yes"}
         self._status = self._state(False, False, "disabled")
 
@@ -113,9 +116,12 @@ class TelemetryRuntime:
         return dict(enabled=enabled, configured=configured, reason=reason,
                     exporter_initialized=False, backend="langfuse",
                     last_test="not_run", connected=False,
-                    data_policy="metadata_only", secret_value_visible=False)
+                    data_policy="metadata_only", secret_value_visible=False,
+                    turn_state="idle")
 
     def _shutdown_locked(self):
+        if self._turn_scope is not None:
+            self.run_in_turn_context(self.finish_agent_turn, "reconfigured")
         if self._langfuse_client is not None:
             # Pinned-SDK compatibility seam. CCad owns this child and is its
             # only Langfuse consumer. Reset shuts queues down before eviction;
@@ -192,6 +198,15 @@ class TelemetryRuntime:
         with self._lock:
             return [self._langfuse_handler] if self._langfuse_handler else []
 
+    def run_in_turn_context(self, callback, *args, **kwargs):
+        """Run one operation in the isolated context that owns the active turn."""
+        with self._lock:
+            context = self._turn_context
+            if context is None:
+                context = contextvars.copy_context()
+                self._turn_context = context
+        return context.run(callback, *args, **kwargs)
+
     def current_trace(self):
         with self._lock:
             return {"trace_id": self._active_trace_id or self._last_trace_id or "unavailable",
@@ -203,6 +218,14 @@ class TelemetryRuntime:
             self._last_trace_id = ""
             self._last_span_id = ""
             self._observation_count = 0
+            self._status.update(
+                trace_id="unavailable",
+                exported_span_count=0,
+                observation_count=0,
+                last_export=("pending" if self._provider is not None and
+                             self._exporter is not None else "disabled"),
+                last_export_ok=False,
+            )
             if self._exporter is not None:
                 self._exporter.last_result = None
                 self._exporter.last_span_count = 0
@@ -212,7 +235,10 @@ class TelemetryRuntime:
         self.finish_agent_turn()
         self.begin_turn()
         with self._lock:
+            self._turn_state = "active"
+            self._status["turn_state"] = "active"
             if self._langfuse_client is None:
+                self._turn_context = None
                 return False
         scope = ExitStack()
         try:
@@ -222,13 +248,19 @@ class TelemetryRuntime:
                 "agent.turn", "agent", metadata or {}, input_data=input_data))
         except Exception:
             scope.close()
+            with self._lock:
+                self._turn_state = "failed"
+                self._status["turn_state"] = "failed"
+                self._turn_context = None
             raise
         with self._lock:
             self._turn_scope = scope
             self._turn_observation = root
+            self._turn_state = "active"
+            self._status["turn_state"] = "active"
         return True
 
-    def finish_agent_turn(self):
+    def finish_agent_turn(self, terminal_state="completed"):
         """End the root once; callers can safely close at early-exit boundaries."""
         with self._lock:
             scope = self._turn_scope
@@ -236,17 +268,29 @@ class TelemetryRuntime:
             observation = self._turn_observation
             self._turn_observation = None
         if scope is None:
+            with self._lock:
+                self._turn_state = str(terminal_state)
+                self._status["turn_state"] = self._turn_state
             return False
         try:
             if observation is not None:
-                observation.update(output={"terminal_state": "closed"})
+                observation.update(output={"terminal_state": str(terminal_state)})
         finally:
             scope.close()
+            with self._lock:
+                self._turn_state = str(terminal_state)
+                self._status["turn_state"] = self._turn_state
+                self._turn_context = None
         return True
 
-    def flush_turn(self):
-        """Flush one completed/failed turn and expose safe exporter diagnostics."""
-        self.finish_agent_turn()
+    def flush_turn(self, *, finish=True, terminal_state="completed"):
+        """Flush a turn, optionally keeping its root alive across tool approval."""
+        if finish:
+            self.finish_agent_turn(terminal_state)
+        else:
+            with self._lock:
+                if self._turn_scope is not None:
+                    self._turn_state = "awaiting_tool_result"
         with self._lock:
             error_type = ""
             provider = self._provider
@@ -293,7 +337,8 @@ class TelemetryRuntime:
             self._status.update(last_export=result, trace_id=trace_id,
                                 exported_span_count=span_count,
                                 observation_count=self._observation_count,
-                                last_export_ok=result in {"success", "verified"})
+                                last_export_ok=result in {"success", "verified"},
+                                turn_state=self._turn_state)
             if result in {"success", "verified"}:
                 self._status.pop("last_export_error_type", None)
             elif error_type:
@@ -301,6 +346,7 @@ class TelemetryRuntime:
             if self._development_logging:
                 error_suffix = f" error_type={error_type}" if error_type else ""
                 print(f"[ccad-otel] turn_flush trace_id={trace_id} result={result} "
+                      f"turn_state={self._turn_state} "
                       f"spans={span_count}{error_suffix}", file=sys.stderr, flush=True)
             return self.status()
 
@@ -326,6 +372,10 @@ class TelemetryRuntime:
                 self._active_span_id = str(observation.id)
                 self._last_trace_id = self._active_trace_id
                 self._last_span_id = self._active_span_id
+                self._status.update(
+                    trace_id=self._active_trace_id,
+                    turn_state=self._turn_state,
+                )
             try:
                 yield observation
             finally:
@@ -376,6 +426,7 @@ class TelemetryRuntime:
             return self.status()
 
     def shutdown(self):
+        self.run_in_turn_context(self.finish_agent_turn, "cancelled")
         with self._lock:
             self._shutdown_locked()
             self._status.update(exporter_initialized=False, connected=False, reason="shutdown")

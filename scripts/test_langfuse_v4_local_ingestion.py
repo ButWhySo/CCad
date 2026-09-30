@@ -70,30 +70,34 @@ def main() -> None:
         }, {"public_key": public_key, "secret_key": secret_key})
         assert state["exporter_initialized"], state
         runtime._development_logging = False
-        assert runtime.start_agent_turn(
+        assert runtime.run_in_turn_context(runtime.start_agent_turn,
             "thread-local-contract",
             {"turn_id": "turn-local-contract"},
             input_data={"prompt_sha256": "b" * 64, "prompt_chars": 9},
         )
-        callback = runtime.callbacks()[0]
-        callback_run_id = uuid.uuid4()
-        callback.on_chain_start(
-            {"name": "ccad_callback_contract"},
-            {"request_kind": "contract"},
-            run_id=callback_run_id,
-            metadata={"ccad_contract": "local"},
-        )
-        callback.on_chain_end(
-            {"result_kind": "observed"}, run_id=callback_run_id)
-        with runtime.observation("tool.call", "tool") as observation:
-            observation.update(output={"status": "observed"})
-        with runtime.observation(
-            "metadata.contract",
-            metadata={"workflow": True, "result": 12, "tool": "x" * 240,
-                      "nested": {"ignored": True}},
-        ):
-            pass
-        runtime.finish_agent_turn()
+        def emit_turn_observations() -> None:
+            callback = runtime.callbacks()[0]
+            callback_run_id = uuid.uuid4()
+            callback.on_chain_start(
+                {"name": "ccad_callback_contract"},
+                {"request_kind": "contract"},
+                run_id=callback_run_id,
+                metadata={"ccad_contract": "local"},
+            )
+            callback.on_chain_end(
+                {"result_kind": "observed"}, run_id=callback_run_id)
+            with runtime.observation("tool.call", "tool") as observation:
+                assert observation is not None
+                observation.update(output={"status": "observed"})
+            with runtime.observation(
+                "metadata.contract",
+                metadata={"workflow": True, "result": 12, "tool": "x" * 240,
+                          "nested": {"ignored": True}},
+            ):
+                pass
+            assert runtime.finish_agent_turn()
+
+        runtime.run_in_turn_context(emit_turn_observations)
         assert runtime._provider.force_flush(timeout_millis=6000)
 
         assert len(Receiver.requests) == 1, len(Receiver.requests)
@@ -117,7 +121,7 @@ def main() -> None:
         root = by_name["agent.turn"]
         root_attrs = attributes(root)
         assert root_attrs.get("langfuse.observation.input", "").find("b" * 64) >= 0, root_attrs
-        assert root_attrs["langfuse.observation.output"] == '{"terminal_state":"closed"}'
+        assert root.end_time_unix_nano > root.start_time_unix_nano, root
         trace_ids = {span.trace_id for span in spans}
         assert len(trace_ids) == 1
         assert by_name["tool.call"].parent_span_id == root.span_id

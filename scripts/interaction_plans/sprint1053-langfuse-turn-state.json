@@ -1,0 +1,18 @@
+{
+  "target_sequence": "sprint1053-langfuse-turn-state",
+  "project": "build-qt/sprint1053-langfuse-state.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:agent",
+    "action:settingsBtn",
+    "control:categoryList",
+    "control:langfuseEnabledCb",
+    "control:langfuseBaseUrlInput",
+    "control:langfuseEnvironmentInput",
+    "control:langfuseServiceNameInput",
+    "label:langfuseStatus",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [],
+  "meaningful_screenshots": 4
+}

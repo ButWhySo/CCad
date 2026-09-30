@@ -120,9 +120,13 @@ assert '"provider_connection_result"' in panel
 assert 'Test live connection (uses quota)' in settings
 assert 'agent.test_provider_connection' in settings
 assert 'Langfuse: ready | export ' in settings
+assert 'state["turn_state"].toString("idle")' in settings
+assert '"Langfuse: disabled | turn "' in settings
 assert 'exported_span_count' in settings
 assert 'trace_id' in settings
 assert 'telemetry_runtime.flush_turn()' in orchestrator
+assert 'name.startsWith("sprint1053-langfuse-turn-state")' in main
+assert '"label:langfuseStatus"' in main
 assert 'method": "observability_state"' in orchestrator
 assert 'payment, credits, or project billing is required' in settings
 assert 'https://api.cerebras.ai/public/v1/models' in model_catalog
