@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1052-memory-retrieval-observability",
+    "feature":  "Expose safe retrieval status and inclusion metadata in Langfuse memory.retrieve spans",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T08:22:46.6125352Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.98 log=artifacts/evidence/sprint-1052-memory-retrieval-observability/preflight.log",
+                      "finished_utc":  "2026-09-30T08:22:47.7021882Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.96 log=artifacts/evidence/sprint-1052-memory-retrieval-observability/build.log",
+                      "finished_utc":  "2026-09-30T08:22:49.6821578Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=205.75 log=artifacts/evidence/sprint-1052-memory-retrieval-observability/ctest.log",
+                      "finished_utc":  "2026-09-30T08:26:15.4297395Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1052-memory-retrieval-observability/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1052-memory-retrieval-observability/ctest.log",
+                                         "sha256":  "29EFECC54FC71293E002AC1B2725E79EDEDDD3BCD77CCA195C159AE2AB11FE1D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1052-memory-retrieval-observability/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T08:26:15.5127377Z"
+}

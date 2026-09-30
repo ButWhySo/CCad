@@ -1,6 +1,9 @@
 # CCad Consolidated Backlog
 
-- [ ] Sprint 1051 integration is locally verified (Qt/MinGW Release, CTest 126/126, changed-module Pyright, 14 mapped interactions); push/PR-hosted CI/main merge remain pending. The Settings-opened checkpoint captured the Agent panel rather than the Settings dialog, so obtain a visible dialog screenshot before claiming its visual validation. Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json` (SHA-256 `3874F8674AEC91B14D6C9BD334C1B012B8AECAE5418743F77F8C460E3CC7CC3F`).
+- [x] Sprint 1051 integration is on `main` at `c7221577a1f81db4b587f8f9a9240dcff67b68ff`; all five hosted CI jobs passed on that exact SHA and merged feature refs were deleted. Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json` (SHA-256 `3874F8674AEC91B14D6C9BD334C1B012B8AECAE5418743F77F8C460E3CC7CC3F`).
+- [ ] Sprint 1051 Settings visual proof remains open: the Settings-opened checkpoint captured the Agent panel rather than the dialog. Preserve the detached worktree and its untracked evidence until it can be archived safely.
+- [x] Sprint 1052 memory-retrieval tracing: `memory.retrieve` now exports content-free status/channel/count metadata and hashed inclusion provenance; focused contracts, changed-module Pyright, Qt/MinGW Release, and CTest 126/126 pass. Manifest `artifacts/evidence/sprint-1052-memory-retrieval-observability.json` (SHA-256 `5DF6C86B758825A8A9ACEDD746FE684760E07C3B9EE3784481138A273C7C774F`).
+- [ ] Verify hosted CI for Sprint 1052 on the exact pushed SHA before merging to `main`.
 
 - [x] Sprint 1039 follow-up: thread exact proposal/approval UUIDs and explicit decisions from authoritative Qt approval IPC into private tool-result artifacts and exact TurnRecord events; fail closed on duplicate IDs and omit ambiguous turn summaries. Qt MinGW Release and full CTest pass 120/120; checkpoint restart accept/reject/cancel contracts, conversation store contracts, Pyright, and evidence review pass. Manifest `artifacts/evidence/sprint-1039-approval-provenance-r3.json` (SHA-256 `08E8ED4983FE9ED637EBD61B79A0A1FD63407DE03CDAAB03FE860F80DA259455`).
 

@@ -1,5 +1,17 @@
 # Implemented Features
 
+## Sprint 1052 — safe memory-retrieval tracing
+
+Each `memory.retrieve` Langfuse observation now reports bounded retrieval and
+cache status, lexical/semantic channel state, available/enabled tier counts,
+retrieved count, memory character/token bounds, and inclusion-channel counts.
+Per-record exposure metadata uses hashed opaque keys. Every value is a scalar
+string compatible with Langfuse v4; memory text, raw record IDs, and raw
+retrieval failure reasons are excluded. The real Langfuse SDK with a local
+in-memory OpenTelemetry exporter verifies the emitted flattened attributes.
+This proves the local instrumentation contract, not receipt by a configured
+Langfuse Cloud project.
+
 ## Sprint 1051 — integrated editor-aware context and transcript provenance
 
 Current-main typed retrieval adapters preserve the ProjectIndex `search_domain`, allowing bounded context to report whether spatial matches are scoped to the active PCB or schematic editor. Checkpointed native-tool replay continues to preserve the broker's content/artifact contract and emits one correlated call event. These integration fixes retain Sprint 1038's exact active-canvas selection and Sprint 1039's private proposal/approval/transaction provenance. Qt/MinGW Release and CTest pass 126/126; changed-module Pyright reports zero diagnostics. The mapped run recorded 14 interactions and four inspected screenshots; its Settings checkpoint did not visibly capture the dialog, so it is not counted as Settings visual proof. Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json` (SHA-256 `3874F8674AEC91B14D6C9BD334C1B012B8AECAE5418743F77F8C460E3CC7CC3F`).

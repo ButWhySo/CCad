@@ -71,6 +71,54 @@ def memory_exposure_manifest(provenance):
     return manifest
 
 
+def memory_retrieval_trace_metadata(turn_context: dict) -> dict[str, str]:
+    """Build scalar, content-free Langfuse metadata for one memory retrieval."""
+    status = turn_context.get("memory_retrieval_status", {})
+    status = status if isinstance(status, dict) else {}
+    channels = status.get("channels", {})
+    channels = channels if isinstance(channels, dict) else {}
+    allowed_statuses = {"ready", "partial", "disabled", "unavailable", "stale",
+                        "failed"}
+
+    def safe_status(value: Any) -> str:
+        return value if isinstance(value, str) and value in allowed_statuses else "unknown"
+
+    def safe_count(value: Any) -> str:
+        return str(value) if isinstance(value, int) and not isinstance(value, bool) \
+            and value >= 0 else "0"
+
+    manifest = turn_context.get("manifest", {})
+    manifest = manifest if isinstance(manifest, dict) else {}
+    tiers = manifest.get("tiers", {})
+    tiers = tiers if isinstance(tiers, dict) else {}
+    enabled_tier_count = sum(
+        1 for state in tiers.values()
+        if isinstance(state, dict) and state.get("enabled") is True)
+    provenance = turn_context.get("memory_retrieval", ())
+    provenance = provenance if isinstance(provenance, (list, tuple)) else ()
+    exposure_counts = memory_exposure_counts(provenance)
+    exposure_manifest = memory_exposure_manifest(provenance)
+    memories = turn_context.get("memories", ())
+    memories = memories if isinstance(memories, (list, tuple)) else ()
+    semantic_ready = manifest.get("semantic_retrieval_ready") is True
+    return {
+        "cache_hit": str(turn_context.get("cache_hit") is True).lower(),
+        "retrieval_status": safe_status(status.get("status")),
+        "retrieval_lexical_status": safe_status(channels.get("lexical")),
+        "retrieval_semantic_status": safe_status(channels.get("semantic")),
+        "semantic_retrieval_ready": str(semantic_ready).lower(),
+        "enabled_tier_count": str(enabled_tier_count),
+        "available_tier_count": safe_count(manifest.get("available_tier_count")),
+        "retrieved_record_count": str(len(memories)),
+        "memory_chars": safe_count(turn_context.get("memory_chars")),
+        "memory_token_budget": safe_count(turn_context.get("memory_token_budget")),
+        **{f"candidate_{channel}_count": str(count)
+           for channel, count in exposure_counts.items()},
+        "memory_exposure": json.dumps(exposure_manifest, sort_keys=True,
+                                       separators=(",", ":")),
+    }
+
+
 def _safe_signal(value: Any, limit: int) -> str:
     text = str(value or "").strip()[:limit]
     return _SECRET_VALUE.sub(r"\1[redacted]", text)

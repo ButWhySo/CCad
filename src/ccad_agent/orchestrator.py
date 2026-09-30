@@ -58,7 +58,8 @@ from memory_compaction import (MemoryCompactionError, MemoryCompactionPlans,
                                MEMORY_SUMMARY_SYSTEM_PROMPT)
 from context_broker import (ContextBroker, extract_context_signals,
                             project_retrieval_signals,
-                            memory_exposure_counts, memory_exposure_manifest)
+                            memory_exposure_counts, memory_exposure_manifest,
+                            memory_retrieval_trace_metadata)
 from engineering_calculator import build_engineering_tools
 from history_compaction import (HistoryCompactionError,
                                 compact_history,
@@ -3122,20 +3123,10 @@ def handle_human_message(req):
                     input={"signal_digest": signals["digest"],
                            "enabled_tier_count": str(
                                sum(memory_manager.enabled.values()))},
-                    output={"result_count": str(
-                                len(turn_context["memories"])),
+                    output={"result_count": str(len(turn_context["memories"])),
                             "context_version": str(
                                 turn_context["version"])},
-                    metadata={
-                    "cache_hit": str(turn_context["cache_hit"]).lower(),
-                    "memory_chars": str(turn_context["memory_chars"]),
-                    **{f"candidate_{channel}_count": str(count) for channel, count in
-                       memory_exposure_counts(
-                           turn_context["memory_retrieval"]).items()},
-                    "memory_exposure": json.dumps(memory_exposure_manifest(
-                        turn_context["memory_retrieval"]), sort_keys=True,
-                        separators=(",", ":")),
-                })
+                    metadata=memory_retrieval_trace_metadata(turn_context))
         with telemetry_runtime.observation("project.retrieve", "retriever", {
                 "signal_digest": signals["digest"],
                 "project_revision": context_revision(raw_context),

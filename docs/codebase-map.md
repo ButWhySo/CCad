@@ -2843,3 +2843,16 @@ Pyright with zero diagnostics, 14 mapped UI interactions, four inspected
 screenshots, and empty captured stderr. The Settings dialog itself was not
 visible in its checkpoint image; no visual claim is made for that dialog.
 Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json`.
+
+## Sprint 1052 — memory retrieval trace metadata
+
+`context_broker.memory_retrieval_trace_metadata()` creates the privacy-bounded
+metadata attached to the `memory.retrieve` Langfuse observation in
+`orchestrator.py`. It allowlists retrieval/channel states, emits only scalar
+strings and safe bounded counts, and reuses hashed per-record inclusion-channel
+provenance. It omits raw retriever reasons, memory content, and record IDs.
+`scripts/test_context_broker.py` checks malformed/private values and metadata
+shape; `scripts/test_agent_turn_trace_hierarchy.py` passes the exact metadata
+through the real Langfuse SDK and verifies the exported local span attributes
+and parent hierarchy. This validates SDK/local exporter output, not Cloud
+receipt. See the Sprint 1052 evidence manifest for build and CTest results.

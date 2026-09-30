@@ -13,13 +13,47 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src" / "ccad_agent"))
 
 from context_broker import (ContextBroker, extract_context_signals,
-                            memory_exposure_manifest, project_retrieval_signals)
+                            memory_exposure_manifest,
+                            memory_retrieval_trace_metadata,
+                            project_retrieval_signals)
 from context_package import build_context_package
 from memory_manager import MemoryManager
 from memory_store import MemoryStore
 
 
 class ContextBrokerTests(unittest.TestCase):
+    def test_memory_retrieval_trace_metadata_is_safe_scalar_and_complete(self):
+        metadata = memory_retrieval_trace_metadata({
+            "cache_hit": True,
+            "memory_chars": 128,
+            "memory_token_budget": 1000,
+            "memories": [{"id": "private-memory-id", "content": "private text"}],
+            "memory_retrieval_status": {
+                "status": "partial", "reason": "untrusted-private-reason",
+                "channels": {"lexical": "ready", "semantic": "unavailable"}},
+            "manifest": {"tiers": {"ltm": {"enabled": True},
+                                    "episodic": {"enabled": False}},
+                         "available_tier_count": 1,
+                         "semantic_retrieval_ready": False},
+            "memory_retrieval": [{
+                "entry_id": "private-memory-id",
+                "inclusion_channels": ["automatic_retrieval", "memory_summary"]}],
+        })
+
+        self.assertTrue(all(type(value) is str for value in metadata.values()))
+        self.assertEqual(metadata["retrieval_status"], "partial")
+        self.assertEqual(metadata["retrieval_lexical_status"], "ready")
+        self.assertEqual(metadata["retrieval_semantic_status"], "unavailable")
+        self.assertEqual(metadata["retrieved_record_count"], "1")
+        self.assertEqual(metadata["candidate_automatic_retrieval_count"], "1")
+        self.assertEqual(metadata["candidate_memory_summary_count"], "1")
+        self.assertEqual(metadata["candidate_explicit_deep_retrieval_count"], "0")
+        self.assertNotIn("private", json.dumps(metadata))
+        manifest = json.loads(metadata["memory_exposure"])
+        self.assertEqual(manifest[0]["inclusion_channels"],
+                         ["automatic_retrieval", "memory_summary"])
+        self.assertNotEqual(manifest[0]["memory_key"], "private-memory-id")
+
     def test_memory_summary_carries_stable_fact_content_without_task_or_secret_data(self):
         summary = ContextBroker._summary([
             {"id": "preference", "tier": "ltm", "scope": "project",

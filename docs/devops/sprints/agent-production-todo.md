@@ -1,5 +1,17 @@
 # CCad Agent production TODO
 
+### Sprint 1052 — truthful memory-retrieval trace metadata (Tier 1)
+
+- [x] Emit bounded Langfuse `memory.retrieve` metadata for retrieval/cache status, lexical and semantic channel state, safe counts, and hashed exposure provenance; keep all metadata scalar strings and exclude memory content, IDs, and raw failure reasons.
+- [x] Add no-network metadata privacy/type contracts and verify flattened attributes through the real Langfuse SDK with an in-memory OpenTelemetry exporter.
+- [x] Run changed-module Pyright (0 diagnostics), Qt/MinGW Release, full CTest (126/126), and official nonvisual evidence gate; manifest `artifacts/evidence/sprint-1052-memory-retrieval-observability.json`, SHA-256 `5DF6C86B758825A8A9ACEDD746FE684760E07C3B9EE3784481138A273C7C774F`.
+- [ ] Verify pushed exact-SHA hosted CI and keep only the verified `main` branch ref; retain the detached prior worktree because it contains untracked user evidence.
+
+### Sprint 1051 — integration delivery follow-up
+
+- [x] Push and merge verified integration to `main`; all five hosted CI jobs pass on `c7221577a1f81db4b587f8f9a9240dcff67b68ff`. Delete merged local/remote feature refs after confirming commit reachability.
+- [ ] Capture visible proof of the Agent Settings dialog; the prior checkpoint showed the Agent panel, so dialog visual validation is not claimed.
+
 ### Sprint 1051 — integration of editor context and transcript provenance
 
 - [x] Merge Sprint 1039 transcript/approval provenance and Sprint 1038 editor-aware context with current `main`, preserving the newer typed retrieval-channel, provider, and approval-expiry behavior.
@@ -7,7 +19,8 @@
 - [x] Align checkpoint replay coverage with the actual `(content, artifact)` tool-result contract while preserving once-only broker event emission.
 - [x] Pass changed-module Pyright (0 diagnostics), focused transcript/retrieval/context contracts, Qt/MinGW Release, and full CTest (126/126); inspect the official mapped UI report and all four retained screenshots. Manifest `artifacts/evidence/sprint-1051-context-provenance-merge-r4.json`, SHA-256 `3874F8674AEC91B14D6C9BD334C1B012B8AECAE5418743F77F8C460E3CC7CC3F`.
 - [x] Verify exact native schematic selection (`U1`) and editor switching with the app-owned GUI map; no provider request was made. Captured stderr is empty. Settings/category controls were mapped and clicked, but the captured Settings checkpoint displays the Agent panel rather than the dialog, so Settings visual proof is not claimed.
-- [ ] Push the verified integration branch, open/update the PR, verify hosted CI on its exact head SHA, merge to `main`, then delete the merged branch/worktree only after confirming no user evidence or dirty files are lost.
+- [x] Verify exact-SHA hosted CI, merge/push to `main`, and remove local/remote feature branch refs; keep the worktree detached because it contains untracked evidence that must not be deleted.
+- [ ] Capture the Settings dialog itself in a distinct screenshot before claiming Settings visual validation.
 
 ### Sprint 1039 — Transcript transaction provenance (Tier 1)
 
@@ -4770,7 +4783,7 @@ The essential architecture is:
 - [ ] Let the Agent issue deeper `memory.search` when new facts discovered during execution make additional historical knowledge relevant.
 - [ ] Merge deep-retrieval results into the current turn memory context with deduplication and token-budget enforcement.
 - [x] Record whether each memory entered context through Memory Summary, automatic retrieval, or explicit deep retrieval (Sprint 1009: per-record safe channel metadata and deep-search response coverage).
-- [ ] Report safe retrieval metadata in Langfuse under `memory.retrieve`.
+- [x] Report safe retrieval metadata in Langfuse under `memory.retrieve` (Sprint 1052: statuses, channel readiness, cache/counts, and hashed inclusion provenance; no memory contents or raw failure strings).
 - [ ] Measure first-turn automatic retrieval recall and unnecessary-memory injection rate.
 - [ ] Measure extra model/tool calls avoided by automatic retrieval compared with on-demand-only memory search.
 - # Context Runtime v2 â€” automatic conversation, memory, and project retrieval

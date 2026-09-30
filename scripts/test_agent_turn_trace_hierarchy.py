@@ -17,6 +17,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from telemetry import TelemetryRuntime
+from context_broker import memory_retrieval_trace_metadata
 
 
 def main() -> None:
@@ -51,8 +52,21 @@ def main() -> None:
         input_data={"prompt_sha256": "a" * 64, "prompt_chars": 12},
     )
     root_trace = runtime.current_trace()["trace_id"]
+    retrieval_metadata = memory_retrieval_trace_metadata({
+        "cache_hit": False, "memory_chars": 42, "memory_token_budget": 1000,
+        "memories": [{"id": "private-memory-id", "content": "private memory text"}],
+        "memory_retrieval_status": {
+            "status": "ready", "channels": {"lexical": "ready",
+                                                "semantic": "disabled"}},
+        "manifest": {"tiers": {"ltm": {"enabled": True}},
+                     "available_tier_count": 1,
+                     "semantic_retrieval_ready": False},
+        "memory_retrieval": [{"entry_id": "private-memory-id",
+                               "inclusion_channels": ["automatic_retrieval"]}],
+    })
     with runtime.observation("context.assemble", "chain"):
-        with runtime.observation("memory.retrieve", "retriever"):
+        with runtime.observation("memory.retrieve", "retriever",
+                                 retrieval_metadata):
             pass
         with runtime.observation("context.package", "span"):
             pass
@@ -88,6 +102,15 @@ def main() -> None:
     assert parent_span_id("memory.retrieve") == contexts["context.assemble"].span_id
     assert parent_span_id("context.package") == contexts["context.assemble"].span_id
     assert parent_span_id("agent-turn") == contexts["agent.turn"].span_id
+
+    memory_attrs = by_name["memory.retrieve"].attributes or {}
+    assert memory_attrs["langfuse.observation.metadata.retrieval_status"] == "ready"
+    assert memory_attrs["langfuse.observation.metadata.retrieval_lexical_status"] == "ready"
+    assert memory_attrs["langfuse.observation.metadata.retrieval_semantic_status"] == "disabled"
+    assert memory_attrs["langfuse.observation.metadata.retrieved_record_count"] == "1"
+    assert memory_attrs["langfuse.observation.metadata.candidate_automatic_retrieval_count"] == "1"
+    assert "private-memory-id" not in str(memory_attrs)
+    assert "private memory text" not in str(memory_attrs)
 
     root = by_name["agent.turn"]
     root_attrs = root.attributes or {}
