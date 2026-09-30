@@ -20,13 +20,21 @@ model. Product startup and broader retrieval failure recovery remain unmeasured.
 For provider calls, the orchestrator now narrows bound native tool schemas only
 when the latest user message explicitly names native method IDs; ordinary turns
 retain the full catalog. It preserves catalog-declared context requirements,
-including project context for `project.object_counts`. Focused contracts pass,
-but the current live Qwen UI attempt recorded no provider request or broker call,
-so end-to-end tool completion is not yet verified. The conservative schema
+including project context for `project.object_counts`. An earlier mapped
+attempt did not produce a provider request or broker call; the later r16
+read-only count flow passed end to end as recorded below. The conservative schema
 selection/runtime-readiness slice passes the Qt/MinGW Release build and full
 CTest 127/127; non-visual manifest
 `artifacts/evidence/sprint-1043-provider-tool-schema-r1.json` has SHA-256
 `577E80E79842AA730BD6DDACEB6C4AA9BF974FBE919D4665F553024FACBDFDFE`.
+
+The subsequent official mapped local-Qwen run verified the plain-language
+read-only board-count path end to end: one `project.object_counts` request,
+one accepted broker result, completed workspace state, and a visible final
+answer. The live run and full Qt/MinGW Release/CTest gate (127/127) are recorded
+in `artifacts/evidence/sprint-1043-live-tool-turn-r16.json` (SHA-256
+`82AF2FD53ACDE4F6CCF47D19BE6F06332B1C5F731F749E535E6516600AD04C74`). This
+does not establish parity for other models, tools, or mutation workflows.
 
 ## Sprint 1041 — retrieval request/result boundary
 

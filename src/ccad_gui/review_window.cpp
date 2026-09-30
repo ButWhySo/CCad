@@ -511,6 +511,7 @@ QJsonObject schemaObject(const QJsonObject& properties, const QStringList& requi
   schema.insert("type", "object");
   schema.insert("properties", properties);
   schema.insert("required", stringListToJsonArray(required));
+  schema.insert("additionalProperties", false);
   return schema;
 }
 

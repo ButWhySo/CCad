@@ -1,0 +1,99 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1043-live-tool-turn-r16",
+    "feature":  "Keep workspace run state accurate while a checkpointed native tool resumes and produces its final count summary",
+    "validation_mode":  "gui",
+    "interaction_plan":  "scripts/validation-plans/sprint1043-agent-live-tool-turn.json",
+    "target_sequence":  "sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16",
+    "visual_validation":  "required",
+    "started_utc":  "2026-09-30T00:31:32.7911774Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.87 log=artifacts/evidence/sprint-1043-live-tool-turn-r16/preflight.log",
+                      "finished_utc":  "2026-09-30T00:31:33.7552277Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=110.6 log=artifacts/evidence/sprint-1043-live-tool-turn-r16/build.log",
+                      "finished_utc":  "2026-09-30T00:33:24.3697645Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=182.71 log=artifacts/evidence/sprint-1043-live-tool-turn-r16/ctest.log",
+                      "finished_utc":  "2026-09-30T00:36:27.0795019Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=165.55 log=artifacts/evidence/sprint-1043-live-tool-turn-r16/ui_harness.log",
+                      "finished_utc":  "2026-09-30T00:39:12.6366804Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=7; screenshots=4",
+                      "finished_utc":  "2026-09-30T00:39:12.8822063Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-09-30T00:39:13.0392104Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/build.log",
+                                         "sha256":  "37D3F0E0F497B7B8B3BAD4E6F87E08CF10DC20CEBD591F45C1C14A0C827F61FE"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/ctest.log",
+                                         "sha256":  "3D966B1CE6CDDD0B97AEB940A1735E206973747EB388F62C8AD18775757293B4"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16.stdout.log",
+                                         "sha256":  "A27212E25BB2C5052946521B3DB58001BC63D8A9762D275450F3662724FFA2C0"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16-before.png",
+                                         "sha256":  "EE9BCAE0D423C9D4F80165341B719A24B4A00FDB4AFE2D28912BE48C9A915C61"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16-model-tool-results.png",
+                                         "sha256":  "235341BE24A6EB3FB13874A10DEB0E3AD0BE1040F7353DC6AB3B50FB1F3AD00C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16-restored-final.png",
+                                         "sha256":  "08EB7DC6B92E38C2509F682B1E42F9FDC0D0D94173F677DD8DF0645EF6DB2C3B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16-settings-open.png",
+                                         "sha256":  "88BCDD4A7DF5F510AEF0354FBAE750048C7FD31A887BA4A85405206D481F9228"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/sprint1043-agent-live-tool-turn-sprint-1043-live-tool-turn-r16-target-sequence.json",
+                                         "sha256":  "9E545B5C2C39F97CFA51C78F0FD949E7C0F60F8195C791709389A00FB30BA706"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1043-live-tool-turn-r16/ui_harness.log",
+                                         "sha256":  "BABAC1CCA7652FFE43694C51CD9B8C481E001B22C643BA2DA8A0777D77389694"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T00:39:13.2017224Z"
+}

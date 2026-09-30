@@ -1209,7 +1209,7 @@ $reportData = Get-Content -Raw $Report | ConvertFrom-Json
 if ($Name.StartsWith("sprint1043-agent-live-tool-turn")) {
   $toolProof = @($reportData.entries | Where-Object {
     $_.real_model_provider_initialized -eq $true -and
-    $_.provider_request_sent -eq $true -and
+    $_.provider_dispatch_started -eq $true -and
     $_.run_state -in @("completed", "idle") -and
     $_.object_count_calls -ge 1 -and $_.accepted_broker_results -ge 1 -and
     $_.count_summary_visible -eq $true

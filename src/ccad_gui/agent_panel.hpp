@@ -314,6 +314,7 @@ class AgentPanel final : public QWidget {
   bool run_queue_cancelable_ = true;
   bool backend_ready_ = false;
   bool backend_provider_initialized_ = false;
+  bool provider_request_dispatch_started_ = false;
   bool native_tool_catalog_sent_ = false;
   bool backend_config_requested_ = false;
   bool orchestrator_catalog_requested_ = false;

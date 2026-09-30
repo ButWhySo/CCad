@@ -511,7 +511,7 @@ int main(int argc, char** argv) {
         ok = add_interaction("ui.click", "{\"id\":\"tab:agent\"}",
                              "tab:agent", "agent-tab") && ok;
         const QString prompt = QStringLiteral(
-            "Read-only check: call project.object_counts once for the loaded board, then report footprint, track, and via counts from its result. Do not call other tools or change anything.");
+            "What are the footprint, track, and via counts on this board?");
         ok = add_interaction("ui.type_text",
             QString("{\"id\":\"control:agent_chat_input\",\"text\":%1}")
                 .arg(jsonStringLocal(prompt)), "control:agent_chat_input",
@@ -550,7 +550,9 @@ int main(int argc, char** argv) {
             }
           }
           if (final_transcript.contains(
-                  "Provider request stopped before a response was completed")) break;
+                  "Provider request stopped before a response was completed") ||
+              final_transcript.contains(
+                  "Provider response was received but contained no answer or tool call")) break;
           const QString run_state = final_state.value("run_state").toString();
           if ((run_state == "completed" || run_state == "idle") &&
               requested_counts > 0 && accepted_results >= 1 &&
@@ -567,11 +569,11 @@ int main(int argc, char** argv) {
             turn_output.contains("via", Qt::CaseInsensitive) &&
             !final_transcript.contains("Provider request stopped");
         const QString result_screenshot = capture("model-tool-results");
-        const bool provider_request_sent = tool_turn_verified ||
-            final_transcript.contains("Provider request stopped before a response");
-        entries << QString("{\"real_model_provider_initialized\":%1,\"provider_request_sent\":%2,\"run_state\":%3,\"object_count_calls\":%4,\"accepted_broker_results\":%5,\"count_summary_visible\":%6,\"screenshot\":%7}")
+        const bool provider_dispatch_started =
+            final_state.value("provider_dispatch_started").toBool();
+        entries << QString("{\"real_model_provider_initialized\":%1,\"provider_dispatch_started\":%2,\"run_state\":%3,\"object_count_calls\":%4,\"accepted_broker_results\":%5,\"count_summary_visible\":%6,\"screenshot\":%7}")
             .arg(final_state.value("backend_provider_initialized").toBool() ? "true" : "false",
-                 provider_request_sent ? "true" : "false",
+                 provider_dispatch_started ? "true" : "false",
                  jsonStringLocal(final_state.value("run_state").toString()))
             .arg(requested_counts).arg(accepted_results)
             .arg((turn_output.contains("footprint", Qt::CaseInsensitive) &&

@@ -20,8 +20,10 @@ from collections import deque
 from typing import Annotated, Any, Dict, Iterable, List, Literal, Sequence, TypedDict, cast
 from langchain_core.tools import StructuredTool
 from langchain_core.runnables import RunnableConfig
-from pydantic import Field, create_model
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.utils.function_calling import convert_to_openai_tool
+from pydantic import ConfigDict, Field, create_model
+from langchain_core.messages import (AIMessage, BaseMessage, HumanMessage,
+                                     SystemMessage, ToolMessage)
 # langgraph-checkpoint currently emits this known pending-deprecation warning
 # during import; install filter after langchain_core imports, which may reset
 # warning filters. Keep all other warnings visible.
@@ -152,6 +154,8 @@ deferred_queue = queue.Queue()
 pending_calls = {}
 pending_call_threads = {}
 pending_calls_lock = threading.Lock()
+checkpoint_tool_events: set[str] = set()
+checkpoint_tool_events_lock = threading.Lock()
 
 def route_protocol_line(protocol_line: str) -> bool:
     """Route a result to its waiting call; return whether it was consumed."""
@@ -304,10 +308,11 @@ def sanitize_persisted_config(value, secret_key_fragments, rejected_keys, path="
 def dispatch_checkpointed_tool(tool_name: str, args: dict):
     """Pause graph until C++ client returns authoritative tool result."""
     call_id = checkpoint_tool_call_id(tool_name, args)
+    approval = tool_approval_decision(tool_name, args)
     decision = interrupt({"kind": "ccad_tool_call", "tool": tool_name,
                           "args": args, "call_id": call_id,
-                          "approval_required": True,
-                          "approval_reason": "project_mutation"})
+                          "approval_required": approval["required"],
+                          "approval_reason": approval["reason"]})
     if isinstance(decision, dict) and "error" in decision:
         return json.dumps(decision)
     return json.dumps(decision) if isinstance(decision, (dict, list)) else str(decision)
@@ -319,6 +324,26 @@ def tool_approval_decision(tool_name: str, args: dict):
     return {"required": required,
             "reason": "dry_run" if dry_run else "project_mutation"}
 
+
+def tool_calls_require_approval(tool_calls: object) -> bool:
+    """Classify calls by native side-effect policy, not by call presence."""
+    if not isinstance(tool_calls, list):
+        return False
+    methods_by_name = {
+        tool_provider_name(entry["method"]): entry["method"]
+        for entry in native_tool_catalog
+    }
+    for call in tool_calls:
+        if not isinstance(call, dict):
+            continue
+        name = call.get("name")
+        args = call.get("args")
+        if not isinstance(name, str) or not isinstance(args, dict):
+            continue
+        if tool_approval_decision(methods_by_name.get(name, name), args)["required"]:
+            return True
+    return False
+
 @trace_function("dispatch-native-tool", "tool")
 def dispatch_client_tool(tool_name: str, args: dict) -> str:
     """Send one client tool call and await its authoritative broker result."""
@@ -326,13 +351,20 @@ def dispatch_client_tool(tool_name: str, args: dict) -> str:
                if checkpoint_saver is not None and broker_wait_enabled
                else new_tool_call_id(tool_name))
     approval = tool_approval_decision(tool_name, args)
-    emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
-        "tool": tool_name, "args": args, "call_id": call_id,
-        "approval_required": approval["required"],
-        "approval_reason": approval["reason"],
-    }})
+    checkpointed = checkpoint_saver is not None and broker_wait_enabled
+    emit_call = True
+    if checkpointed:
+        with checkpoint_tool_events_lock:
+            emit_call = call_id not in checkpoint_tool_events
+            checkpoint_tool_events.add(call_id)
+    if emit_call:
+        emit({"jsonrpc": "2.0", "method": "tool_call", "params": {
+            "tool": tool_name, "args": args, "call_id": call_id,
+            "approval_required": approval["required"],
+            "approval_reason": approval["reason"],
+        }})
     if broker_wait_enabled:
-        if approval["required"]:
+        if approval["required"] and emit_call:
             emit_tool_approval_state()
         if checkpoint_saver is not None:
             return dispatch_checkpointed_tool(tool_name, args)
@@ -841,6 +873,31 @@ def record_provider_response_usage(report, response, generation_observation):
     return accounting
 
 
+class ProviderEmptyResponseError(RuntimeError):
+    """Provider returned neither user-visible content nor a native tool call."""
+
+    category = "empty_response"
+
+
+def provider_response_has_payload(response):
+    """Accept text, structured content, or tool calls; reject a blank success."""
+    if getattr(response, "tool_calls", None):
+        return True
+    content = getattr(response, "content", "")
+    if isinstance(content, str):
+        return bool(content.strip())
+    if isinstance(content, (list, tuple)):
+        for block in content:
+            if isinstance(block, dict):
+                if str(block.get("text", "")).strip() or block.get("type") not in {
+                        None, "text"}:
+                    return True
+            elif str(block).strip():
+                return True
+        return False
+    return bool(content)
+
+
 def provider_request_trace_metadata(report):
     """Convert safe request accounting to Langfuse-compatible string metadata."""
     result = {
@@ -951,6 +1008,9 @@ def validate_native_tool_catalog(catalog: object) -> List[dict]:
                 or not isinstance(description, str) or not description.strip()
                 or not isinstance(schema, dict) or schema.get("type") != "object"):
             raise ValueError("catalog entry has invalid method, description, or inputSchema")
+        additional_properties = schema.get("additionalProperties")
+        if additional_properties is True or isinstance(additional_properties, dict):
+            raise ValueError("open-ended native tool argument schemas are unsupported")
         callable_method = entry.get("callable", True)
         if not isinstance(callable_method, bool):
             raise ValueError("catalog callable flag must be boolean")
@@ -996,8 +1056,11 @@ def build_native_tools(catalog: List[dict]) -> List[StructuredTool]:
             default = ... if key in required else property_schema.get("default", None)
             fields[key] = (json_schema_annotation(property_schema),
                            Field(default, description=str(property_schema.get("description", ""))))
-        args_schema = create_model("CCad_" + tool_provider_name(entry["method"]).replace("-", "_"),
-                                   **fields)
+        schema_extra = schema.get("additionalProperties")
+        extra_behavior = "forbid" if schema_extra is False else "ignore"
+        args_schema = create_model(
+            "CCad_" + tool_provider_name(entry["method"]).replace("-", "_"),
+            __config__=ConfigDict(extra=extra_behavior), **fields)
         method = entry["method"]
         read_only = entry["read_only"]
 
@@ -1025,7 +1088,26 @@ def bind_native_tools(model: Any, tools: List[StructuredTool] | None = None):
     binder = getattr(model, "bind_tools", None)
     if not callable(binder):
         raise TypeError("provider adapter does not support tool binding")
-    return binder(agent_tools if tools is None else tools)
+    return binder(provider_safe_tool_declarations(
+        agent_tools if tools is None else tools))
+
+
+def provider_safe_tool_declarations(tools: List[StructuredTool]) -> List[dict]:
+    """Preserve native object-closure rules omitted by provider schema conversion."""
+    declarations = []
+    for tool in tools:
+        declaration = convert_to_openai_tool(tool)
+        parameters = declaration.get("function", {}).get("parameters", {})
+        args_schema = getattr(tool, "args_schema", None)
+        schema_exporter = getattr(args_schema, "model_json_schema", None)
+        source_parameters = schema_exporter() if callable(schema_exporter) else {}
+        if (isinstance(parameters, dict) and parameters.get("type") == "object"
+                and isinstance(source_parameters, dict)
+                and isinstance(source_parameters.get("additionalProperties"), bool)
+                and "additionalProperties" not in parameters):
+            parameters["additionalProperties"] = source_parameters["additionalProperties"]
+        declarations.append(declaration)
+    return declarations
 
 
 def provider_tools_for_messages(messages: Sequence[BaseMessage]) -> List[StructuredTool]:
@@ -1036,8 +1118,11 @@ def provider_tools_for_messages(messages: Sequence[BaseMessage]) -> List[Structu
     the LangGraph ToolNode remains bound to the full authoritative catalog.
     """
     human_text = ""
-    for message in reversed(messages):
+    latest_human_index = -1
+    for index in range(len(messages) - 1, -1, -1):
+        message = messages[index]
         if isinstance(message, HumanMessage) or getattr(message, "type", None) == "human":
+            latest_human_index = index
             content = getattr(message, "content", "")
             if isinstance(content, str):
                 human_text = content
@@ -1051,16 +1136,40 @@ def provider_tools_for_messages(messages: Sequence[BaseMessage]) -> List[Structu
 
     tools_by_name = {tool.name: tool for tool in agent_tools}
     selected_names = set()
+    lower_text = human_text.lower()
+    explicitly_requests_counts = bool(re.search(
+        r"\b(count|counts|how many|number of)\b", lower_text))
+    asks_board_counts = explicitly_requests_counts and all(
+        re.search(r"\b" + term + r"s?\b", lower_text)
+        for term in ("footprint", "track", "via"))
     for entry in native_tool_catalog:
         method = entry["method"]
         if re.search(r"(?<![A-Za-z0-9_.-])" + re.escape(method) +
                      r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9_])", human_text):
             selected_names.add(tool_provider_name(method))
+        if method == "project.object_counts" and asks_board_counts:
+            selected_names.add(tool_provider_name(method))
     for tool in agent_tools:
         if re.search(r"(?<![A-Za-z0-9_-])" + re.escape(tool.name) +
                      r"(?![A-Za-z0-9_-])", human_text):
             selected_names.add(tool.name)
+    explicitly_narrowed = bool(selected_names)
+    completed_names = set()
+    for message in messages[latest_human_index + 1:]:
+        if isinstance(message, ToolMessage) and isinstance(message.name, str):
+            completed_names.add(message.name)
+        # ToolNode returns only after its native call result arrived. Retain the
+        # requested identity as a fallback for provider adapters that omit the
+        # ToolMessage name while preserving the assistant tool-call envelope.
+        calls = getattr(message, "tool_calls", None)
+        if isinstance(calls, list):
+            completed_names.update(
+                call["name"] for call in calls
+                if isinstance(call, dict) and isinstance(call.get("name"), str))
+    selected_names.difference_update(completed_names)
     selected = [tool for tool in agent_tools if tool.name in selected_names]
+    if explicitly_narrowed and not selected:
+        return []
     return selected or agent_tools
 
 
@@ -1077,6 +1186,38 @@ def provider_context_for_tools(tools: List[StructuredTool], context: str) -> str
         if entry is None or entry.get("context_requirements"):
             return context
     return ""
+
+
+def provider_tool_scope_instruction(tools: List[StructuredTool]) -> str:
+    """Resolve general system-prompt guidance against this turn's bound schemas."""
+    if tools is agent_tools:
+        return ""
+    entries_by_name = {
+        tool_provider_name(entry["method"]): entry
+        for entry in native_tool_catalog
+    }
+    bound_entries = [entries_by_name[tool.name] for tool in tools
+                     if tool.name in entries_by_name]
+    if not bound_entries:
+        return ""
+    methods = ", ".join(f"`{entry['method']}`" for entry in bound_entries)
+    zero_argument_tools = [
+        f"`{tool_provider_name(entry['method'])}` for `{entry['method']}`"
+        for entry in bound_entries
+        if not entry.get("inputSchema", {}).get("properties")
+        and not entry.get("inputSchema", {}).get("required")
+    ]
+    instruction = (
+        "The user explicitly requested these bound native methods: "
+        f"{methods}. If a listed method directly answers, call its exact "
+        "bound tool now. Do not call `project.state` or any unbound method. "
+        "Report only authoritative tool results. If none of the listed "
+        "methods can answer, state that limitation without inventing a call.")
+    if zero_argument_tools:
+        instruction += (
+            " The following bound tools take no arguments; call them with "
+            f"an empty JSON object {{}}: {', '.join(zero_argument_tools)}.")
+    return instruction
 
 
 def install_native_tool_catalog(catalog: object) -> dict:
@@ -1272,7 +1413,7 @@ def provider_retry_after_seconds(error: Exception):
 def classify_provider_error(error: Exception):
     """Return safe, actionable category; never include secret-bearing text."""
     explicit_category = getattr(error, "category", None)
-    if explicit_category in {"quota_exhausted", "quota_or_rate_limit", "rate_limited",
+    if explicit_category in {"empty_response", "quota_exhausted", "quota_or_rate_limit", "rate_limited",
                              "authentication", "permission_denied", "payment_required",
                              "model_not_found"}:
         return explicit_category
@@ -1349,6 +1490,7 @@ def provider_error_user_message(error: Exception):
     """Explain a provider failure without exposing SDK text or secrets."""
     category = classify_provider_error(error)
     guidance = {
+        "empty_response": "The provider returned success without answer content or a tool call; retry once or choose a compatible model.",
         "missing_api_key": "Add the selected provider's API key in Agent Settings.",
         "authentication": "The provider rejected this credential; verify the key for the selected provider.",
         "permission_denied": "The credential lacks access to this model or project; check provider permissions.",
@@ -1366,6 +1508,9 @@ def provider_error_user_message(error: Exception):
     status_text = f" (HTTP {status})" if status is not None else ""
     retry_after = provider_retry_after_seconds(error)
     retry_text = f" Retry after {retry_after} seconds as requested by the provider." if retry_after else ""
+    if category == "empty_response":
+        return ("Provider response was received but contained no answer or tool call. "
+                f"{guidance[category]} Cause: {category}.")
     return ("Provider request stopped before a response was completed. "
             f"{guidance.get(category, guidance['provider_unavailable'])} "
             f"Cause: {category}{status_text}.{retry_text}")
@@ -1654,18 +1799,40 @@ def invoke_agent_run(state):
 
 
 
-def get_system_prompt(role_desc: str) -> str:
+def get_system_prompt(role_desc: str,
+                      tools: List[StructuredTool] | None = None) -> str:
     base_prompt = config_manager.get("system_prompt", "")
     person_config = config_manager.get("personalisation", {})
     personality = person_config.get("agent_personality", "Default")
     custom_inst = person_config.get("custom_instructions", "")
     
     parts = [f"You are {role_desc}",
-             "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation.",
-             "Read the typed project context and project_retrieval matches before design-specific work. Retrieved positions and IDs come from the active typed model. Schematic pin membership is an authoritative netlist assignment; shared PCB net IDs are not proof of geometric copper continuity. Use project.state for complete live PCB/schematic state before changes or when requested details are not present.",
+             "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation."]
+    if tools is None or tools is agent_tools:
+        parts.append(
+            "Read the typed project context and project_retrieval matches before design-specific work. "
+            "Retrieved positions and IDs come from the active typed model. Schematic pin membership "
+            "is an authoritative netlist assignment; shared PCB net IDs are not proof of geometric "
+            "copper continuity. Use project.state for complete live PCB/schematic state before "
+            "changes or when requested details are not present.")
+    elif not tools:
+        parts.append(
+            "The requested native tool has already returned in this turn. Do not call any more "
+            "tools; answer using the returned tool result only. Do not infer missing values.")
+    else:
+        parts.append(
+            "Read the typed project context and project_retrieval matches before design-specific work. "
+            "Retrieved positions and IDs come from the active typed model. Schematic pin membership "
+            "is an authoritative netlist assignment; shared PCB net IDs are not proof of geometric "
+            "copper continuity. This request exposes only its listed native tool methods; do not "
+            "request or refer to any unbound method.")
+        scope_instruction = provider_tool_scope_instruction(tools)
+        if scope_instruction:
+            parts.append(scope_instruction)
+    parts.extend([
              "For a requested PCB layer or net, verify it exists in project context, then call ui.set_active_layer or ui.set_active_net before a dependent mutation.",
              "Treat tool results as authoritative: report a change only after performed=true; report the returned failure reason otherwise.",
-             "Persistent mutations require the approval path. Use rendered proposal preview when available; never describe text-only context as a visual diff."]
+             "Persistent mutations require the approval path. Use rendered proposal preview when available; never describe text-only context as a visual diff."])
     if base_prompt: parts.append(f"System Base: {base_prompt}")
     
     # Inject active workflow context
@@ -1760,7 +1927,7 @@ def router_node(state: AgentState):
                    bind_native_tools(llm, request_tools))
     request_context = provider_context_for_tools(request_tools, context_str)
     role_desc = "the CCad PCB Routing Expert."
-    system_text = get_system_prompt(role_desc)
+    system_text = get_system_prompt(role_desc, request_tools)
     if request_context:
         system_text += f"\nContext: {request_context}"
     
@@ -1781,10 +1948,28 @@ def router_node(state: AgentState):
             "context_chars": str(len(request_context)),
             **provider_request_trace_metadata(request_context),
         }, model=os.environ.get("CCAD_MODEL", "configured")) as generation_observation:
+        emit({"jsonrpc": "2.0", "method": "provider_request_state", "params": {
+            "stage": "dispatch_started",
+            "provider": os.environ.get("CCAD_PROVIDER", "configured"),
+            "model": os.environ.get("CCAD_MODEL", "configured"),
+            "tool_schema_count": len(request_tools),
+            "context_chars": len(request_context),
+            "secret_value_visible": False,
+        }})
         response = invoke_provider_with_retry(
             request_llm, prompt, config={"callbacks": callbacks} if callbacks else {})
         accounting = record_provider_response_usage(
             request_context, response, generation_observation)
+        emit({"jsonrpc": "2.0", "method": "provider_request_state", "params": {
+            "stage": "response_received",
+            "provider": os.environ.get("CCAD_PROVIDER", "configured"),
+            "model": os.environ.get("CCAD_MODEL", "configured"),
+            "tool_call_count": len(getattr(response, "tool_calls", []) or []),
+            "content_chars": len(str(getattr(response, "content", "") or "")),
+            "secret_value_visible": False,
+        }})
+        if not provider_response_has_payload(response):
+            raise ProviderEmptyResponseError("empty_response")
     if "post node" in [h.lower() for h in active_hooks]:
         hooks.trigger_hook("post node", emit, "router")
     return {"messages": [response], "provider_request_accounting": accounting}
@@ -1803,7 +1988,7 @@ def librarian_node(state: AgentState):
                    bind_native_tools(llm, request_tools))
     request_context = provider_context_for_tools(request_tools, context_str)
     role_desc = "the CCad Component Librarian."
-    system_text = get_system_prompt(role_desc)
+    system_text = get_system_prompt(role_desc, request_tools)
     if request_context:
         system_text += f"\nContext: {request_context}"
     
@@ -1897,6 +2082,18 @@ def resume_checkpointed_run(thread_id: str, resume_value):
     if callbacks:
         config["callbacks"] = callbacks
     return ensure_orchestrator().invoke(Command(resume=resume_value), config=config)
+
+
+def checkpoint_run_state(snapshot: Any) -> str:
+    """Expose whether a checkpoint is complete, awaiting approval, or awaiting a result."""
+    if not getattr(snapshot, "next", ()):
+        return "completed"
+    for task in getattr(snapshot, "tasks", ()):
+        for pending_interrupt in getattr(task, "interrupts", ()):
+            value = getattr(pending_interrupt, "value", {})
+            if isinstance(value, dict) and value.get("approval_required") is True:
+                return "awaiting_tool_approval"
+    return "awaiting_tool_result"
 
 session_messages = []
 conversation_store = ConversationStore()
@@ -2814,6 +3011,8 @@ def handle_human_message(req):
     if not isinstance(params, dict):
         params = {}
     text = params.get("text", "")
+    with checkpoint_tool_events_lock:
+        checkpoint_tool_events.clear()
     raw_context = params.get("context", "")
     requested_thread = str(params.get("thread_id") or
                            os.environ.get("CCAD_AGENT_THREAD_ID", "ccad-local"))
@@ -3486,7 +3685,11 @@ def handle_human_message(req):
     elif isinstance(output_tokens, int):
         token_usage = f"{output_tokens} provider-reported output tokens; input unavailable"
     emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
-        "run_state": "awaiting_tool_approval" if (has_tool_calls or has_legacy_tool) else "completed",
+        "run_state": (
+            "awaiting_tool_approval"
+            if tool_calls_require_approval(getattr(last_msg, "tool_calls", None))
+            else "awaiting_tool_result"
+        ) if (has_tool_calls or has_legacy_tool) else "completed",
         **trace,
         "token_usage": token_usage,
         "provider_usage": provider_usage,
@@ -3500,6 +3703,11 @@ def handle_human_message(req):
 
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
         for tcall in last_msg.tool_calls:
+            # The ToolNode already emitted the broker request before pausing at
+            # its checkpoint interrupt. Re-emitting the outer model call here
+            # creates a duplicate GUI action for the same stable call ID.
+            if checkpoint_saver is not None and broker_wait_enabled:
+                continue
             tool_event = model_tool_call_event(tcall)
             if tool_event is None:
                 emit({"jsonrpc": "2.0", "method": "message", "params": {
@@ -3617,6 +3825,9 @@ if __name__ == "__main__":
                         "error_present": error is not None,
                     }})
                     resume_value = {"error": error} if error is not None else result
+                    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+                        "run_state": "running", "secret_value_visible": False,
+                    }})
                     resumed = resume_checkpointed_run(thread_id, resume_value)
                     resumed_snapshot = executor.get_state(
                         {"configurable": {"thread_id": thread_id}})
@@ -3635,10 +3846,16 @@ if __name__ == "__main__":
                         emit({"jsonrpc": "2.0", "method": "message", "params": {
                             "text": assistant_text, "kind": "assistant_response",
                             "turn_id": resumed_turn_id, "secret_value_visible": False}})
+                    resumed_run_state = checkpoint_run_state(resumed_snapshot)
+                    emit({"jsonrpc": "2.0", "method": "telemetry", "params": {
+                        "run_state": resumed_run_state,
+                        "secret_value_visible": False,
+                    }})
                     emit({"jsonrpc": "2.0", "method": "thread_resumed", "params": {
                         "thread_id": thread_id,
                         "call_id": received_call_id,
                         "message_count": len(resumed.get("messages", [])) if isinstance(resumed, dict) else 0,
+                        "run_state": resumed_run_state,
                     }})
                 else:
                     if pending_result_queue is None:

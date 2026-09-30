@@ -1864,7 +1864,13 @@ void AgentPanel::handlePythonOutput() {
       } else if (obj.contains("method") && obj["method"].toString() == "telemetry") {
         QJsonObject params = obj["params"].toObject();
         if (params.contains("run_state") && run_state_chip_label_) {
-          run_state_chip_label_->setText("Run: " + params["run_state"].toString());
+          run_state_ = params["run_state"].toString();
+          run_queue_status_ = run_state_;
+          run_queue_cancelable_ = run_state_ == "running" ||
+                                  run_state_ == "awaiting_tool_result" ||
+                                  run_state_ == "awaiting_tool_approval";
+          run_state_chip_label_->setText("Run: " + run_state_);
+          updateRunQueueLabels();
         }
         if (params.contains("trace_id") && trace_id_label_) {
           trace_id_label_->setText("TraceID: " + params["trace_id"].toString());
@@ -1872,6 +1878,12 @@ void AgentPanel::handlePythonOutput() {
         }
         if (params.contains("span_id") && span_id_label_) {
           span_id_label_->setText("SpanID: " + params["span_id"].toString());
+        }
+      } else if (obj.contains("method") &&
+                 obj["method"].toString() == "provider_request_state") {
+        const QJsonObject params = obj["params"].toObject();
+        if (params.value("stage").toString() == "dispatch_started") {
+          provider_request_dispatch_started_ = true;
         }
       }
     }
@@ -1944,6 +1956,7 @@ void AgentPanel::submitChat() {
     session_title_label_->setText(text.section('\n', 0, 0).left(48));
   }
   tool_result_ack_visible_ = false;
+  provider_request_dispatch_started_ = false;
   
   appendChatMessage("user", text);
   chat_input_->clear();
@@ -3556,6 +3569,7 @@ QString AgentPanel::workspaceStateJson() const {
   response.insert("status", statusText());
   response.insert("backend_ready", backend_ready_);
   response.insert("backend_provider_initialized", backend_provider_initialized_);
+  response.insert("provider_dispatch_started", provider_request_dispatch_started_);
   response.insert("native_tool_catalog_installed", native_tool_catalog_sent_);
   response.insert("native_tool_catalog_method_count", native_tool_catalog_.size());
   response.insert("context_revision", context_revision_);

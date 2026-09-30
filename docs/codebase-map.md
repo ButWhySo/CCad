@@ -2667,3 +2667,54 @@ under non-visual manifest `artifacts/evidence/sprint-1043-provider-tool-schema-r
 that build/test evidence does not close the model-backed turn requirement.
 `scripts/test_agent_retrieval_benchmark.py` exercises metric math and the real
 retrieval paths; the CTest and CI `agent-python` gates run it.
+
+## Sprint 1043 live provider response and dispatch reporting
+
+`router_node()` emits content-free `provider_request_state` events at provider
+dispatch start and response receipt, including provider/model, schema count,
+and character/count metadata only. `provider_response_has_payload()` preserves
+native tool-call-only responses and rejects empty text/empty text blocks;
+`ProviderEmptyResponseError` is classified as `empty_response` and its user
+message states that the provider responded without answer or tool content.
+This prevents a blank assistant message from being recorded as a completed
+turn. `AgentPanel` resets and tracks dispatch-start per submitted message and
+exposes `provider_dispatch_started` in workspace state. The Sprint 1043 live
+turn harness reads that event rather than inferring dispatch from broker
+success. Dispatch-start is not proof of transport receipt; only successful
+tool/result/final-answer evidence closes the local-model integration gate.
+Contracts are in `scripts/test_agent_provider_tool_selection.py`; the official
+Qt/MinGW Release and full CTest passed 127/127 in r9. The mapped run exercised
+seven UI interactions and four inspected checkpoints. Ollama logged HTTP 200
+in r8, but Qwen still produced neither text nor a native tool call in r9, so
+no broker action ran. The local-model tool-call acceptance gate remains open.
+
+The r10 official run also passed Release build and full CTest (127/127), then
+failed the required model-backed interaction with a visible categorized
+`empty_response`; its report records dispatch start but zero native calls,
+accepted broker results, or count-bearing answer. The harness prompt now uses a
+normal-language board-count request. `provider_tools_for_messages()` narrowly
+recognizes that request only when it asks for counts of footprints, tracks, and
+vias, selecting the authoritative `project.object_counts` schema. Two focused
+tests cover positive and negative selection. These latest changes have only
+The r11 rebuilt run passed Qt/MinGW Release and full CTest (127/127) but again
+returned `empty_response` with zero tool calls and broker results. That failure
+was later resolved for the narrow read-only count flow in r16, documented
+below; it remains useful as the historical boundary for the earlier intent
+selection attempt.
+
+The r16 live local-Qwen run closed this narrowly scoped read-only count flow:
+the provider initialized, the model requested `project.object_counts` once,
+the C++ broker accepted one result, AgentPanel workspace state reached
+`completed`, and the final answer visibly reported footprint, track, and via
+counts. The four meaningful GUI screenshots and stdout/stderr were inspected;
+stderr was empty. This slice fixed conflicting broad `project.state` guidance
+when only a narrowed method was bound, explicit `{}` for a zero-argument tool,
+duplicate checkpoint call events, and C++ workspace state not following
+result-resume telemetry. Focused tool-selection/runtime tests pass 28/28,
+approval-state contract passes, and Qt/MinGW Release plus full CTest pass
+127/127. Evidence: `artifacts/evidence/sprint-1043-live-tool-turn-r16.json`
+(SHA-256 `82AF2FD53ACDE4F6CCF47D19BE6F06332B1C5F731F749E535E6516600AD04C74`).
+Other providers, mutation approvals, and the complete tool catalog remain
+unverified. clangd's optional ExtractFunction action reported internal
+break/continue errors and its check did not complete; the compiler build is
+the authoritative C++ result.
