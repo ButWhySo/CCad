@@ -4,7 +4,10 @@
 #include "ccad_core/model.hpp"
 
 #include <cstdint>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 
 namespace ccad {
 
@@ -104,5 +107,7 @@ int64_t viaAnnularRing(const Via& via);
 
 std::string padShapeDescription(const Pad& pad);
 std::string itemTypeString(const std::string& objectId, const Board& board);
+std::unordered_map<std::string, BoundingBox> projectItemBoundingBoxes(
+    const Project& project, std::string_view collection, bool board_collection);
 
 }  // namespace ccad

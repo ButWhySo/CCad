@@ -1,5 +1,15 @@
 # CCad Agent production TODO
 
+### Sprint 1059 — spatially bounded project inspection (local gate passed)
+
+- [x] Add validated millimetre bbox input with inclusive typed AABB intersection for supported PCB/schematic geometry.
+- [x] Report objects without authoritative geometry rather than treating them as spatial matches.
+- [x] Enforce max_tokens as a conservative serialized UTF-8 byte upper bound alongside max_bytes.
+- [x] Contract-test bbox hit, miss, boundary, malformed range, token-budget refusal/cap, and schema exposure.
+- [x] Run the Qt MinGW Release/full CTest gate: 126/126; clangd used compile_commands but its semantic feature probe reported internal code-action errors without source diagnostics; update evidence docs.
+- [x] Update feature, progress, and codebase handover documentation with the exact local evidence.
+- [ ] Commit and push only verified source/tests/docs; keep hosted CI/merge pending until the exact SHA passes.
+
 ### Sprint 1058 — safer bounded project inspection (in progress)
 
 - [x] Make unfiltered `project.inspect` summary-only; require explicit filters or sections to return design objects.
@@ -5825,9 +5835,9 @@ The agent should not need ten `list-*`, `get-*`, shell, grep, or UI calls to ans
 - [ ] Add region scope only with defined typed geometry semantics.
 - [x] Filter by exact object IDs and reference designators.
 - [x] Filter by net IDs, PCB layer IDs, object types, and requested typed sections.
-- [ ] Add a typed bounding-box filter with explicit coordinate units and object intersection semantics.
+- [x] Add a typed bounding-box filter with explicit millimetre units and inclusive typed-AABB intersection semantics for supported geometry; report unsupported/unlocated objects.
 - [x] Enforce maximum-object and serialized-byte budgets; report exact output bytes, per-section omissions, and reject malformed/fractional limits.
-- [ ] Add a provider-compatible token budget in addition to the object and serialized-byte budgets.
+- [x] Add a conservative provider-compatible token budget implemented as a serialized UTF-8 byte upper bound in addition to object/byte budgets; reject requests when even metadata cannot fit.
 - [x] Accept an expected source revision and fail closed when the live revision differs.
 - [x] Return snapshot identity, project/PCB/schematic revisions, scope, selection, project summary, and caller-selected typed sections.
 - [ ] Add derived-index/context revisions and revision-coherence state.

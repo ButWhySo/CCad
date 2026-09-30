@@ -475,6 +475,38 @@ static void testItemTypeString() {
   std::cout << "  PASS: testItemTypeString\n";
 }
 
+static void testProjectItemBoundingBoxLookup() {
+  Project project;
+  Board board;
+  TrackSegment track;
+  track.id = "T1";
+  track.start = {millimeters(1), millimeters(1)};
+  track.end = {millimeters(3), millimeters(3)};
+  track.width = millimeters(0.2);
+  board.tracks.push_back(track);
+  project.boards.push_back(board);
+  Schematic schematic;
+  SchSymbol symbol;
+  symbol.id = "U1";
+  symbol.position = {millimeters(10), millimeters(20)};
+  schematic.symbols.push_back(symbol);
+  project.schematics.push_back(schematic);
+
+  const auto track_bounds = projectItemBoundingBoxes(project, "tracks", true);
+  assertTrue(track_bounds.contains("T1") && track_bounds.at("T1").valid,
+             "typed board bounds found");
+  assertClose(toMillimeters(track_bounds.at("T1").min.x), 0.9, 0.001, "typed board min x");
+  assertClose(toMillimeters(track_bounds.at("T1").max.y), 3.1, 0.001, "typed board max y");
+  const auto symbol_bounds = projectItemBoundingBoxes(project, "components", false);
+  assertTrue(symbol_bounds.contains("U1") && symbol_bounds.at("U1").valid,
+             "typed schematic bounds found");
+  assertTrue(projectItemBoundingBoxes(project, "tracks", false).empty(),
+             "wrong domain has no bounds");
+  assertTrue(projectItemBoundingBoxes(project, "nets", false).empty(),
+             "nonspatial collection has no bounds");
+  std::cout << "  PASS: testProjectItemBoundingBoxLookup\n";
+}
+
 // --- Schematic Geometry tests ---
 
 static void testSchWireBoundingBoxAndLength() {
@@ -734,6 +766,7 @@ int main() {
 
   // Item type lookup
   testItemTypeString();
+  testProjectItemBoundingBoxLookup();
 
   // Schematic
   testSchWireBoundingBoxAndLength();

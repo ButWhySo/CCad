@@ -12,6 +12,7 @@
 #include "ccad_core/agent_policy.hpp"
 #include "ccad_core/drc.hpp"
 #include "ccad_core/agent_orchestrator.hpp"
+#include "ccad_core/item_geometry.hpp"
 #include "ccad_core/nearest_neighbor_connectivity.hpp"
 #include "ccad_gui/component_wizard_dialog.hpp"
 #include "ccad_gui/footprint_placement_dialog.hpp"
@@ -99,6 +100,7 @@
 #include <QPushButton>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -109,6 +111,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <QVector>
@@ -978,14 +981,20 @@ QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}
                                     {"items", QJsonObject{{"type", "string"}}}}},
           {"max_objects", QJsonObject{{"type", "integer"}, {"minimum", 1}, {"maximum", 256}}},
           {"max_bytes", QJsonObject{{"type", "integer"}, {"minimum", 1024}, {"maximum", 32768}}},
+          {"max_tokens", QJsonObject{{"type", "integer"}, {"minimum", 1024}, {"maximum", 32768}}},
+          {"bbox", QJsonObject{{"type", "array"}, {"minItems", 4}, {"maxItems", 4},
+                               {"items", QJsonObject{{"type", "number"}}},
+                               {"description", "Inclusive [min_x_mm, min_y_mm, max_x_mm, max_y_mm] query bounds."}}},
           {"if_revision", QJsonObject{{"type", "string"}, {"maxLength", 128}}}}}};
   append(agentMethodEntry("project.inspect", "project", "Bounded Project Snapshot",
-                          "Return a deterministic, revision-bound snapshot of selected project, PCB, schematic, net, or selection data. An unfiltered request returns summary only; specify sections and filters for object data. Collections report counts, omissions, and bounded follow-up object IDs. Use this before broad project.state reads.",
+                          "Return a deterministic, revision-bound snapshot of selected project, PCB, schematic, net, or selection data. An unfiltered request returns summary only; specify sections/filters. bbox is [min_x_mm,min_y_mm,max_x_mm,max_y_mm] and uses inclusive intersection of typed axis-aligned bounds. max_tokens conservatively caps serialized UTF-8 bytes. Counts expose omitted and nonspatial objects, with stable follow-up IDs.",
                           true, false, false, false, false, inspect_schema,
                           "Snapshot revision/digest, safe summary, selected typed sections, and per-section counts/omissions.",
                           QJsonObject{{"scope", "pcb"}, {"layer_ids", QJsonArray{"F.Cu"}},
-                                      {"sections", QJsonArray{"board.layers", "board.tracks"}},
-                                      {"max_objects", 64}, {"max_bytes", 16384}}));
+                                      {"sections", QJsonArray{"board.tracks"}},
+                                      {"bbox", QJsonArray{0, 0, 25, 25}},
+                                      {"max_objects", 64}, {"max_bytes", 16384},
+                                      {"max_tokens", 8192}}));
   append(agentMethodEntry("project.object_counts", "project", "Object Counts",
                           "Return project and board object counts.",
                           true, false, false, false, false, emptySchema(),
@@ -7242,15 +7251,42 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
     return value.isDouble() && std::floor(value.toDouble()) == value.toDouble();
   };
   if (!valid_integer("max_objects") || !valid_integer("max_bytes") ||
+      !valid_integer("max_tokens") ||
       (request.contains("if_revision") && !request.value("if_revision").isString())) {
     if (error != nullptr) *error = "invalid_snapshot_limit";
     return {};
   }
   const int max_objects = request.value("max_objects").toInt(64);
-  const int max_bytes = request.value("max_bytes").toInt(16384);
-  if (max_objects < 1 || max_objects > 256 || max_bytes < 1024 || max_bytes > 32768) {
+  const int requested_max_bytes = request.value("max_bytes").toInt(16384);
+  const int max_tokens = request.value("max_tokens").toInt(32768);
+  if (max_objects < 1 || max_objects > 256 || requested_max_bytes < 1024 ||
+      requested_max_bytes > 32768 || max_tokens < 1024 || max_tokens > 32768) {
     if (error != nullptr) *error = "invalid_snapshot_limit";
     return {};
+  }
+  const int max_bytes = std::min(requested_max_bytes, max_tokens);
+  std::optional<std::array<double, 4>> requested_bbox;
+  if (request.contains("bbox")) {
+    const QJsonValue value = request.value("bbox");
+    if (!value.isArray() || value.toArray().size() != 4) {
+      if (error != nullptr) *error = "invalid_bbox";
+      return {};
+    }
+    std::array<double, 4> bounds{};
+    for (qsizetype index = 0; index < 4; ++index) {
+      const QJsonValue coordinate = value.toArray().at(index);
+      if (!coordinate.isDouble() || !std::isfinite(coordinate.toDouble()) ||
+          std::abs(coordinate.toDouble()) > 1000000000.0) {
+        if (error != nullptr) *error = "invalid_bbox";
+        return {};
+      }
+      bounds[static_cast<std::size_t>(index)] = coordinate.toDouble();
+    }
+    if (bounds[0] > bounds[2] || bounds[1] > bounds[3]) {
+      if (error != nullptr) *error = "invalid_bbox";
+      return {};
+    }
+    requested_bbox = bounds;
   }
   const auto read_filter = [error](const QJsonValue& value, const QString& name,
                                    QStringList* output) {
@@ -7345,9 +7381,12 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
     }
     return false;
   };
+  int unlocated_spatial_items = 0;
+  QHash<QString, std::unordered_map<std::string, ccad::BoundingBox>> spatial_bounds;
   const auto item_matches = [&object_ids, &refdes, &net_ids, &layer_ids,
-                             &contains_filter_value](const QJsonValue& value,
-                                                     const QString& collection) {
+                             &contains_filter_value, this, &requested_bbox,
+                             &unlocated_spatial_items, &spatial_bounds]
+      (const QJsonValue& value, const QString& collection, const QString& section) {
     const QStringList identity_keys{"id", "object_id", "component_id", "reference", "ref"};
     const bool id_match = object_ids.isEmpty() ||
         contains_filter_value(value, identity_keys, object_ids, contains_filter_value);
@@ -7363,7 +7402,31 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
         contains_filter_value(value,
             {"layer_id", "start_layer_id", "end_layer_id", "layers"},
             layer_ids, contains_filter_value);
-    return id_match && ref_match && net_match && layer_match;
+    if (!id_match || !ref_match || !net_match || !layer_match) return false;
+    if (!requested_bbox.has_value()) return true;
+    const QJsonObject item = value.toObject();
+    QString id = item.value("id").toString();
+    if (id.isEmpty()) id = item.value("object_id").toString();
+    if (id.isEmpty()) id = item.value("reference").toString();
+    if (id.isEmpty()) id = item.value("ref").toString();
+    const bool board_collection = section.startsWith("board.");
+    const QString cache_key = (board_collection ? "board:" : "schematic:") + collection;
+    if (!spatial_bounds.contains(cache_key)) {
+      spatial_bounds.insert(cache_key, ccad::projectItemBoundingBoxes(
+          project_cache_, collection.toStdString(), board_collection));
+    }
+    const auto& bounds = spatial_bounds[cache_key];
+    const auto found = bounds.find(id.toStdString());
+    if (found == bounds.end() || !found->second.valid) {
+      ++unlocated_spatial_items;
+      return false;
+    }
+    const ccad::BoundingBox& box = found->second;
+    const auto& query = *requested_bbox;
+    return ccad::toMillimeters(box.max.x) >= query[0] &&
+           ccad::toMillimeters(box.max.y) >= query[1] &&
+           ccad::toMillimeters(box.min.x) <= query[2] &&
+           ccad::toMillimeters(box.min.y) <= query[3];
   };
   const QHash<QString, QStringList> type_aliases{
       {"footprints", {"footprint"}}, {"keepouts", {"keepout"}}, {"pads", {"pad"}},
@@ -7418,7 +7481,8 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
     }
   }
   const bool summary_only = requested_sections.isEmpty() && object_ids.isEmpty() &&
-      refdes.isEmpty() && net_ids.isEmpty() && layer_ids.isEmpty() && object_types.isEmpty();
+      refdes.isEmpty() && net_ids.isEmpty() && layer_ids.isEmpty() && object_types.isEmpty() &&
+      !requested_bbox.has_value();
   const auto section_requested = [&requested_sections, &summary_only](const QString& key) {
     return requested_sections.contains(key) || (!summary_only && requested_sections.isEmpty());
   };
@@ -7448,6 +7512,13 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
       std::string_view(schematic_revision_input.constData(),
                       static_cast<std::size_t>(schematic_revision_input.size())))));
   response.insert("scope", scope);
+  response.insert("token_budget", max_tokens);
+  response.insert("token_budget_basis", "serialized_utf8_bytes_upper_bound");
+  if (requested_bbox.has_value()) {
+    const auto& bounds = *requested_bbox;
+    response.insert("bbox_mm", QJsonArray{bounds[0], bounds[1], bounds[2], bounds[3]});
+    response.insert("bbox_semantics", "inclusive_axis_aligned_bounds_intersection");
+  }
   response.insert("inspection_mode", summary_only ? "summary" : "filtered_objects");
   response.insert("active_editor", editor_tabs_ != nullptr &&
                   editor_tabs_->currentWidget() == schematic_view_ ? "schematic" : "pcb");
@@ -7494,7 +7565,7 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
     }
     QVector<QJsonValue> candidates;
     for (const QJsonValue& value : source_array) {
-      if (item_matches(value, collection)) candidates.append(value);
+      if (item_matches(value, collection, path)) candidates.append(value);
     }
     std::sort(candidates.begin(), candidates.end(), [](const QJsonValue& left,
                                                        const QJsonValue& right) {
@@ -7553,11 +7624,13 @@ QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* er
   response.insert("sections", sections);
   response.insert("section_counts", section_counts);
   response.insert("omissions", omissions);
+  response.insert("unlocated_spatial_item_count", unlocated_spatial_items);
   QJsonArray included_ids;
   for (const QString& id : object_ids) included_ids.append(id);
   response.insert("requested_object_ids", included_ids);
   response.insert("object_limit", max_objects);
   response.insert("byte_limit", max_bytes);
+  response.insert("requested_byte_limit", requested_max_bytes);
   response.insert("digest", QString(16, QChar('0')));
   response.insert("snapshot_id", revision_text + ":" + QString(16, QChar('0')));
   response.insert("serialized_bytes", 99999);

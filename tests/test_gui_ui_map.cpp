@@ -175,7 +175,11 @@ int main(int argc, char** argv) {
   }();
   if (!inspect_schema.value("read_only").toBool() ||
       inspect_schema.value("inputSchema").toObject().value("properties").toObject()
-          .value("max_objects").toObject().value("type").toString() != "integer") {
+          .value("max_objects").toObject().value("type").toString() != "integer" ||
+      !inspect_schema.value("inputSchema").toObject().value("properties").toObject()
+          .contains("bbox") ||
+      !inspect_schema.value("inputSchema").toObject().value("properties").toObject()
+          .contains("max_tokens")) {
     return 32;
   }
   const QJsonObject summary_only_inspect = QJsonDocument::fromJson(
@@ -376,6 +380,55 @@ int main(int argc, char** argv) {
   }
 
   window.loadProjectPath(diagnostic_path.toStdString());
+  const QJsonObject undersized_token_budget = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"scope\":\"pcb\",\"sections\":[\"board.tracks\"],"
+          "\"bbox\":[2.8,2.8,3.2,3.2],\"max_tokens\":1024}").toUtf8())
+      .object();
+  if (undersized_token_budget.value("ok").toBool() ||
+      undersized_token_budget.value("reason").toString() !=
+          "snapshot_metadata_exceeds_byte_limit") return 54;
+  const QJsonObject spatial_hit = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"scope\":\"pcb\",\"sections\":[\"board.tracks\"],"
+          "\"bbox\":[2.8,2.8,3.2,3.2],\"max_tokens\":4096}").toUtf8())
+      .object().value("result").toObject();
+  const QJsonArray spatial_tracks = spatial_hit.value("sections").toObject()
+      .value("pcb").toObject().value("tracks").toArray();
+  if (spatial_hit.value("inspection_mode").toString() != "filtered_objects" ||
+      spatial_tracks.size() != 1 ||
+      spatial_tracks.at(0).toObject().value("id").toString() != "T_BAD" ||
+      spatial_hit.value("bbox_semantics").toString() !=
+          "inclusive_axis_aligned_bounds_intersection" ||
+      spatial_hit.value("serialized_bytes").toInt() >
+          spatial_hit.value("token_budget").toInt()) return 49;
+  const QJsonObject spatial_miss_envelope = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"scope\":\"pcb\",\"sections\":[\"board.tracks\"],"
+          "\"bbox\":[8,8,9,9]}").toUtf8()).object();
+  const QJsonObject spatial_miss = spatial_miss_envelope.value("result").toObject();
+  if (!spatial_miss_envelope.value("ok").toBool() ||
+      !spatial_miss.value("sections").toObject().value("pcb").toObject()
+           .value("tracks").toArray().isEmpty() ||
+      spatial_miss.value("section_counts").toObject().value("board.tracks")
+          .toObject().value("filtered").toInt() != 1) return 50;
+  const QJsonObject spatial_boundary = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"scope\":\"pcb\",\"sections\":[\"board.tracks\"],"
+          "\"bbox\":[3.125,3.125,4,4]}").toUtf8()).object()
+      .value("result").toObject();
+  if (spatial_boundary.value("sections").toObject().value("pcb").toObject()
+          .value("tracks").toArray().size() != 1) return 53;
+  const QJsonObject invalid_bbox = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"bbox\":[4,4,3,5]}").toUtf8()).object();
+  if (invalid_bbox.value("ok").toBool() ||
+      invalid_bbox.value("reason").toString() != "invalid_bbox") return 51;
+  const QJsonObject fractional_tokens = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"max_tokens\":1024.5}").toUtf8()).object();
+  if (fractional_tokens.value("ok").toBool() ||
+      fractional_tokens.value("reason").toString() != "invalid_snapshot_limit") return 52;
   const QJsonObject diagnostic_context = QJsonDocument::fromJson(
       window.runAgentUiQueryJson("project.context", "{}").toUtf8()).object()
       .value("result").toObject();

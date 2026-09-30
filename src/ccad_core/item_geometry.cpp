@@ -1048,4 +1048,49 @@ std::string itemTypeString(const std::string& objectId, const Board& board) {
   return "unknown";
 }
 
+std::unordered_map<std::string, BoundingBox> projectItemBoundingBoxes(
+    const Project& project, const std::string_view collection, const bool board_collection) {
+  std::unordered_map<std::string, BoundingBox> result;
+  const auto append = [&result](const auto& items, const auto& bounds_for) {
+    result.reserve(items.size());
+    for (const auto& item : items) result.emplace(item.id, bounds_for(item));
+  };
+  if (board_collection) {
+    const Board* board = primaryBoard(project);
+    if (board == nullptr) return result;
+    if (collection == "pads") append(board->pads, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "vias") append(board->vias, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "tracks") append(board->tracks, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "track_arcs") append(board->track_arcs, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "graphics") append(board->graphics, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "texts") append(board->texts, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "dimensions") append(board->dimensions, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "keepouts") append(board->keepouts, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "barcodes") append(board->barcodes, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "targets") append(board->targets, [](const auto& item) { return itemBoundingBox(item); });
+    else if (collection == "zones") append(board->zones, [](const auto& item) { return itemBoundingBox(item); });
+    return result;
+  }
+  const Schematic* schematic = primarySchematic(project);
+  if (schematic == nullptr) return result;
+  if (collection == "components" || collection == "symbols") append(schematic->symbols, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "wires") append(schematic->wires, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "buses") append(schematic->buses, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "labels") append(schematic->labels, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "power_symbols") append(schematic->power_symbols, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "junctions") append(schematic->junctions, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "no_connects") append(schematic->no_connects, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "sheets") append(schematic->sheets, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "texts") append(schematic->texts, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "textboxes") append(schematic->textboxes, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "graphics") append(schematic->graphics, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "markers") append(schematic->markers, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "bus_entries") append(schematic->bus_entries, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "bitmaps") append(schematic->bitmaps, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "rule_areas") append(schematic->rule_areas, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "tables") append(schematic->tables, [](const auto& item) { return itemBoundingBox(item); });
+  else if (collection == "groups") append(schematic->groups, [schematic](const auto& item) { return itemBoundingBox(item, *schematic); });
+  return result;
+}
+
 }  // namespace ccad
