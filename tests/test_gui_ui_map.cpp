@@ -163,6 +163,109 @@ int main(int argc, char** argv) {
       !state.contains("binary_payloads_excluded") || !state.contains("GND")) {
     return 13;
   }
+  const QJsonObject inspect_catalog = QJsonDocument::fromJson(
+      methods.toUtf8()).object().value("result").toObject();
+  const QJsonObject inspect_schema = [&inspect_catalog]() {
+    const QJsonArray entries = inspect_catalog.value("methods").toArray();
+    for (const QJsonValue& value : entries) {
+      const QJsonObject entry = value.toObject();
+      if (entry.value("method").toString() == "project.inspect") return entry;
+    }
+    return QJsonObject{};
+  }();
+  if (!inspect_schema.value("read_only").toBool() ||
+      inspect_schema.value("inputSchema").toObject().value("properties").toObject()
+          .value("max_objects").toObject().value("type").toString() != "integer") {
+    return 32;
+  }
+  const QJsonObject inspect = QJsonDocument::fromJson(window.runAgentUiQueryJson(
+      "project.inspect",
+      "{\"scope\":\"schematic\",\"sections\":[\"components\"],"
+      "\"object_ids\":[\"U1\"],\"refdes\":[\"U1\"],"
+      "\"object_types\":[\"component\"],\"max_objects\":8,\"max_bytes\":4096}")
+      .toUtf8()).object()
+      .value("result").toObject();
+  const QJsonObject inspect_sections = inspect.value("sections").toObject();
+  const QJsonArray inspected_components = inspect_sections.value("schematic").toObject()
+      .value("components").toArray();
+  const QJsonObject context_revision = QJsonDocument::fromJson(context.toUtf8())
+      .object().value("result").toObject();
+  if (inspect.value("scope").toString() != "schematic" ||
+      inspect.value("project_revision").toString() !=
+          context_revision.value("design_revision").toString() ||
+      inspect.value("digest").toString().isEmpty() ||
+      inspected_components.size() != 1 ||
+      inspected_components.at(0).toObject().value("reference").toString() != "U1") {
+    return 33;
+  }
+  if (inspect.value("serialized_bytes").toInt() !=
+      QJsonDocument(inspect).toJson(QJsonDocument::Compact).size()) {
+    return 40;
+  }
+  const QJsonObject revision_request{{"scope", "schematic"},
+                                    {"sections", QJsonArray{"components"}},
+                                    {"object_ids", QJsonArray{"U1"}},
+                                    {"max_objects", 8}, {"max_bytes", 4096},
+                                    {"if_revision", inspect.value("project_revision")}};
+  const QJsonObject repeated_envelope = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          QString::fromUtf8(QJsonDocument(revision_request).toJson(QJsonDocument::Compact)))
+          .toUtf8()).object();
+  if (!repeated_envelope.value("ok").toBool()) return 43;
+  const QJsonObject repeated_inspect = repeated_envelope.value("result").toObject();
+  if (repeated_inspect.value("project_revision").toString() !=
+      inspect.value("project_revision").toString()) return 44;
+  if (repeated_inspect.value("digest").toString() != inspect.value("digest").toString()) {
+    return 36;
+  }
+  const QJsonObject layer_inspect = QJsonDocument::fromJson(window.runAgentUiQueryJson(
+      "project.inspect", "{\"scope\":\"pcb\",\"sections\":[\"board.layers\"],"
+      "\"layer_ids\":[\"F.Cu\"]}").toUtf8()).object().value("result").toObject();
+  const QJsonArray inspected_layers = layer_inspect.value("sections").toObject()
+      .value("pcb").toObject().value("layers").toArray();
+  if (inspected_layers.size() != 1 ||
+      inspected_layers.at(0).toObject().value("id").toString() != "F.Cu" ||
+      layer_inspect.value("section_counts").toObject().value("board.layers")
+          .toObject().value("filtered").toInt() != 1) {
+    return 38;
+  }
+  const QJsonObject net_inspect = QJsonDocument::fromJson(window.runAgentUiQueryJson(
+      "project.inspect", "{\"scope\":\"nets\",\"net_ids\":[\"GND\"]}")
+      .toUtf8()).object().value("result").toObject();
+  const QJsonArray inspected_nets = net_inspect.value("sections").toObject()
+      .value("schematic").toObject().value("nets").toArray();
+  if (inspected_nets.size() != 1 ||
+      inspected_nets.at(0).toObject().value("id").toString() != "GND") {
+    return 39;
+  }
+  const QJsonObject stale_inspect = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"scope\":\"pcb\",\"if_revision\":\"stale\"}").toUtf8()).object();
+  if (stale_inspect.value("ok").toBool() ||
+      stale_inspect.value("reason").toString() != "revision_mismatch") {
+    return 37;
+  }
+  const QJsonObject bounded_envelope = QJsonDocument::fromJson(window.runAgentUiQueryJson(
+      "project.inspect", "{\"scope\":\"project\",\"max_objects\":1,"
+      "\"max_bytes\":4096}").toUtf8()).object();
+  if (!bounded_envelope.value("ok").toBool()) return 45;
+  const QJsonObject bounded_inspect = bounded_envelope.value("result").toObject();
+  if (bounded_inspect.value("omissions").toArray().isEmpty()) return 35;
+  if (bounded_inspect.value("serialized_bytes").toInt() > 4096) return 46;
+  const QJsonObject invalid_inspect = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect", "{\"scope\":\"invalid\"}")
+          .toUtf8()).object();
+  if (invalid_inspect.value("ok").toBool() ||
+      invalid_inspect.value("reason").toString() != "unsupported_scope") {
+    return 34;
+  }
+  const QJsonObject fractional_limit = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect", "{\"max_objects\":1.5}")
+          .toUtf8()).object();
+  if (fractional_limit.value("ok").toBool() ||
+      fractional_limit.value("reason").toString() != "invalid_snapshot_limit") {
+    return 42;
+  }
   QJsonObject context_result = QJsonDocument::fromJson(context.toUtf8()).object()
                                    .value("result").toObject();
   if (context_result.value("active_editor").toString() != "pcb" ||
@@ -221,6 +324,16 @@ int main(int argc, char** argv) {
       selected_items.size() != 1 ||
       selected_items.at(0).toObject().value("object_id").toString() != "U1") {
     return 25;
+  }
+  const QJsonObject selected_snapshot = QJsonDocument::fromJson(
+      window.runAgentUiQueryJson("project.inspect",
+          "{\"scope\":\"selection\",\"sections\":[\"components\"]}")
+          .toUtf8()).object().value("result").toObject();
+  const QJsonArray selected_components = selected_snapshot.value("sections").toObject()
+      .value("schematic").toObject().value("components").toArray();
+  if (selected_components.size() != 1 ||
+      selected_components.at(0).toObject().value("reference").toString() != "U1") {
+    return 41;
   }
   const QJsonObject selected = QJsonDocument::fromJson(
       window.runAgentUiQueryJson("ui.get_selection", "{}").toUtf8()).object()

@@ -451,8 +451,8 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
     if len(encoded) > limit:
         # Never cut serialized JSON mid-token. If the full design snapshot is
         # too large, send a valid summary and preserve the highest-ranked
-        # memories that fit; the prompt directs the model to project.state for
-        # precise design details rather than treating damaged JSON as state.
+        # memories that fit; the prompt directs the model to project.inspect
+        # for precise design details rather than treating damaged JSON as state.
         truncated = True
         if project:
             envelope["project"] = {
@@ -460,7 +460,7 @@ def build_context_package(raw_context: Any, memory_entries: Iterable[dict],
                 "revision": native_revision,
                 "source_chars": project_source_chars,
                 "object_counts": project_counts,
-                "detail_source": "project.state",
+                "detail_source": "project.inspect",
             }
             envelope["constraints"]["project_snapshot_omitted"] = True
         envelope["constraints"]["context_truncated"] = True
@@ -916,7 +916,7 @@ def format_large_context_explanation(report: dict,
     project_detail = (
         f"Project snapshot omitted ({report['project_source_chars']:,} source chars); "
         f"a counts-only summary with object counts {report['project_counts']} was sent, "
-        "so exact design work must first call project.state."
+        "so exact design work should first call bounded project.inspect."
         if report["project_snapshot_omitted"] else
         f"Project snapshot supplied ({report['project_source_chars']:,} source chars).")
     lifecycle_detail = (

@@ -246,7 +246,7 @@ class ContextBudgetTests(unittest.TestCase):
                          "Memory capture remains explicit",
                          "unsafe legacy records are excluded",
                          "1 omitted by package budget",
-                         "exact design work must first call project.state",
+                         "exact design work should first call bounded project.inspect",
                          "Model context limit: unavailable"):
             self.assertIn(expected, explanation)
         self.assertNotIn("USB power constraints", explanation)

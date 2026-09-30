@@ -103,6 +103,7 @@ class ReviewWindow final : public QMainWindow {
   QString projectContextJson() const;
   std::string agentDesignRevision() const;
   QString projectStateJson() const;
+  QString projectInspectJson(const QJsonObject& request, QString* error) const;
   QString projectObjectCountsJson() const;
   QString projectReviewJson() const;
   QString projectErcJson() const;

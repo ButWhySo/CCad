@@ -162,12 +162,13 @@ class ProviderToolSelectionTests(unittest.TestCase):
         self.assertIn("do not request or refer to any unbound method", prompt)
         self.assertNotIn("Use project.state for complete live", prompt)
 
-    def test_full_catalog_system_prompt_retains_project_state_guidance(self):
+    def test_full_catalog_system_prompt_prefers_bounded_project_inspection(self):
         messages = [orchestrator.HumanMessage(content="Inspect this board.")]
         tools = orchestrator.provider_tools_for_messages(messages)
         prompt = orchestrator.get_system_prompt(
             "the CCad PCB Routing Expert.", tools)
-        self.assertIn("Use project.state for complete live", prompt)
+        self.assertIn("Use project.inspect for a bounded", prompt)
+        self.assertIn("project.state only when the user explicitly needs the full serialized design model", prompt)
         self.assertIn("inspect ui.active_layer or ui.active_net", prompt)
         self.assertIn("Never infer an ID from a display name", prompt)
 

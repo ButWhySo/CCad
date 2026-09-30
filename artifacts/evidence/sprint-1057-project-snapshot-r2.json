@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1057-project-snapshot-r2",
+    "feature":  "Bounded revision-aware Agent project inspection across typed PCB and schematic state",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T19:08:45.9106542Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.69 log=artifacts/evidence/sprint-1057-project-snapshot-r2/preflight.log",
+                      "finished_utc":  "2026-09-30T19:08:46.6572286Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=341.17 log=artifacts/evidence/sprint-1057-project-snapshot-r2/build.log",
+                      "finished_utc":  "2026-09-30T19:14:27.8424119Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=157.46 log=artifacts/evidence/sprint-1057-project-snapshot-r2/ctest.log",
+                      "finished_utc":  "2026-09-30T19:17:05.3048256Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1057-project-snapshot-r2/build.log",
+                                         "sha256":  "6604C16576E8B7AA03AB75696E1C37BF3BC5F7145431D79ACD5EF8D7367E45F3"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1057-project-snapshot-r2/ctest.log",
+                                         "sha256":  "4589DF5B7B689F971C184FD12E9BC3CB76FCC8387F0BE6F0D21C655149678979"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1057-project-snapshot-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T19:17:05.3898805Z"
+}

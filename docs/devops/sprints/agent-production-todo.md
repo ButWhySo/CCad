@@ -1,5 +1,17 @@
 # CCad Agent production TODO
 
+### Sprint 1057 — revision-bound project inspection (local gate passed)
+
+- [x] Expose read-only `project.inspect` from the native Agent method catalog and route it through the live typed project model.
+- [x] Support exact object/reference, net, layer, type, section, scope, object-count, byte-count, and expected-revision filters; return deterministic IDs, counts, omissions, and a stable digest.
+- [x] Make selection-scoped inspection resolve the selected native object ID and include the selected object's design-domain data.
+- [x] Direct context-omission guidance and design reasoning to bounded inspection before requesting broad serialized project state.
+- [x] Add regression contracts for schematic objects, nets, layers, stale revisions, deterministic digests, limits, invalid input, and selected objects; run context contracts and Pyright (Pyright 0 diagnostics; provider-selection 28/28, context-budget 13/13, context-package pass).
+- [x] Run Qt/MinGW Release plus full CTest (126/126) and record the local evidence manifest; no rendered UI change is intended by this read-only tool addition. Manifest `artifacts/evidence/sprint-1057-project-snapshot-r2.json`, SHA-256 `39FAF7BB8415FAA38BC18FD86233AE12A735D42F8468BDBB2E662D177DD88B4B`.
+- [x] Update the codebase map, feature inventory, progress, backlog, and this TODO with verified behavior and remaining R11 gaps.
+- [x] Run redacted tracked-text and staged-addition secret checks. The tracked scan surfaced 21 existing fixture/documentation/env-name/CLI-option false positives, all reviewed with match contents redacted; the staged additions contain zero credential-pattern matches.
+- [ ] Commit and publish only verified scoped files, then verify hosted checks on the exact pushed SHA before any merge.
+
 ### Sprint 1056 — authoritative live PCB layer and net inventory
 
 - [x] Return the bounded, exact board-layer catalog from `ui.active_layer` with ID, name, kind, visibility, separately identified active layer ID, total count, and omitted count (up to 256 records).
@@ -5798,16 +5810,18 @@ The agent should not need ten `list-*`, `get-*`, shell, grep, or UI calls to ans
 - [ ] Audit existing `project.state`, `project.retrieve`, `project.review`, `project.diagnostics`, PCB object queries, net queries, ContextBroker retrieval, and indexes.
 - [ ] Build one façade over existing authoritative primitives. Do not duplicate parsing/indexing logic.
 - [ ] Proposed read-only API name: `project.inspect` or `project.snapshot`.
-- [ ] Input must support:
-  - `scope`: project / schematic / PCB / selection / region / component-group / nets;
-  - object IDs/refdes;
-  - bounding box;
-  - net IDs;
-  - layer IDs;
-  - object types;
-  - requested sections;
-  - max objects;
-  - max bytes/tokens.
+- [x] Support project, schematic, PCB, selection, component-group, and nets scopes; verify exact component, layer, and net reads through the GUI-map contract.
+- [ ] Add region scope only with defined typed geometry semantics.
+- [x] Filter by exact object IDs and reference designators.
+- [x] Filter by net IDs, PCB layer IDs, object types, and requested typed sections.
+- [ ] Add a typed bounding-box filter with explicit coordinate units and object intersection semantics.
+- [x] Enforce maximum-object and serialized-byte budgets; report exact output bytes, per-section omissions, and reject malformed/fractional limits.
+- [ ] Add a provider-compatible token budget in addition to the object and serialized-byte budgets.
+- [x] Accept an expected source revision and fail closed when the live revision differs.
+- [x] Return snapshot identity, project/PCB/schematic revisions, scope, selection, project summary, and caller-selected typed sections.
+- [ ] Add derived-index/context revisions and revision-coherence state.
+- [ ] Add placement/routing summaries, DRC/ERC, relevant artifacts, graph/spatial context, and provenance using authoritative services.
+- [x] Return deterministic ordering, digest, section counts, and explicit omission metadata.
 - [ ] Return a deterministic typed envelope equivalent to:
 
 ```text
@@ -5841,7 +5855,8 @@ AgentProjectSnapshot
 - [ ] Never silently dump the entire project because the caller omitted a filter.
 - [ ] For large designs return compact summary + relevant windows + handles for targeted follow-up.
 - [ ] Include legal/recommended next capabilities when useful, but do not fabricate a next action.
-- [ ] The snapshot must be built against one immutable project revision; do not mix pre- and post-mutation state.
+- [x] Build each synchronous snapshot from one live serialized project revision; refuse a caller-supplied stale revision.
+- [ ] Keep derived index/context data on that same revision before including it in a snapshot.
 - [ ] Add a low-cost `project.inspect_object`/existing targeted query path for follow-up rather than regenerating a large snapshot.
 - [ ] Benchmark this against the previous repeated-query workflow on identical questions.
 

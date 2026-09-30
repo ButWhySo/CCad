@@ -102,6 +102,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -110,6 +111,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <QVector>
 
 QString formatCursorStatus(const std::optional<ccad::Board>& board, const QPointF& scene_position) {
   return formatCursorStatus(board, scene_position, false, false);
@@ -957,6 +959,33 @@ QJsonArray agentMethodCatalogArray(const QJsonArray& python_control_methods = {}
                           "Return the serialized typed PCB and schematic model with binary image payloads excluded.",
                           true, false, false, false, false, emptySchema(),
                           "Typed project model, board and schematic objects, and binary-payload policy."));
+  const QJsonObject inspect_schema{
+      {"type", "object"},
+      {"properties", QJsonObject{
+          {"scope", QJsonObject{{"type", "string"},
+                                 {"enum", QJsonArray{"project", "pcb", "schematic", "selection", "nets", "component-group"}}}},
+          {"object_ids", QJsonObject{{"type", "array"}, {"maxItems", 64},
+                                     {"items", QJsonObject{{"type", "string"}}}}},
+          {"refdes", QJsonObject{{"type", "array"}, {"maxItems", 64},
+                                  {"items", QJsonObject{{"type", "string"}}}}},
+          {"net_ids", QJsonObject{{"type", "array"}, {"maxItems", 64},
+                                   {"items", QJsonObject{{"type", "string"}}}}},
+          {"layer_ids", QJsonObject{{"type", "array"}, {"maxItems", 64},
+                                    {"items", QJsonObject{{"type", "string"}}}}},
+          {"object_types", QJsonObject{{"type", "array"}, {"maxItems", 24},
+                                        {"items", QJsonObject{{"type", "string"}}}}},
+          {"sections", QJsonObject{{"type", "array"}, {"maxItems", 48},
+                                    {"items", QJsonObject{{"type", "string"}}}}},
+          {"max_objects", QJsonObject{{"type", "integer"}, {"minimum", 1}, {"maximum", 256}}},
+          {"max_bytes", QJsonObject{{"type", "integer"}, {"minimum", 1024}, {"maximum", 32768}}},
+          {"if_revision", QJsonObject{{"type", "string"}, {"maxLength", 128}}}}}};
+  append(agentMethodEntry("project.inspect", "project", "Bounded Project Snapshot",
+                          "Return a deterministic, revision-bound snapshot of selected project, PCB, schematic, net, or selection data. Filter by exact object ID, reference, net ID, layer ID, or object type; every collection is capped and reports counts and omissions. Use this before broad project.state reads.",
+                          true, false, false, false, false, inspect_schema,
+                          "Snapshot revision/digest, safe summary, selected typed sections, and per-section counts/omissions.",
+                          QJsonObject{{"scope", "pcb"}, {"layer_ids", QJsonArray{"F.Cu"}},
+                                      {"sections", QJsonArray{"board.layers", "board.tracks"}},
+                                      {"max_objects", 64}, {"max_bytes", 16384}}));
   append(agentMethodEntry("project.object_counts", "project", "Object Counts",
                           "Return project and board object counts.",
                           true, false, false, false, false, emptySchema(),
@@ -7196,6 +7225,404 @@ QString ReviewWindow::projectStateJson() const {
   return jsonObjectLine(response);
 }
 
+QString ReviewWindow::projectInspectJson(const QJsonObject& request, QString* error) const {
+  if (request.contains("scope") && !request.value("scope").isString()) {
+    if (error != nullptr) *error = "invalid_scope";
+    return {};
+  }
+  const QString scope = request.value("scope").toString("project").trimmed();
+  if (scope != "project" && scope != "pcb" && scope != "schematic" &&
+      scope != "selection" && scope != "nets" && scope != "component-group") {
+    if (error != nullptr) *error = "unsupported_scope";
+    return {};
+  }
+  const auto valid_integer = [&request](const QString& key) {
+    if (!request.contains(key)) return true;
+    const QJsonValue value = request.value(key);
+    return value.isDouble() && std::floor(value.toDouble()) == value.toDouble();
+  };
+  if (!valid_integer("max_objects") || !valid_integer("max_bytes") ||
+      (request.contains("if_revision") && !request.value("if_revision").isString())) {
+    if (error != nullptr) *error = "invalid_snapshot_limit";
+    return {};
+  }
+  const int max_objects = request.value("max_objects").toInt(64);
+  const int max_bytes = request.value("max_bytes").toInt(16384);
+  if (max_objects < 1 || max_objects > 256 || max_bytes < 1024 || max_bytes > 32768) {
+    if (error != nullptr) *error = "invalid_snapshot_limit";
+    return {};
+  }
+  const auto read_filter = [error](const QJsonValue& value, const QString& name,
+                                   QStringList* output) {
+    if (value.isUndefined()) return true;
+    if (!value.isArray() || value.toArray().size() > 64) {
+      if (error != nullptr) *error = "invalid_" + name;
+      return false;
+    }
+    for (const QJsonValue& item : value.toArray()) {
+      const QString text = item.toString().trimmed();
+      if (!item.isString() || text.isEmpty() || text.size() > 128) {
+        if (error != nullptr) *error = "invalid_" + name;
+        return false;
+      }
+      output->append(text);
+    }
+    output->removeDuplicates();
+    std::sort(output->begin(), output->end());
+    return true;
+  };
+  QStringList object_ids;
+  QStringList refdes;
+  QStringList net_ids;
+  QStringList layer_ids;
+  QStringList object_types;
+  QStringList requested_sections;
+  if (!read_filter(request.value("object_ids"), "object_ids", &object_ids) ||
+      !read_filter(request.value("refdes"), "refdes", &refdes) ||
+      !read_filter(request.value("net_ids"), "net_ids", &net_ids) ||
+      !read_filter(request.value("layer_ids"), "layer_ids", &layer_ids) ||
+      !read_filter(request.value("object_types"), "object_types", &object_types) ||
+      !read_filter(request.value("sections"), "sections", &requested_sections)) {
+    return {};
+  }
+  if ((scope == "nets" && net_ids.isEmpty()) ||
+      (scope == "component-group" && object_ids.isEmpty() && refdes.isEmpty())) {
+    if (error != nullptr) *error = scope == "nets" ? "net_ids_required" : "component_identity_required";
+    return {};
+  }
+  QJsonParseError parse_error;
+  const QByteArray serialized = QByteArray::fromStdString(ccad::dumpProjectJson(project_cache_));
+  const QJsonDocument source_document = QJsonDocument::fromJson(serialized, &parse_error);
+  if (parse_error.error != QJsonParseError::NoError || !source_document.isObject()) {
+    if (error != nullptr) *error = "project_serialization_failed";
+    return {};
+  }
+  const QJsonObject source = stripContextBinaryData(source_document.object()).toObject();
+  const QString selection_json = uiSelectionJson();
+  const QJsonObject selection = parsedJsonObjectOrRaw(selection_json);
+  const std::string revision_input = serialized.toStdString() + "\n" +
+      activePcbLayerOrDefault() + "\n" + activePcbNetOrDefault() + "\n" +
+      selection_json.toStdString();
+  const QString revision_text = QString::fromStdString(
+      ccad::project_context_revision(revision_input));
+  const QString expected_revision = request.value("if_revision").toString().trimmed();
+  if (!expected_revision.isEmpty() && expected_revision != revision_text) {
+    if (error != nullptr) *error = "revision_mismatch";
+    return {};
+  }
+  if (scope == "selection" && object_ids.isEmpty() && refdes.isEmpty()) {
+    for (const QJsonValue& item : selection.value("items").toArray()) {
+      const QJsonObject selected = item.toObject();
+      QString id = selected.value("object_id").toString().trimmed();
+      if (id.isEmpty()) id = selected.value("id").toString().trimmed();
+      if (!id.isEmpty()) object_ids.append(id);
+    }
+    if (object_ids.isEmpty()) {
+      if (error != nullptr) *error = "selection_empty";
+      return {};
+    }
+  }
+  const QJsonObject source_board = source.value("board").toObject();
+  const auto contains_filter_value = [](const QJsonValue& value, const QStringList& keys,
+                                        const QStringList& wanted, const auto& self) -> bool {
+    if (value.isObject()) {
+      const QJsonObject object = value.toObject();
+      for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
+        if (keys.contains(it.key())) {
+          if (it.value().isString() && wanted.contains(it.value().toString())) return true;
+          if (it.value().isArray()) {
+            for (const QJsonValue& candidate : it.value().toArray()) {
+              if (candidate.isString() && wanted.contains(candidate.toString())) return true;
+            }
+          }
+        }
+        if (self(it.value(), keys, wanted, self)) return true;
+      }
+    } else if (value.isArray()) {
+      for (const QJsonValue& child : value.toArray()) {
+        if (self(child, keys, wanted, self)) return true;
+      }
+    }
+    return false;
+  };
+  const auto item_matches = [&object_ids, &refdes, &net_ids, &layer_ids,
+                             &contains_filter_value](const QJsonValue& value,
+                                                     const QString& collection) {
+    const QStringList identity_keys{"id", "object_id", "component_id", "reference", "ref"};
+    const bool id_match = object_ids.isEmpty() ||
+        contains_filter_value(value, identity_keys, object_ids, contains_filter_value);
+    const bool ref_match = refdes.isEmpty() ||
+        contains_filter_value(value, {"reference", "ref"}, refdes, contains_filter_value);
+    const bool net_match = net_ids.isEmpty() ||
+        (collection == "nets" && contains_filter_value(value, {"id"}, net_ids,
+                                                        contains_filter_value)) ||
+        contains_filter_value(value, {"net_id", "net_ids"}, net_ids, contains_filter_value);
+    const bool layer_match = layer_ids.isEmpty() ||
+        (collection == "layers" && contains_filter_value(value, {"id"}, layer_ids,
+                                                           contains_filter_value)) ||
+        contains_filter_value(value,
+            {"layer_id", "start_layer_id", "end_layer_id", "layers"},
+            layer_ids, contains_filter_value);
+    return id_match && ref_match && net_match && layer_match;
+  };
+  const QHash<QString, QStringList> type_aliases{
+      {"footprints", {"footprint"}}, {"keepouts", {"keepout"}}, {"pads", {"pad"}},
+      {"tracks", {"track"}}, {"graphics", {"graphic"}}, {"texts", {"text"}},
+      {"zones", {"zone"}}, {"vias", {"via"}}, {"components", {"component", "symbol"}},
+      {"nets", {"net"}}, {"wires", {"wire"}}, {"buses", {"bus"}},
+      {"labels", {"label"}}, {"junctions", {"junction"}},
+      {"power_symbols", {"power_symbol"}}, {"rule_areas", {"rule_area"}},
+      {"dimensions", {"dimension"}}, {"groups", {"group"}}, {"targets", {"target"}},
+      {"barcodes", {"barcode"}}, {"tables", {"table"}},
+      {"placement_regions", {"placement_region"}}, {"track_arcs", {"track_arc"}},
+      {"reference_images", {"reference_image"}}, {"teardrops", {"teardrop"}},
+      {"route_requests", {"route_request"}}, {"no_connects", {"no_connect"}},
+      {"sheets", {"sheet"}}, {"textboxes", {"textbox"}}, {"markers", {"marker"}},
+      {"bus_entries", {"bus_entry"}}, {"bitmaps", {"bitmap"}}};
+  const QStringList supported_types = type_aliases.keys();
+  for (const QString& type : object_types) {
+    bool supported = supported_types.contains(type);
+    for (auto it = type_aliases.cbegin(); it != type_aliases.cend(); ++it) {
+      supported = supported || (it.key() == type) || it.value().contains(type);
+    }
+    if (!supported) {
+      if (error != nullptr) *error = "unsupported_object_type";
+      return {};
+    }
+  }
+  QStringList board_array_keys;
+  QStringList schematic_array_keys;
+  for (auto it = source_board.begin(); it != source_board.end(); ++it) {
+    if (it.value().isArray()) board_array_keys.append(it.key());
+  }
+  for (auto it = source.begin(); it != source.end(); ++it) {
+    if (it.key() != "board" && it.value().isArray()) schematic_array_keys.append(it.key());
+  }
+  std::sort(board_array_keys.begin(), board_array_keys.end());
+  std::sort(schematic_array_keys.begin(), schematic_array_keys.end());
+  QStringList available_sections;
+  for (const QString& key : board_array_keys) available_sections.append("board." + key);
+  available_sections.append(schematic_array_keys);
+  available_sections.append({"board.outline", "board.design_rules"});
+  if (!requested_sections.isEmpty()) {
+    for (const QString& section : requested_sections) {
+      if (!available_sections.contains(section)) {
+        if (error != nullptr) *error = "unsupported_section";
+        return {};
+      }
+      const bool is_board = section.startsWith("board.");
+      if ((scope == "pcb" && !is_board) || (scope == "schematic" && is_board)) {
+        if (error != nullptr) *error = "section_outside_scope";
+        return {};
+      }
+    }
+  }
+  const auto section_requested = [&requested_sections](const QString& key) {
+    return requested_sections.isEmpty() || requested_sections.contains(key);
+  };
+  const auto scope_allows = [&scope](const QString& key) {
+    const bool is_board = key.startsWith("board.");
+    return scope == "project" || (scope == "pcb" && is_board) ||
+           (scope == "schematic" && !is_board) || scope == "selection" ||
+           (scope == "nets" && (is_board || key == "nets")) ||
+           scope == "component-group";
+  };
+  QJsonObject response;
+  response.insert("schema_version", 1);
+  response.insert("snapshot_id", revision_text);
+  response.insert("project_revision", revision_text);
+  const QByteArray pcb_revision_input =
+      QJsonDocument(source_board).toJson(QJsonDocument::Compact);
+  response.insert("pcb_revision", QString::fromStdString(ccad::project_context_revision(
+      std::string_view(pcb_revision_input.constData(),
+                      static_cast<std::size_t>(pcb_revision_input.size())))));
+  QJsonObject schematic_source;
+  for (auto it = source.constBegin(); it != source.constEnd(); ++it) {
+    if (it.key() != "board" && it.value().isArray()) schematic_source.insert(it.key(), it.value());
+  }
+  const QByteArray schematic_revision_input =
+      QJsonDocument(schematic_source).toJson(QJsonDocument::Compact);
+  response.insert("schematic_revision", QString::fromStdString(ccad::project_context_revision(
+      std::string_view(schematic_revision_input.constData(),
+                      static_cast<std::size_t>(schematic_revision_input.size())))));
+  response.insert("scope", scope);
+  response.insert("active_editor", editor_tabs_ != nullptr &&
+                  editor_tabs_->currentWidget() == schematic_view_ ? "schematic" : "pcb");
+  response.insert("summary", projectObjectCountsObject(project_cache_));
+  QJsonObject summary = response.value("summary").toObject();
+  summary.insert("project_id", source.value("id"));
+  summary.insert("project_name", source.value("name"));
+  response.insert("summary", summary);
+  response.insert("selection", selection);
+  QJsonObject sections;
+  QJsonObject pcb;
+  QJsonObject schematic;
+  const bool board_scope = scope == "project" || scope == "pcb" || scope == "selection";
+  if (board_scope && section_requested("board.outline")) {
+    pcb.insert("outline", source_board.value("outline"));
+  }
+  if (board_scope && section_requested("board.design_rules")) {
+    pcb.insert("design_rules", source_board.value("design_rules"));
+  }
+  QJsonArray omissions;
+  QJsonObject section_counts;
+  int remaining = max_objects;
+  const auto append_array = [&](const QString& key, const QString& path,
+                                const QJsonArray& source_array, QJsonObject* destination) {
+    const QString collection = key;
+    const bool has_filters = !object_ids.isEmpty() || !refdes.isEmpty() ||
+        !net_ids.isEmpty() || !layer_ids.isEmpty() || !object_types.isEmpty();
+    if (source_array.isEmpty() && requested_sections.isEmpty() && !has_filters) return;
+    if (!object_types.isEmpty()) {
+      const QStringList aliases = type_aliases.value(collection);
+      if (!object_types.contains(collection) &&
+          std::none_of(aliases.cbegin(), aliases.cend(), [&object_types](const QString& alias) {
+            return object_types.contains(alias);
+          })) {
+        return;
+      }
+    }
+    QVector<QJsonValue> candidates;
+    for (const QJsonValue& value : source_array) {
+      if (item_matches(value, collection)) candidates.append(value);
+    }
+    std::sort(candidates.begin(), candidates.end(), [](const QJsonValue& left,
+                                                       const QJsonValue& right) {
+      const auto identity = [](const QJsonValue& value) {
+        const QJsonObject item = value.toObject();
+        QString id = item.value("id").toString();
+        if (id.isEmpty()) id = item.value("reference").toString();
+        if (id.isEmpty()) id = item.value("ref").toString();
+        return id;
+      };
+      const QString left_id = identity(left);
+      const QString right_id = identity(right);
+      if (left_id != right_id) return left_id < right_id;
+      return QJsonDocument(left.toObject()).toJson(QJsonDocument::Compact) <
+             QJsonDocument(right.toObject()).toJson(QJsonDocument::Compact);
+    });
+    QJsonArray included;
+    const int matched = static_cast<int>(candidates.size());
+    const int take = std::min(remaining, matched);
+    for (int i = 0; i < take; ++i) included.append(candidates.at(i));
+    remaining -= take;
+    destination->insert(key, included);
+    const int omitted_count = matched - take;
+    const int total = static_cast<int>(source_array.size());
+    section_counts.insert(path, QJsonObject{{"total", total},
+                                           {"matched", matched}, {"included", take},
+                                           {"omitted", omitted_count},
+                                           {"filtered", total - matched}});
+    if (omitted_count > 0) {
+      omissions.append(QJsonObject{{"section", path}, {"total", total},
+                                   {"matched", matched}, {"included", take},
+                                   {"omitted", omitted_count}});
+    }
+  };
+  for (const QString& key : board_array_keys) {
+    const QString section = "board." + key;
+    if (!scope_allows(section) || !section_requested(section)) continue;
+    append_array(key, section, source_board.value(key).toArray(), &pcb);
+  }
+  for (const QString& key : schematic_array_keys) {
+    if (!scope_allows(key) || !section_requested(key)) continue;
+    append_array(key, key, source.value(key).toArray(), &schematic);
+  }
+  if (!pcb.isEmpty()) sections.insert("pcb", pcb);
+  if (!schematic.isEmpty()) sections.insert("schematic", schematic);
+  if (scope == "selection") sections.insert("selection", response.value("selection"));
+  response.insert("sections", sections);
+  response.insert("section_counts", section_counts);
+  response.insert("omissions", omissions);
+  QJsonArray included_ids;
+  for (const QString& id : object_ids) included_ids.append(id);
+  response.insert("requested_object_ids", included_ids);
+  response.insert("object_limit", max_objects);
+  response.insert("byte_limit", max_bytes);
+  response.insert("digest", QString(16, QChar('0')));
+  response.insert("snapshot_id", revision_text + ":" + QString(16, QChar('0')));
+  response.insert("serialized_bytes", 99999);
+  const auto serialized_size = [&response]() {
+    return QJsonDocument(response).toJson(QJsonDocument::Compact).size();
+  };
+  while (serialized_size() > max_bytes) {
+    bool removed = false;
+    QJsonObject current_sections = response.value("sections").toObject();
+    for (const QString& domain : {QStringLiteral("schematic"), QStringLiteral("pcb")}) {
+      QJsonObject collection = current_sections.value(domain).toObject();
+      QStringList keys = collection.keys();
+      std::sort(keys.begin(), keys.end(), std::greater<QString>());
+      for (const QString& key : keys) {
+        QJsonArray values = collection.value(key).toArray();
+        if (values.isEmpty()) continue;
+        values.removeLast();
+        collection.insert(key, values);
+        current_sections.insert(domain, collection);
+        response.insert("sections", current_sections);
+        const QString path = domain == "pcb" ? "board." + key : key;
+        QJsonObject count = response.value("section_counts").toObject()
+                                .value(path).toObject();
+        const int included = std::max(0, count.value("included").toInt() - 1);
+        const int omitted = count.value("omitted").toInt() + 1;
+        count.insert("included", included);
+        count.insert("omitted", omitted);
+        QJsonObject counts = response.value("section_counts").toObject();
+        counts.insert(path, count);
+        response.insert("section_counts", counts);
+        QJsonArray updated_omissions;
+        bool found = false;
+        for (const QJsonValue& omission_value : response.value("omissions").toArray()) {
+          QJsonObject omission = omission_value.toObject();
+          if (omission.value("section").toString() == path) {
+            omission.insert("included", included);
+            omission.insert("omitted", omitted);
+            updated_omissions.append(omission);
+            found = true;
+          } else {
+            updated_omissions.append(omission);
+          }
+        }
+        if (!found) {
+          updated_omissions.append(QJsonObject{{"section", path},
+              {"total", count.value("total")}, {"matched", count.value("matched")},
+              {"included", included}, {"omitted", omitted}});
+        }
+        response.insert("omissions", updated_omissions);
+        removed = true;
+        break;
+      }
+      if (removed) break;
+    }
+    if (!removed) {
+      if (error != nullptr) *error = "snapshot_metadata_exceeds_byte_limit";
+      return {};
+    }
+  }
+  QJsonObject digest_source = response;
+  digest_source.remove("digest");
+  digest_source.remove("snapshot_id");
+  digest_source.remove("serialized_bytes");
+  const QByteArray digest_input = QJsonDocument(digest_source).toJson(QJsonDocument::Compact);
+  const std::string_view digest_view(digest_input.constData(),
+      static_cast<std::size_t>(digest_input.size()));
+  const QString digest = QString::fromStdString(ccad::project_context_revision(
+      digest_view));
+  response.insert("digest", digest);
+  response.insert("snapshot_id", revision_text + ":" + digest);
+  int exact_size = 0;
+  for (int attempt = 0; attempt < 4; ++attempt) {
+    exact_size = static_cast<int>(serialized_size());
+    if (response.value("serialized_bytes").toInt() == exact_size) break;
+    response.insert("serialized_bytes", exact_size);
+  }
+  if (response.value("serialized_bytes").toInt() !=
+      static_cast<int>(serialized_size())) {
+    if (error != nullptr) *error = "snapshot_size_accounting_failed";
+    return {};
+  }
+  return jsonObjectLine(response);
+}
+
 QString ReviewWindow::projectObjectCountsJson() const {
   QJsonObject response = projectObjectCountsObject(project_cache_);
   response.insert("schema_version", 1);
@@ -7951,6 +8378,16 @@ QString ReviewWindow::runAgentUiQueryJson(const QString& method, const QString& 
   }
   if (trimmed_method == "project.context") {
     return agentQueryResponse(trimmed_method, true, {}, projectContextJson());
+  }
+  if (trimmed_method == "project.inspect") {
+    const std::optional<QJsonObject> object = requireObject();
+    if (!object.has_value()) {
+      return agentQueryResponse(trimmed_method, false, "payload_must_be_json_object");
+    }
+    QString error;
+    const QString result = projectInspectJson(*object, &error);
+    if (!error.isEmpty()) return agentQueryResponse(trimmed_method, false, error);
+    return agentQueryResponse(trimmed_method, true, {}, result);
   }
   if (trimmed_method == "project.state") {
     return agentQueryResponse(trimmed_method, true, {}, projectStateJson());

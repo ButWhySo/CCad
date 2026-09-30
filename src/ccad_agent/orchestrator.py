@@ -1823,11 +1823,14 @@ def get_system_prompt(role_desc: str,
              "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation."]
     if tools is None or tools is agent_tools:
         parts.append(
-            "Read the typed project context and project_retrieval matches before design-specific work. "
-            "Retrieved positions and IDs come from the active typed model. Schematic pin membership "
-            "is an authoritative netlist assignment; shared PCB net IDs are not proof of geometric "
-            "copper continuity. Use project.state for complete live PCB/schematic state before "
-            "changes or when requested details are not present.")
+             "Read the typed project context and project_retrieval matches before design-specific work. "
+             "Retrieved positions and IDs come from the active typed model. Schematic pin membership "
+             "is an authoritative netlist assignment; shared PCB net IDs are not proof of geometric "
+             "copper continuity. Use project.inspect for a bounded, revision-matched project/PCB/"
+             "schematic snapshot, then exact object IDs or references to narrow follow-up reads. "
+             "Use bounded project.inspect with the relevant scope and exact IDs "
+             "before changes or when requested details are not present; use project.state only when "
+             "the user explicitly needs the full serialized design model.")
     elif not tools:
         parts.append(
             "The requested native tool has already returned in this turn. Do not call any more "
