@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1059-project-inspect-spatial-budget-r6",
+    "feature":  "Record Sprint 1059 publication state; reuse verified source/test gate",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-09-30T22:23:25.3510964Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.93 log=artifacts/evidence/sprint-1059-project-inspect-spatial-budget-r6/preflight.log",
+                      "finished_utc":  "2026-09-30T22:23:26.3797826Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1059-project-inspect-spatial-budget-r4; source timestamps precede test log",
+                      "finished_utc":  "2026-09-30T22:23:27.3829348Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint-1059-project-inspect-spatial-budget-r4; 126/126 passed",
+                      "finished_utc":  "2026-09-30T22:23:27.3829348Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1059-project-inspect-spatial-budget-r6/build.log",
+                                         "sha256":  "F60B7775B9E6EE5CADF2951ED949AF8F4163907DE5425979AC77F4A168839F7A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1059-project-inspect-spatial-budget-r6/ctest.log",
+                                         "sha256":  "A87C1E82EA1DB48BBBE0B45C6E22847390668C0E4A62977CB159A4693F5EACB9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1059-project-inspect-spatial-budget-r6/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-09-30T22:23:27.4529412Z"
+}

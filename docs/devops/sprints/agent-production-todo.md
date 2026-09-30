@@ -1,6 +1,6 @@
 # CCad Agent production TODO
 
-### Sprint 1059 — spatially bounded project inspection (local gate passed)
+### Sprint 1059 — spatially bounded project inspection (pushed; hosted CI pending)
 
 - [x] Add validated millimetre bbox input with inclusive typed AABB intersection for supported PCB/schematic geometry.
 - [x] Report objects without authoritative geometry rather than treating them as spatial matches.
@@ -8,7 +8,7 @@
 - [x] Contract-test bbox hit, miss, boundary, malformed range, token-budget refusal/cap, and schema exposure.
 - [x] Run the Qt MinGW Release/full CTest gate: 126/126; clangd used compile_commands but its semantic feature probe reported internal code-action errors without source diagnostics; update evidence docs.
 - [x] Update feature, progress, and codebase handover documentation with the exact local evidence.
-- [ ] Commit and push only verified source/tests/docs; keep hosted CI/merge pending until the exact SHA passes.
+- [x] Commit and push only verified source/tests/docs (`44fff2bda175ca736ca82c805e84ca829b32eaee`); exact-SHA hosted CI and merge remain pending until a PR is authorized and checks pass.
 
 ### Sprint 1058 — safer bounded project inspection (in progress)
 
