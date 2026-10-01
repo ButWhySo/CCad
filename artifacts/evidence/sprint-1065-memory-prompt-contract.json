@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1065-memory-prompt-contract",
+    "feature":  "Memory retrieval and explicit-write guidance in provider system prompts",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-10-01T04:54:11.1653874Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.1 log=artifacts/evidence/sprint-1065-memory-prompt-contract/preflight.log",
+                      "finished_utc":  "2026-10-01T04:54:12.4000050Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.35 log=artifacts/evidence/sprint-1065-memory-prompt-contract/build.log",
+                      "finished_utc":  "2026-10-01T04:54:12.7685406Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=197.36 log=artifacts/evidence/sprint-1065-memory-prompt-contract/ctest.log",
+                      "finished_utc":  "2026-10-01T04:57:30.1327807Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1065-memory-prompt-contract/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1065-memory-prompt-contract/ctest.log",
+                                         "sha256":  "AC13F37D71EF24A55B0CF957A7DEA2B6F5C5137CC817E8BA341E693E44376819"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1065-memory-prompt-contract/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-10-01T04:57:30.1947998Z"
+}

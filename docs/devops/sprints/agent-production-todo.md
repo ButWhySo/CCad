@@ -1,5 +1,14 @@
 # CCad Agent production TODO
 
+### Sprint 1065 - memory system-prompt policy (in progress)
+
+- [x] Explain auto-injected enabled memories and when bound `ccad_search_memory` is appropriate; avoid redundant discovery searches.
+- [x] State explicit user-only memory writes; prohibit ungrounded save/verify/supersede claims and secret/transient storage.
+- [x] Contract-test full-catalog, narrowed-tool, and no-tool prompt variants.
+- [x] Run changed-module Pyright (0 diagnostics) and official Qt/MinGW Release/full CTest verifier (126/126); manifest `artifacts/evidence/sprint-1065-memory-prompt-contract.json`, SHA-256 `48076B9C9DC6B17DB13F6D5F0F20F40D495617C98F47B5D52070533A44A0E2B5`.
+- [x] Redacted tracked-repository scan: one existing dummy credential sentinel in `scripts/test_memory_store.py`; staged-added-line scan: zero matches.
+- [ ] Commit/push, verify exact-SHA hosted CI, then integrate and clean completed branch.
+
 ### Sprint 1064 - explicit memory verification and supersession (in progress)
 
 - [x] Add durable active/superseded state with reciprocal replacement IDs, verified timestamps, strict legacy defaults, and atomic supersession writes.
@@ -8,7 +17,7 @@
 - [x] Add store, manager, command, and real provider-disabled conversation subprocess regression coverage; local Python contracts pass and changed-module Pyright reports 0 diagnostics.
 - [x] Run official Qt MinGW Release/non-visual verifier and full CTest: build current, 126/126 passed; rerun final source after lifecycle hardening. Changed-module Pyright 0 diagnostics; focused memory/persistence/compaction/conversation contracts pass. Final manifest `artifacts/evidence/sprint-1064-memory-supersession-r3.json`, SHA-256 `438BC2C0AB55172951448EA3A46A7218834BC14130DD60DE8DE6D832B67820FF`; build/CTest logs workspace-only.
 - [x] Run redacted tracked-repository and staged-addition scans; the 11 tracked matches are existing documentation/path examples, test sentinels, or `--solder-mask` flag false positives, all reviewed with matched token strings redacted; staged additions contain zero high-confidence credential patterns. Build/CTest logs and screenshots remain workspace-only.
-- [ ] Commit, push, verify exact-SHA hosted CI, integrate to `main`, and clean only the completed feature branch.
+- [x] Commit `c9b633a4d28aa9d157943db22cf52d37b7bf5209`, push, fast-forward `main`, verify exact-SHA hosted CI run `36816178918` (all five jobs passed), then remove the completed feature branch.
 - [ ] Keep automatic memory extraction authorization, decay policy, GUI command autocomplete, and richer lifecycle management open; no automatic capture was added.
 
 ### Sprint 1063 — authoritative memory source-event provenance (local gate passed)
@@ -1257,6 +1266,7 @@ Langfuse's current [LangChain integration](https://langfuse.com/integrations/fra
 - [x] Give STM a distinct task identity with `/task start|status|end` and cache-isolation validation; keep LTM keyed to thread and episodic keyed to local OS user.
 - [x] Align memory retrieval with tier/namespace isolation; keep `scope` as explicit list/delete metadata rather than claiming it filters retrieval.
 - [x] Define memory capture as explicit Manage Memories or `/memory` operations; ordinary chat is not automatically captured.
+- [x] Explain memory retrieval and explicit-write capabilities in the model system prompt; condition search guidance on the bound read-only tool.
 - [x] Publish `docs/devops/memory-context-lifecycle.md` with end-to-end context/memory flow and explicit gaps.
 - [x] Add semantic compaction for durable memory records; bounded newest-64 retention, exact normalized deduplication, and lexical near-duplicate rejection are implemented. Sprint 970 compacts conversation history only.
 

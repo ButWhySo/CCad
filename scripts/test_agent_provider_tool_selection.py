@@ -172,6 +172,33 @@ class ProviderToolSelectionTests(unittest.TestCase):
         self.assertIn("inspect ui.active_layer or ui.active_net", prompt)
         self.assertIn("Never infer an ID from a display name", prompt)
 
+    def test_system_prompt_explains_memory_retrieval_and_user_controlled_writes(self):
+        prompt = orchestrator.get_system_prompt(
+            "the CCad PCB Routing Expert.", orchestrator.agent_tools)
+        self.assertIn("Relevant enabled memories may already be present", prompt)
+        self.assertIn("ccad_search_memory", prompt)
+        self.assertIn("only when a specific needed fact is absent", prompt)
+        self.assertIn("Memory writes are user-controlled", prompt)
+        self.assertIn("do not claim a memory was saved", prompt)
+        self.assertIn("/memory add", prompt)
+        self.assertIn("/memory verify", prompt)
+        self.assertIn("/memory supersede", prompt)
+
+    def test_system_prompt_does_not_claim_memory_search_when_tool_unbound(self):
+        prompt = orchestrator.get_system_prompt(
+            "the CCad PCB Routing Expert.",
+            [tool for tool in orchestrator.agent_tools
+             if tool.name != "ccad_search_memory"])
+        self.assertIn("Do not claim to search or inspect memory", prompt)
+        self.assertNotIn("Use `ccad_search_memory`", prompt)
+
+    def test_completed_tool_prompt_keeps_memory_commands_human_operated(self):
+        prompt = orchestrator.get_system_prompt(
+            "the CCad PCB Routing Expert.", [])
+        self.assertIn("The requested native tool has already returned", prompt)
+        self.assertIn("Memory writes are user-controlled", prompt)
+        self.assertIn("do not claim a memory was saved", prompt)
+
     def test_read_only_tool_calls_do_not_report_approval_pending(self):
         self.assertFalse(orchestrator.tool_calls_require_approval([{
             "name": "ccad_project_object_counts", "args": {}, "id": "call-ro"}]))

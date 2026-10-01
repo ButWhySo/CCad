@@ -1821,6 +1821,26 @@ def get_system_prompt(role_desc: str,
     
     parts = [f"You are {role_desc}",
              "Use only tools in the native catalog. Never invent a tool, board object, layer, net, placement, preview, or successful mutation."]
+    available_tools = agent_tools if tools is None else tools
+    if any(getattr(tool, "name", "") == "ccad_search_memory"
+           for tool in available_tools):
+        parts.append(
+            "Memory retrieval: Relevant enabled memories may already be present "
+            "in supplied context. Do not search merely to check whether memory "
+            "exists. Use `ccad_search_memory` only when a specific needed fact "
+            "is absent from the supplied context, and treat results as scoped "
+            "evidence rather than universal truth.")
+    else:
+        parts.append(
+            "Memory retrieval: Do not claim to search or inspect memory; use "
+            "only memory evidence already present in supplied context.")
+    parts.append(
+        "Memory writes are user-controlled and are not available as model tools. "
+        "Never autonomously add, update, delete, verify, or supersede a memory, "
+        "and do not claim a memory was saved unless an authoritative completion "
+        "result confirms it. Memory changes require an explicit user `/memory "
+        "add`, `/memory update`, `/memory verify`, or `/memory supersede` command. "
+        "Do not store secrets or transient one-turn details.")
     if tools is None or tools is agent_tools:
         parts.append(
              "Read the typed project context and project_retrieval matches before design-specific work. "
