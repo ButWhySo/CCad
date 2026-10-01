@@ -667,7 +667,7 @@ class MemoryManager:
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
             kind=None, pinned=None,
             expires_at="", importance=None, source_evidence_class="",
-            source_thread_id="", source_turn_id=""):
+            source_thread_id="", source_turn_id="", source_event_id=""):
         tier = self._check_tier(tier)
         if not self.enabled[tier]:
             raise RuntimeError(f"memory tier disabled: {tier}")
@@ -684,7 +684,8 @@ class MemoryManager:
         namespace = self.namespace_for(tier, scope)
         importance = 3 if importance is None else importance
         provenance = self._user_provenance(
-            source_evidence_class, source_thread_id, source_turn_id)
+            source_evidence_class, source_thread_id, source_turn_id,
+            source_event_id)
         if pinned is not None:
             provenance = dict(provenance or {})
             provenance["pinned"] = pinned
@@ -733,13 +734,15 @@ class MemoryManager:
                 self._working_memory_tasks.popitem(last=False)
         return entry
 
-    def _user_provenance(self, evidence_class="", thread_id="", turn_id=""):
+    def _user_provenance(self, evidence_class="", thread_id="", turn_id="",
+                         event_id=""):
         if not evidence_class:
             return None
         return {"authorship": "user_authored", "explicit_user_evidence": True,
                 "source_evidence_classes": [evidence_class],
                 "source_thread_ids": [str(thread_id)] if thread_id else [],
-                "source_turn_ids": [str(turn_id)] if turn_id else []}
+                "source_turn_ids": [str(turn_id)] if turn_id else [],
+                "source_event_ids": [str(event_id)] if event_id else []}
 
     def _near_duplicate(self, content: str, tier: str, *, exclude_id="", scope=None):
         words = set(self._word.findall(str(content).casefold()))
@@ -827,7 +830,7 @@ class MemoryManager:
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
                expires_at=None, kind=None, importance=None, pinned=None,
                source_evidence_class="",
-               source_thread_id="", source_turn_id=""):
+               source_thread_id="", source_turn_id="", source_event_id=""):
         if pinned is not None and type(pinned) is not bool:
             raise ValueError("memory pinned state must be boolean")
         for tier in self.TIERS:
@@ -852,7 +855,8 @@ class MemoryManager:
                       "tier": tier, "namespace": namespace,
                       "expires_at": entry.get("expires_at", "") if expires_at is None else expires_at}
             provenance = self._user_provenance(
-                source_evidence_class, source_thread_id, source_turn_id)
+                source_evidence_class, source_thread_id, source_turn_id,
+                source_event_id)
             if provenance is not None:
                 fields["provenance"] = self.store._merge_provenance(
                     entry.get("provenance"), provenance)

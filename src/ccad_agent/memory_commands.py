@@ -14,7 +14,8 @@ def _metadata(arguments, *, allowed):
     return values, " ".join(tokens).strip()
 
 
-def execute_memory_command(manager, arguments, *, source_thread_id="", source_turn_id=""):
+def execute_memory_command(manager, arguments, *, source_thread_id="", source_turn_id="",
+                           source_event_id=""):
     """Return one safe JSON-RPC event; persistent deletes require explicit scope."""
     command, _, remainder = arguments.strip().partition(" ")
     command = command.lower()
@@ -39,7 +40,8 @@ def execute_memory_command(manager, arguments, *, source_thread_id="", source_tu
                              kind=options.get("kind"), importance=importance,
                              source_evidence_class="explicit_user_command",
                              source_thread_id=source_thread_id,
-                             source_turn_id=source_turn_id)
+                             source_turn_id=source_turn_id,
+                             source_event_id=source_event_id)
         return "memory_added", {"id": entry["id"], "tier": entry["tier"],
                                  "scope": entry["scope"], "kind": entry["kind"],
                                  "importance": entry["importance"],
@@ -58,7 +60,8 @@ def execute_memory_command(manager, arguments, *, source_thread_id="", source_tu
                                importance=importance,
                                source_evidence_class="explicit_user_command",
                                source_thread_id=source_thread_id,
-                               source_turn_id=source_turn_id)
+                               source_turn_id=source_turn_id,
+                               source_event_id=source_event_id)
         return "memory_updated", {"id": entry_id, "updated": entry is not None,
                                   "kind": entry.get("kind", "fact") if entry else "",
                                   "importance": entry.get("importance", 3) if entry else None,

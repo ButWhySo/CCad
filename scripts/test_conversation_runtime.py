@@ -69,6 +69,47 @@ def run():
                    for item in first)
         assert db_path.is_file()
 
+        memory_appdata = appdata / "memory-source-events"
+        memory_appdata.mkdir()
+        memory_env = env.copy()
+        memory_env.update({
+            "APPDATA": str(memory_appdata),
+            "LOCALAPPDATA": str(memory_appdata),
+            "CCAD_AGENT_CONVERSATION_DB": str(memory_appdata / "conversations.sqlite3"),
+            "CCAD_AGENT_CHECKPOINT_DB": str(memory_appdata / "checkpoints.sqlite3"),
+            "CCAD_AGENT_MEMORY_PATH": str(memory_appdata / "memories.json"),
+        })
+        memory_events = exchange(memory_env, [
+            {"jsonrpc": "2.0", "id": 30, "method": "agent.set_thread_id",
+             "params": thread},
+            {"jsonrpc": "2.0", "id": 32, "method": "agent.memory_set_enabled",
+             "params": {"tier": "ltm", "enabled": True}},
+            {"jsonrpc": "2.0", "id": 31, "method": "human_message",
+             "params": {**thread,
+                        "text": "/memory add tier:ltm scope:conversation title:source-event Preserve the exact user-approved source event.",
+                        "context": "{}"}},
+            {"jsonrpc": "2.0", "id": 33, "method": "agent.memory_set_enabled",
+             "params": {"tier": "ltm", "enabled": False}},
+        ])
+        added_event = next((item for item in memory_events
+                            if item.get("method") == "memory_added"), None)
+        assert added_event is not None, memory_events
+        added = added_event["params"]
+        memory_store_path = memory_appdata / "memories.json"
+        persisted_memory = json.loads(memory_store_path.read_text(encoding="utf-8"))
+        provenance = next(item["provenance"] for item in persisted_memory
+                          if item["id"] == added["id"])
+        source_event_id = provenance["source_event_ids"][0]
+        source_turn_id = provenance["source_turn_ids"][0]
+        sys.path.insert(0, str(AGENT_DIR))
+        from conversation_store import ConversationStore
+        event_store = ConversationStore(memory_appdata / "conversations.sqlite3")
+        assert event_store.turn_id_for_message(
+            thread["thread_id"], source_event_id) == source_turn_id
+        assert any(message.id == source_event_id and
+                   message.type == "human" for message in
+                   event_store.load_messages(thread["thread_id"]))
+
         sys.path.insert(0, str(AGENT_DIR))
         from langchain_core.messages import AIMessage, HumanMessage
         from langgraph.checkpoint.sqlite import SqliteSaver

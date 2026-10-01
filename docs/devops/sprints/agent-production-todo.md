@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1063 — authoritative memory source-event provenance (local gate passed)
+
+- [x] Give each incoming user turn an application-generated message/event ID and persist `/memory` commands before applying explicit add/update operations.
+- [x] Bind explicit slash-command memory provenance to the persisted event, thread, and turn; verify the event is recorded under the same thread/turn before allowing the memory write.
+- [x] Carry source-event IDs through memory command, manager, store, update/merge paths; keep them outside provider context and prevent model-supplied provenance.
+- [x] Add store/command contracts and an isolated real-orchestrator subprocess contract proving event ID points to the exact persisted user message; no provider request.
+- [x] Run official Qt MinGW Release/full CTest non-visual gate: full CTest 126/126, changed-module Pyright 0 diagnostics, focused memory/conversation contracts pass. Passing manifest `artifacts/evidence/sprint1063-memory-provenance-r4.json`, SHA-256 `238154C8CEA17B67F157677B086526788DE2ED8ED6A97B94E291A53B08588E4A`; the passing manifest's build step was up-to-date after the successful 519-step full compile in the earlier gate attempt. Build/CTest/preflight logs remain workspace-only.
+- [x] Run redacted secret-pattern scan against the staged diff; clean. `git diff --cached --check` passes.
+- [ ] Commit/push the verified source/tests/docs plus manifest, and confirm exact-SHA hosted CI before integrating and cleaning the feature branch.
+- [ ] Continue remaining Tier-1 provenance: generated-memory extraction authorization, contradiction/supersession policy, last-verified/decay, and lifecycle controls.
+
 ### Sprint 1062 — Langfuse ingestion clock-resolution contract (merged; hosted CI green)
 
 - [x] Reproduce the hosted Windows-only `langfuse_v4_local_ingestion` failure: short root span had equal start/end nanoseconds, then passed on the workflow's verbose rerun.

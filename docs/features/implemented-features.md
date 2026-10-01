@@ -1,5 +1,9 @@
 # Implemented Features
 
+## Sprint 1063 — authoritative memory source-event provenance (locally verified)
+
+Explicit `/memory add` and `/memory update` commands now receive an application-generated message ID. The orchestrator stores that user command in the durable conversation transcript and confirms the ID resolves to the same thread and turn before applying the memory mutation. The ID is carried into bounded memory provenance alongside existing authorship, thread, and turn fields; provider-context allowlisting continues to exclude provenance. Store, command, persistence, compaction, conversation-store, and isolated provider-free orchestrator contracts pass; changed-module Pyright reports 0 diagnostics. Qt/MinGW Release and full CTest pass 126/126. Official non-visual manifest `artifacts/evidence/sprint1063-memory-provenance-r4.json`, SHA-256 `238154C8CEA17B67F157677B086526788DE2ED8ED6A97B94E291A53B08588E4A`. Hosted CI is not yet confirmed. Generated-memory extraction authorization, contradiction/supersession policy, last-verified/decay, and lifecycle controls remain open.
+
 ## Sprint 1062 — Langfuse local-ingestion timing contract (merged; hosted CI green)
 
 The local OTLP ingestion contract now permits equal root-span start/end timestamps, which are valid when a short in-process span completes within the clock's timestamp resolution. It still requires a nonzero start time and rejects end timestamps earlier than start. The focused contract passed five consecutive local runs; Qt MinGW Release and full CTest pass 128/128. Non-visual manifest `artifacts/evidence/sprint1062-langfuse-clock-contract-r3.json`, SHA-256 `22D3D574356661DFD06D14A2009EA8DCEA4C2510BD84D20B83EDCD589641CF69`; logs remain workspace-only. Exact-main hosted Actions run `36803847090` passed all five jobs on `6a75ef1d6521d3ce671233a2b378729c6142f972`; feature branch was deleted.

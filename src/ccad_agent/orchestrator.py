@@ -3350,6 +3350,8 @@ def handle_human_message(req):
         "memory_token_budget": turn_context["memory_token_budget"],
         "project_counts": context_metadata["project_counts"],
     }})
+    source_event_id = uuid.uuid4().hex
+    user_message = HumanMessage(content=text, id=source_event_id)
     # Robust Command Parser
     if text.startswith("/"):
         cmd_parts = text.split(" ", 1)
@@ -3452,9 +3454,17 @@ def handle_human_message(req):
                     cmd_args.strip()[len("compact"):], context_thread_id)
             else:
                 try:
+                    inserted = persist_turn_messages(
+                        requested_thread, turn_id, [user_message],
+                        requested_session, project_id)
+                    if (inserted != 1 and conversation_store.turn_id_for_message(
+                            requested_thread, source_event_id) != turn_id):
+                        raise ConversationStoreError(
+                            "memory_source_event_not_persisted")
                     event, result = execute_memory_command(
                         memory_manager, cmd_args, source_thread_id=requested_thread,
-                        source_turn_id=turn_id)
+                        source_turn_id=turn_id,
+                        source_event_id=source_event_id)
                     if event in {"memory_added", "memory_updated",
                                  "memory_deleted", "memory_reset"}:
                         invalidate_thread_context(requested_thread)
@@ -3578,7 +3588,6 @@ def handle_human_message(req):
             emit({"jsonrpc": "2.0", "method": "message", "params": {"text": f"Unknown command: {cmd_base}"}})
             return
 
-    user_message = HumanMessage(content=text)
     try:
         next_history = bound_session_history([*session_messages, user_message])
     except ValueError:
