@@ -1,6 +1,6 @@
 # CCad Agent production TODO
 
-### Sprint 1061 — memory pin/unpin lifecycle (local verification passed; publication pending)
+### Sprint 1061 — memory pin/unpin lifecycle (merged; hosted CI green)
 
 - [x] Complete verified `main` integration for Sprints 1056–1060: direct fast-forward push at `e2035fddaf39c22ebb24202e2bde7fad59b09b8d`; hosted workflow run `36792365682` passed all five jobs on that exact SHA; only `main` remains as a local/remote branch. PR merge API was unavailable, so the authorized fast-forward push was used and verified.
 - [x] Expose provenance pin state in Manage Memories and allow explicit pin/unpin without changing memory content, scope, or provenance lineage.
@@ -8,7 +8,7 @@
 - [x] Contract-test pin validation, persistence, explicit unpin after provenance merge, retrieval priority over lexical matches, and GUI state updates.
 - [x] Run Qt MinGW Release/full CTest (126/126) and the official mapped memory-manager mouse/keyboard flow (29 successful interactions, 10 distinct images); inspect each image plus report and both captured process logs.
 - [x] Update evidence manifest, handover/progress/feature/backlog docs, and interaction plan. Passing manifest `artifacts/evidence/sprint1061-memory-pins-r2.json`, SHA-256 `6EE403F2DBA6F96345F668EA2C28A3AA349C76C8DF943FFE15536129205452DA`; build/CTest and GUI payloads remain workspace-only. Pyright is clean; clangd was invoked with the real Qt/MinGW compile database but did not complete before timeout, so its result is unverified and the successful MinGW build is the compiler evidence.
-- [ ] Run redacted repository and staged-diff scans, commit/push the verified slice, confirm exact-SHA hosted CI, then integrate and clean its branch.
+- [x] Run redacted repository and staged-diff scans, commit/push the verified slice, confirm exact-SHA hosted CI, fast-forward `main`, and delete the completed feature branch. Commit `eb3b8c4fb2bd6387466acaab66e0de2494b0a56c`; Actions run `36797742968` passed all five jobs on the exact `main` SHA.
 - [ ] Continue remaining Tier-1 memory provenance work: authoritative event IDs, generated-memory extraction authorization, contradiction/supersession policy, last-verified/decay, and lifecycle controls.
 
 ### Sprint 1060 — explicit memory provenance (local gate passed; branch pushed)
