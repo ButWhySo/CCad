@@ -327,4 +327,35 @@ with tempfile.TemporaryDirectory() as temp:
     else:
         raise AssertionError("unsupported memory retrieval channel was accepted")
 
+    lifecycle_manager = MemoryManager(
+        MemoryStore(Path(temp) / "memory-supersession.json"),
+        thread_id="lifecycle-thread", project_id="lifecycle-project")
+    lifecycle_manager.configure({"ltm": True})
+    original = lifecycle_manager.add(
+        "Preserve analog ground near connector J4", tier="ltm",
+        scope="conversation", title="ground routing")
+    verified = lifecycle_manager.verify(
+        original["id"], source_thread_id="lifecycle-thread",
+        source_turn_id="turn-verify", source_event_id="event-verify")
+    assert verified and verified["last_verified_at"]
+    revised = lifecycle_manager.supersede(
+        original["id"], "Keep clean GND return close to U3 pins",
+        kind="correction", source_thread_id="lifecycle-thread",
+        source_turn_id="turn-revise", source_event_id="event-revise")
+    assert revised and revised["supersedes"] == original["id"]
+    assert [item["id"] for item in lifecycle_manager.list(tier="ltm")] == [
+        revised["id"]]
+    assert [item["id"] for item in lifecycle_manager.list(
+        tier="ltm", status="superseded")] == [original["id"]]
+    assert {item["id"] for item in lifecycle_manager.list(
+        tier="ltm", status="all")} == {original["id"], revised["id"]}
+    assert all(item["id"] != original["id"]
+               for item in lifecycle_manager.retrieve("analog ground connector"))
+    lifecycle_history = lifecycle_manager.store.list(
+        tier="ltm", namespace="lifecycle-thread", include_superseded=True)[0][
+                "status"]
+    assert lifecycle_history == "superseded"
+    lifecycle_manager.disable("ltm")
+    assert lifecycle_manager.verify(revised["id"]) is None
+
 print("PASS Working Memory/LTM/project/episodic memory lifecycle; no network")

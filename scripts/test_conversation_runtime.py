@@ -95,17 +95,46 @@ def run():
                             if item.get("method") == "memory_added"), None)
         assert added_event is not None, memory_events
         added = added_event["params"]
+        lifecycle_events = exchange(memory_env, [
+            {"jsonrpc": "2.0", "id": 40, "method": "agent.set_thread_id",
+             "params": thread},
+            {"jsonrpc": "2.0", "id": 41, "method": "agent.memory_set_enabled",
+             "params": {"tier": "ltm", "enabled": True}},
+            {"jsonrpc": "2.0", "id": 42, "method": "human_message",
+             "params": {**thread, "text": f"/memory verify {added['id']}",
+                        "context": "{}"}},
+            {"jsonrpc": "2.0", "id": 43, "method": "human_message",
+             "params": {**thread,
+                        "text": f"/memory supersede {added['id']} title:source-event Keep a corrected user-approved source event.",
+                        "context": "{}"}},
+        ])
+        verified_event = next((item for item in lifecycle_events
+                               if item.get("method") == "memory_verified"), None)
+        superseded_event = next((item for item in lifecycle_events
+                                 if item.get("method") == "memory_superseded"), None)
+        assert verified_event and verified_event["params"]["verified"] is True
+        assert superseded_event and superseded_event["params"]["superseded"] is True
+        assert superseded_event["params"]["old_id"] == added["id"]
         memory_store_path = memory_appdata / "memories.json"
         persisted_memory = json.loads(memory_store_path.read_text(encoding="utf-8"))
-        provenance = next(item["provenance"] for item in persisted_memory
-                          if item["id"] == added["id"])
-        source_event_id = provenance["source_event_ids"][0]
-        source_turn_id = provenance["source_turn_ids"][0]
+        old_record = next(item for item in persisted_memory if item["id"] == added["id"])
+        assert old_record["status"] == "superseded"
+        assert old_record["last_verified_at"]
+        assert old_record["superseded_by"] == superseded_event["params"]["new_id"]
+        provenance = old_record["provenance"]
+        source_event_id = provenance["source_event_ids"][-1]
+        source_turn_id = provenance["source_turn_ids"][-1]
+        replacement_record = next(item for item in persisted_memory
+                                  if item["id"] == superseded_event["params"]["new_id"])
+        replacement_source = replacement_record["provenance"]["source_event_ids"][0]
+        replacement_turn = replacement_record["provenance"]["source_turn_ids"][0]
         sys.path.insert(0, str(AGENT_DIR))
         from conversation_store import ConversationStore
         event_store = ConversationStore(memory_appdata / "conversations.sqlite3")
         assert event_store.turn_id_for_message(
             thread["thread_id"], source_event_id) == source_turn_id
+        assert event_store.turn_id_for_message(
+            thread["thread_id"], replacement_source) == replacement_turn
         assert any(message.id == source_event_id and
                    message.type == "human" for message in
                    event_store.load_messages(thread["thread_id"]))

@@ -59,6 +59,41 @@ with tempfile.TemporaryDirectory() as temp:
     assert manager.list(tier="ltm")[0]["provenance"]["source_turn_ids"] == ["turn-a", "turn-b"]
     assert manager.list(tier="ltm")[0]["provenance"]["source_event_ids"] == [
         "message-a", "message-b"]
+    _, verified = execute_memory_command(
+        manager, f"verify {entry_id}", source_thread_id="thread-a",
+        source_turn_id="turn-c", source_event_id="message-c")
+    assert verified["verified"] is True
+    verified_record = manager.list(tier="ltm")[0]
+    assert verified_record["last_verified_at"]
+    assert verified_record["provenance"]["source_event_ids"] == [
+        "message-a", "message-b", "message-c"]
+    old_content = verified_record["content"]
+    _, superseded = execute_memory_command(
+        manager, f'supersede {entry_id} kind:correction title:"updated route rule" Keep return path short and solid',
+        source_thread_id="thread-a", source_turn_id="turn-d",
+        source_event_id="message-d")
+    assert superseded["superseded"] is True
+    assert superseded["old_id"] == entry_id
+    current_records = manager.list(tier="ltm")
+    assert len(current_records) == 1 and current_records[0]["content"] != old_content
+    assert current_records[0]["supersedes"] == entry_id
+    assert current_records[0]["last_verified_at"]
+    assert current_records[0]["provenance"]["source_event_ids"] == ["message-d"]
+    all_records = manager.store.list(tier="ltm", namespace="thread-a",
+                                    include_superseded=True)
+    old_record = next(item for item in all_records if item["id"] == entry_id)
+    assert old_record["status"] == "superseded"
+    assert old_record["superseded_by"] == current_records[0]["id"]
+    assert old_record["content"] == old_content
+    assert current_records[0]["provenance"]["source_memory_ids"] == [entry_id]
+    _, history_result = execute_memory_command(
+        manager, "list tier:ltm scope:conversation status:superseded")
+    assert len(history_result["entries"]) == 1
+    assert history_result["entries"][0]["id"] == entry_id
+    _, missing_verification = execute_memory_command(
+        manager, "verify missing-memory-id", source_thread_id="thread-a",
+        source_turn_id="turn-e", source_event_id="message-e")
+    assert missing_verification["verified"] is False
     project_added, project_result = execute_memory_command(
         manager, 'add tier:ltm scope:project title:"board rule" Keep analog ground return clear')
     assert project_added == "memory_added"
@@ -87,7 +122,7 @@ with tempfile.TemporaryDirectory() as temp:
     manager.set_identities(task_id="task-a", thread_id="thread-a",
                            project_id="project-a")
     assert manager.list(tier="ltm", scope="project")[0]["id"] == project_id
-    _, deleted = execute_memory_command(manager, f"delete {entry_id}")
+    _, deleted = execute_memory_command(manager, f"delete {current_records[0]['id']}")
     assert deleted["removed"]
     manager.reset("ltm")
     assert manager.list(tier="ltm", scope="project") == []

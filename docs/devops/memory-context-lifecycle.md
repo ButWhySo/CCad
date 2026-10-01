@@ -1,5 +1,9 @@
 # CCad Agent context and memory lifecycle
 
+## Sprint 1064 memory provenance lifecycle update
+
+Persistent memory uses explicit verification and supersession, not background model extraction. The active record is the only form eligible for default listing and retrieval. Superseded records remain in the same local JSON store with reciprocal IDs, and a user can inspect them with `/memory list status:superseded` or request all records with `status:all`; deleting history remains explicit. Verification and replacement commands retain the application-generated source event, thread, and turn established by the conversation runtime. `last_verified_at` is evidence of a user action, not a decay clock; a decay policy is still undefined and therefore not applied. Final local gate: Qt/MinGW Release current, full CTest 126/126; manifest `artifacts/evidence/sprint-1064-memory-supersession-r2.json`, SHA-256 `9A698FCDB5466A137D697423C1DCDFDDBEAC4BF8612C993156CE7C12E4C1644C`.
+
 ## Sprint 976 canonical conversations, model projection, and TurnRecords
 
 `ConversationStore` (`src/ccad_agent/conversation_store.py`) owns the durable, thread-keyed SQLite transcript. Each message is serialized with a stable ID and role; assistant tool calls, tool-call IDs, and tool names survive reload. Recognized secret-like key names and common token formats are redacted before persistence. The store records only allowlisted scalar tool findings, extracted explicit constraints and common PCB references/layers/nets, request/result summaries, outcome, tool IDs, and source message IDs in a versioned TurnRecord. This extraction is deterministic and bounded; it is not a model-generated account of every decision.

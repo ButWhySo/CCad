@@ -765,7 +765,9 @@ class MemoryManager:
         if best is not None:
             return (*best, "lexical overlap")
 
-    def list(self, *, tier=None, scope=None):
+    def list(self, *, tier=None, scope=None, status="active"):
+        if status not in {"active", "superseded", "all"}:
+            raise ValueError("memory status must be active, superseded, or all")
         self._prune_expired()
         tier = self._check_tier(tier) if tier is not None else None
         tiers = self.TIERS if tier is None else (tier,)
@@ -774,14 +776,18 @@ class MemoryManager:
             self._check_tier(current)
             durable = ([] if current == "working_memory" else [
                 item for namespace in self._namespaces(current)
-                for item in self.store.list(tier=current, namespace=namespace, scope=scope)
+                for item in self.store.list(
+                    tier=current, namespace=namespace, scope=scope,
+                    include_superseded=status != "active")
                 if not self.store.contains_secret(item) and
-                not (current != "ltm" and item.get("scope") == "project")])
+                not (current != "ltm" and item.get("scope") == "project") and
+                (status == "all" or item.get("status", "active") == status)])
             if current == "ltm" and scope == "project":
                 for item in durable:
                     item["project_id"] = self.project_id
             runtime = [item for item in self.runtime[current]
-                       if scope is None or item.get("scope") == scope]
+                       if (scope is None or item.get("scope") == scope) and
+                       (status == "all" or item.get("status", "active") == status)]
             by_id = {item.get("id"): item for item in durable}
             by_id.update((item.get("id"), item) for item in runtime)
             entries.extend(by_id.values())
@@ -901,6 +907,79 @@ class MemoryManager:
             return replacement
         return None
 
+    def verify(self, entry_id, *, source_evidence_class="explicit_user_command",
+               source_thread_id="", source_turn_id="", source_event_id=""):
+        """Mark one currently accessible record verified by explicit user action."""
+        for tier in self.TIERS:
+            if not self.enabled[tier]:
+                continue
+            entry = next((item for item in self.list(tier=tier)
+                          if item.get("id") == entry_id), None)
+            if entry is None:
+                continue
+            provenance = self._user_provenance(
+                source_evidence_class, source_thread_id, source_turn_id,
+                source_event_id)
+            if tier == "working_memory":
+                entry["last_verified_at"] = self._now().isoformat()
+                entry["provenance"] = self.store._merge_provenance(
+                    entry.get("provenance"), provenance)
+                verified = entry
+            else:
+                verified = self.store.verify(entry_id, provenance=provenance)
+                if verified is None:
+                    return None
+                verified["project_id"] = self.project_id
+            self.runtime[tier] = [verified if item.get("id") == entry_id else item
+                                  for item in self.runtime[tier]]
+            self._clear_embedding_cache()
+            return verified
+        return None
+
+    def supersede(self, entry_id, content, *, title=None, kind=None,
+                  importance=None, source_evidence_class="explicit_user_command",
+                  source_thread_id="", source_turn_id="", source_event_id=""):
+        """Preserve an accessible durable record and replace it in one store write."""
+        entry = None
+        tier = ""
+        for candidate_tier in ("ltm", "episodic"):
+            if not self.enabled[candidate_tier]:
+                continue
+            entry = next((item for item in self.list(tier=candidate_tier)
+                          if item.get("id") == entry_id), None)
+            if entry is not None:
+                tier = candidate_tier
+                break
+        if entry is None:
+            return None
+        provenance = self._user_provenance(
+            source_evidence_class, source_thread_id, source_turn_id,
+            source_event_id)
+        replacement = self.store.normalise(
+            content, title=entry.get("title", "") if title is None else title,
+            scope=entry.get("scope", "project"), tags=entry.get("tags", []),
+            tier=tier, kind=entry.get("kind", "fact") if kind is None else kind,
+            namespace=entry.get("namespace", self.identities[tier]),
+            expires_at=entry.get("expires_at", ""),
+            importance=entry.get("importance", 3) if importance is None else importance,
+            provenance=provenance)
+        replacement["provenance"]["source_memory_ids"] = [entry_id]
+        duplicate = self._near_duplicate(replacement["content"], tier,
+                                         exclude_id=entry_id,
+                                         scope=entry.get("scope"))
+        if duplicate:
+            other, similarity, method = duplicate
+            raise ValueError(
+                f"near-duplicate memory exists ({other['id']}, {method} "
+                f"{similarity:.0%}); revise to distinct information")
+        replacement = self.store.supersede(entry_id, replacement)
+        if replacement is None:
+            return None
+        replacement["project_id"] = self.project_id
+        self.runtime[tier] = self._load(tier)
+        self._clear_embedding_cache()
+        return replacement
+
     def delete(self, entry_id):
         for tier in self.TIERS:
             matching = any(item.get("id") == entry_id for item in self.list(tier=tier))
@@ -920,7 +999,7 @@ class MemoryManager:
         # occurs inside the confirmation dialog's nested event loop. The
         # selected ID is globally unique, so honor that explicit delete even
         # when its old thread namespace is no longer the active one.
-        stored_entry = next((item for item in self.store.list()
+        stored_entry = next((item for item in self.store.list(include_superseded=True)
                              if item.get("id") == entry_id), None)
         if stored_entry is None:
             return False

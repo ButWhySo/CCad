@@ -20,13 +20,15 @@ def execute_memory_command(manager, arguments, *, source_thread_id="", source_tu
     command, _, remainder = arguments.strip().partition(" ")
     command = command.lower()
     if command == "list":
-        options, trailing = _metadata(remainder, allowed=("tier", "scope"))
+        options, trailing = _metadata(remainder, allowed=("tier", "scope", "status"))
         if trailing:
             raise ValueError("unexpected text after memory list filters")
         tier = options.get("tier") or None
-        entries = manager.list(tier=tier, scope=options.get("scope"))
+        status = options.get("status", "active")
+        entries = manager.list(tier=tier, scope=options.get("scope"), status=status)
         return "memory_state", {"entries": entries, "tier": tier or "all",
                                  "scope": options.get("scope", ""),
+                                 "status": status,
                                  "secret_value_visible": False}
     if command == "add":
         options, content = _metadata(remainder, allowed=("tier", "scope", "kind", "title", "importance"))
@@ -66,6 +68,37 @@ def execute_memory_command(manager, arguments, *, source_thread_id="", source_tu
                                   "kind": entry.get("kind", "fact") if entry else "",
                                   "importance": entry.get("importance", 3) if entry else None,
                                   "secret_value_visible": False}
+    if command == "verify":
+        entry_id = remainder.strip()
+        if not entry_id:
+            raise ValueError("memory ID required")
+        entry = manager.verify(entry_id, source_evidence_class="explicit_user_command",
+                               source_thread_id=source_thread_id,
+                               source_turn_id=source_turn_id,
+                               source_event_id=source_event_id)
+        return "memory_verified", {"id": entry_id, "verified": entry is not None,
+                                   "last_verified_at": entry.get("last_verified_at", "") if entry else "",
+                                   "secret_value_visible": False}
+    if command == "supersede":
+        entry_id, _, remainder = remainder.strip().partition(" ")
+        if not entry_id:
+            raise ValueError("memory ID required")
+        options, content = _metadata(remainder, allowed=("kind", "title", "importance"))
+        try:
+            importance = int(options["importance"]) if "importance" in options else None
+        except ValueError as error:
+            raise ValueError("memory importance must be an integer from 1 to 5") from error
+        entry = manager.supersede(
+            entry_id, content, title=options.get("title") if "title" in options else None,
+            kind=options.get("kind"), importance=importance,
+            source_evidence_class="explicit_user_command",
+            source_thread_id=source_thread_id, source_turn_id=source_turn_id,
+            source_event_id=source_event_id)
+        return "memory_superseded", {
+            "old_id": entry_id, "new_id": entry.get("id", "") if entry else "",
+            "superseded": entry is not None, "tier": entry.get("tier", "") if entry else "",
+            "scope": entry.get("scope", "") if entry else "",
+            "secret_value_visible": False}
     if command == "delete":
         entry_id = remainder.strip()
         if not entry_id:
@@ -81,4 +114,4 @@ def execute_memory_command(manager, arguments, *, source_thread_id="", source_tu
         else:
             raise ValueError("use `/memory clear all` or `/memory clear scope:<name> [tier:<tier>]`")
         return "memory_cleared", {"removed": removed, "secret_value_visible": False}
-    raise ValueError("use `/memory list|add|update|delete|clear` with tier/scope filters")
+    raise ValueError("use `/memory list|add|update|verify|supersede|delete|clear` with tier/scope filters")

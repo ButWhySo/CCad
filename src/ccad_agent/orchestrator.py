@@ -3404,7 +3404,7 @@ def handle_human_message(req):
             }})
             return
         if cmd_base == "/commands":
-            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list|list scope:x|add [scope:x] [title:y] <text>|update <id> [scope:x] [title:y] <text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped Working Memory)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
+            emit({"jsonrpc": "2.0", "method": "message", "params": {"text": "Available commands:\n- `/context [draft]` (inspect bounded context and memory; no provider call)\n- `/workflow use: <name>`\n- `/workflow chaining phase: <phase>`\n- `/workflow chaining state: <true|false>`\n- `/hooks <hook_name>`\n- `/set provider:model`\n- `/cc` (Compact context)\n- `/memory list [tier:x] [scope:x] [status:active|superseded|all]|add [scope:x] [title:y] <text>|update <id> <text>|verify <id>|supersede <id> <replacement text>|delete <id>|clear all|clear scope:<name>`\n- `/task start|status|end` (manage task-scoped Working Memory)\n- `/schedule prompt: state`\n- `/marketplace install <plugin>`"}})
             return
         elif cmd_base == "/task":
             task_action = cmd_args.strip().casefold()
@@ -3465,7 +3465,7 @@ def handle_human_message(req):
                         memory_manager, cmd_args, source_thread_id=requested_thread,
                         source_turn_id=turn_id,
                         source_event_id=source_event_id)
-                    if event in {"memory_added", "memory_updated",
+                    if event in {"memory_added", "memory_updated", "memory_superseded",
                                  "memory_deleted", "memory_reset"}:
                         invalidate_thread_context(requested_thread)
                     emit({"jsonrpc": "2.0", "method": event, "params": result})

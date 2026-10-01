@@ -76,11 +76,45 @@ class MemoryStore:
                     not isinstance(item["importance"], int) or
                     not 1 <= item["importance"] <= 5):
                 raise MemoryStoreError("memory_store_corrupt")
+            item.setdefault("status", "active")
+            if item["status"] not in {"active", "superseded"}:
+                raise MemoryStoreError("memory_store_corrupt")
+            for field in ("supersedes", "superseded_by"):
+                value = item.get(field, "")
+                if value and (not isinstance(value, str) or
+                              not _PROVENANCE_ID.fullmatch(value) or
+                              SECRET_MARKERS.search(value)):
+                    raise MemoryStoreError("memory_store_corrupt")
+            for timestamp_field in ("last_verified_at", "superseded_at"):
+                timestamp = item.get(timestamp_field, "")
+                if not timestamp:
+                    continue
+                try:
+                    parsed = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+                except ValueError as error:
+                    raise MemoryStoreError("memory_store_corrupt") from error
+                if parsed.tzinfo is None:
+                    raise MemoryStoreError("memory_store_corrupt")
+            if item["status"] == "superseded" and not (
+                    item.get("superseded_by") and item.get("superseded_at")):
+                raise MemoryStoreError("memory_store_corrupt")
+            if item["status"] == "active" and (
+                    item.get("superseded_by") or item.get("superseded_at")):
+                raise MemoryStoreError("memory_store_corrupt")
             try:
                 item["provenance"] = self._normalise_provenance(
                     item.get("provenance"), legacy=item.get("provenance") is None)
             except ValueError as error:
                 raise MemoryStoreError("memory_store_corrupt") from error
+        by_id = {item.get("id"): item for item in data if item.get("id")}
+        for item in data:
+            if item.get("status") != "superseded":
+                continue
+            replacement = by_id.get(item.get("superseded_by"))
+            if replacement is not None and (
+                    replacement.get("status", "active") != "active" or
+                    replacement.get("supersedes") != item.get("id")):
+                raise MemoryStoreError("memory_store_corrupt")
         return data
 
     @staticmethod
@@ -256,6 +290,8 @@ class MemoryStore:
             if current.get("id") == entry_id:
                 if self.contains_secret(current):
                     return None
+                if current.get("status", "active") != "active":
+                    return None
                 replacement = self._normalise_entry(
                     content,
                     title=current.get("title", "") if title is None else title,
@@ -271,7 +307,8 @@ class MemoryStore:
                 replacement["id"] = entry_id
                 replacement["created_at"] = current.get("created_at", replacement["created_at"])
                 replacement["updated_at"] = datetime.now(timezone.utc).isoformat()
-                for field in ("last_used_at", "use_count"):
+                for field in ("last_used_at", "use_count", "status", "supersedes",
+                              "superseded_by", "superseded_at", "last_verified_at"):
                     if field in current:
                         replacement[field] = current[field]
                 replacement["provenance"] = self._merge_provenance(
@@ -283,14 +320,80 @@ class MemoryStore:
                 return replacement
         return None
 
-    def list(self, scope=None, *, tier=None, namespace=None):
+    def list(self, scope=None, *, tier=None, namespace=None,
+             include_superseded=False):
         """Return only safe records; keep rejected legacy bytes untouched on disk."""
         entries = self._read()
         return [item for item in entries
                 if (scope is None or item.get("scope") == scope)
                 and (tier is None or item.get("tier", "ltm") == tier)
                 and (namespace is None or item.get("namespace", "project") == namespace)
+                and (include_superseded or item.get("status", "active") == "active")
                 and not self.contains_secret(item)]
+
+    def verify(self, entry_id, *, provenance=None, verified_at=None):
+        """Record explicit user verification without changing memory content."""
+        if SECRET_MARKERS.search(str(entry_id or "")):
+            return None
+        entries = self._read()
+        for entry in entries:
+            if entry.get("id") != entry_id or self.contains_secret(entry):
+                continue
+            if entry.get("status", "active") != "active":
+                return None
+            timestamp = verified_at or datetime.now(timezone.utc).isoformat()
+            try:
+                parsed = datetime.fromisoformat(str(timestamp).replace("Z", "+00:00"))
+            except ValueError as error:
+                raise ValueError("verification time must be an ISO-8601 timestamp") from error
+            if parsed.tzinfo is None:
+                raise ValueError("verification time must include a timezone")
+            entry["last_verified_at"] = parsed.astimezone(timezone.utc).isoformat()
+            if provenance is not None:
+                entry["provenance"] = self._merge_provenance(
+                    entry.get("provenance"), provenance)
+            self._write(entries)
+            return entry
+        return None
+
+    def supersede(self, entry_id, replacement):
+        """Atomically retain the old record and activate its replacement."""
+        if not isinstance(replacement, dict) or self.contains_secret(replacement):
+            raise ValueError("replacement memory is invalid or contains a secret")
+        replacement_id = replacement.get("id", "")
+        if not isinstance(replacement_id, str) or not _PROVENANCE_ID.fullmatch(replacement_id):
+            raise ValueError("replacement memory ID is invalid")
+        replacement = self._normalise_entry(
+            replacement.get("content"), title=replacement.get("title", ""),
+            scope=replacement.get("scope", "project"), tags=replacement.get("tags", []),
+            tier=replacement.get("tier", "ltm"), kind=replacement.get("kind", "fact"),
+            namespace=replacement.get("namespace", "project"),
+            expires_at=replacement.get("expires_at", ""),
+            importance=replacement.get("importance", 3),
+            provenance=replacement.get("provenance"))
+        replacement["id"] = replacement_id
+        entries = self._read()
+        old = next((item for item in entries if item.get("id") == entry_id), None)
+        if old is None or self.contains_secret(old):
+            return None
+        if old.get("status", "active") != "active":
+            return None
+        if any(item.get("id") == replacement_id for item in entries):
+            raise ValueError("replacement memory ID already exists")
+        if any(replacement.get(key) != old.get(key) for key in ("tier", "scope", "namespace")):
+            raise ValueError("replacement must preserve the memory tier, scope, and namespace")
+        if replacement.get("id") == entry_id:
+            raise ValueError("replacement must have a new memory ID")
+        now = datetime.now(timezone.utc).isoformat()
+        old["status"] = "superseded"
+        old["superseded_by"] = replacement["id"]
+        old["superseded_at"] = now
+        replacement["status"] = "active"
+        replacement["supersedes"] = entry_id
+        replacement["last_verified_at"] = now
+        entries.append(replacement)
+        self._write(entries)
+        return replacement
 
     def record_usage(self, entry_ids, *, used_at=None):
         """Persist bounded retrieval-use metadata without changing memory content."""
@@ -302,6 +405,8 @@ class MemoryStore:
         updated = {}
         for entry in entries:
             if entry.get("id") not in ids or self.contains_secret(entry):
+                continue
+            if entry.get("status", "active") != "active":
                 continue
             count = entry.get("use_count", 0)
             count = count if isinstance(count, int) and not isinstance(count, bool) else 0

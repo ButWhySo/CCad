@@ -66,6 +66,34 @@ with tempfile.TemporaryDirectory() as temp:
     assert store.list()[0]["use_count"] == 1
     assert updated["updated_at"]
     assert store.list()[0]["content"].startswith("Use 0.28")
+
+    verified = store.verify(
+        item["id"], provenance={
+            "authorship": "user_authored", "explicit_user_evidence": True,
+            "source_evidence_classes": ["explicit_user_command"],
+            "source_event_ids": ["verify-event"]})
+    assert verified["last_verified_at"]
+    assert verified["provenance"]["source_event_ids"] == ["verify-event"]
+    replacement = store.normalise(
+        "Use 0.25 mm minimum track width", scope="user", tier="episodic",
+        namespace="local-user", kind="correction", importance=4,
+        provenance={"authorship": "user_authored", "explicit_user_evidence": True,
+                    "source_evidence_classes": ["explicit_user_command"],
+                    "source_event_ids": ["supersede-event"],
+                    "source_memory_ids": [item["id"]]})
+    superseding = store.supersede(item["id"], replacement)
+    assert superseding["supersedes"] == item["id"]
+    assert superseding["last_verified_at"]
+    assert store.list(tier="episodic", namespace="local-user") == [superseding]
+    history = store.list(tier="episodic", namespace="local-user",
+                         include_superseded=True)
+    old_record = next(record for record in history if record["id"] == item["id"])
+    assert old_record["status"] == "superseded"
+    assert old_record["superseded_by"] == superseding["id"]
+    assert old_record["content"] == "Use 0.28 mm minimum track width"
+    assert old_record["last_verified_at"] == verified["last_verified_at"]
+    assert store.update(item["id"], "Do not rewrite preserved history") is None
+    assert store.record_usage([item["id"]]) == {}
     legacy_path = Path(temp) / "legacy.json"
     legacy_path.write_text('[{"id":"old","content":"legacy preference","tier":"ltm"}]',
                            encoding="utf-8")
@@ -76,6 +104,7 @@ with tempfile.TemporaryDirectory() as temp:
     assert legacy["provenance"]["explicit_user_evidence"] is False
     legacy_disk = legacy_path.read_text(encoding="utf-8")
     assert '"kind"' not in legacy_disk and '"importance"' not in legacy_disk
+    assert store.delete(superseding["id"]) is True
     assert store.delete(item["id"]) is True
     assert store.list() == []
     try:

@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1064 - explicit memory verification and supersession (in progress)
+
+- [x] Add durable active/superseded state with reciprocal replacement IDs, verified timestamps, strict legacy defaults, and atomic supersession writes.
+- [x] Keep superseded records out of retrieval and normal listing; expose explicit history listing and preserve explicit deletion/reset behavior.
+- [x] Add `/memory verify <id>`, `/memory supersede <id> ...`, and `/memory list status:active|superseded|all`; bind writes to the persisted source thread, turn, and user event.
+- [x] Add store, manager, command, and real provider-disabled conversation subprocess regression coverage; local Python contracts pass and changed-module Pyright reports 0 diagnostics.
+- [x] Run official Qt MinGW Release/non-visual verifier and full CTest: build current, 126/126 passed; rerun final source after lifecycle hardening. Changed-module Pyright 0 diagnostics; focused memory/persistence/compaction/conversation contracts pass. Final manifest `artifacts/evidence/sprint-1064-memory-supersession-r3.json`, SHA-256 `438BC2C0AB55172951448EA3A46A7218834BC14130DD60DE8DE6D832B67820FF`; build/CTest logs workspace-only.
+- [x] Run redacted tracked-repository and staged-addition scans; the 11 tracked matches are existing documentation/path examples, test sentinels, or `--solder-mask` flag false positives, all reviewed with matched token strings redacted; staged additions contain zero high-confidence credential patterns. Build/CTest logs and screenshots remain workspace-only.
+- [ ] Commit, push, verify exact-SHA hosted CI, integrate to `main`, and clean only the completed feature branch.
+- [ ] Keep automatic memory extraction authorization, decay policy, GUI command autocomplete, and richer lifecycle management open; no automatic capture was added.
+
 ### Sprint 1063 — authoritative memory source-event provenance (local gate passed)
 
 - [x] Give each incoming user turn an application-generated message/event ID and persist `/memory` commands before applying explicit add/update operations.
@@ -8,8 +19,8 @@
 - [x] Add store/command contracts and an isolated real-orchestrator subprocess contract proving event ID points to the exact persisted user message; no provider request.
 - [x] Run official Qt MinGW Release/full CTest non-visual gate: full CTest 126/126, changed-module Pyright 0 diagnostics, focused memory/conversation contracts pass. Passing manifest `artifacts/evidence/sprint1063-memory-provenance-r4.json`, SHA-256 `238154C8CEA17B67F157677B086526788DE2ED8ED6A97B94E291A53B08588E4A`; the passing manifest's build step was up-to-date after the successful 519-step full compile in the earlier gate attempt. Build/CTest/preflight logs remain workspace-only.
 - [x] Run redacted secret-pattern scan against the staged diff; clean. `git diff --cached --check` passes.
-- [ ] Commit/push the verified source/tests/docs plus manifest, and confirm exact-SHA hosted CI before integrating and cleaning the feature branch.
-- [ ] Continue remaining Tier-1 provenance: generated-memory extraction authorization, contradiction/supersession policy, last-verified/decay, and lifecycle controls.
+- [x] Commit/push the verified source/tests/docs plus manifest, and confirm exact-SHA hosted CI before integrating and cleaning the feature branch. Integrated at `a201049b76eb367e61be5333dbb1b82650273a0c`; hosted Actions run `36810359424` passed all five jobs; feature branch removed.
+- [ ] Continue remaining Tier-1 provenance: generated-memory extraction authorization, decay policy, and remaining lifecycle controls. Sprint 1064 adds explicit verification/supersession and history visibility.
 
 ### Sprint 1062 — Langfuse ingestion clock-resolution contract (merged; hosted CI green)
 
@@ -28,7 +39,7 @@
 - [x] Run Qt MinGW Release/full CTest (126/126) and the official mapped memory-manager mouse/keyboard flow (29 successful interactions, 10 distinct images); inspect each image plus report and both captured process logs.
 - [x] Update evidence manifest, handover/progress/feature/backlog docs, and interaction plan. Passing manifest `artifacts/evidence/sprint1061-memory-pins-r2.json`, SHA-256 `6EE403F2DBA6F96345F668EA2C28A3AA349C76C8DF943FFE15536129205452DA`; build/CTest and GUI payloads remain workspace-only. Pyright is clean; clangd was invoked with the real Qt/MinGW compile database but did not complete before timeout, so its result is unverified and the successful MinGW build is the compiler evidence.
 - [x] Run redacted repository and staged-diff scans, commit/push the verified slice, confirm exact-SHA hosted CI, fast-forward `main`, and delete the completed feature branch. Commit `eb3b8c4fb2bd6387466acaab66e0de2494b0a56c`; Actions run `36797742968` passed all five jobs on the exact `main` SHA.
-- [ ] Continue remaining Tier-1 memory provenance work: authoritative event IDs, generated-memory extraction authorization, contradiction/supersession policy, last-verified/decay, and lifecycle controls.
+- [x] Continue remaining Tier-1 memory provenance work in later slices: Sprint 1063 completed authoritative event IDs; Sprint 1064 added explicit supersession and last-verified timestamps. Generated-memory extraction authorization, decay policy, and richer lifecycle controls remain open.
 
 ### Sprint 1060 — explicit memory provenance (local gate passed; branch pushed)
 
@@ -40,7 +51,7 @@
 - [x] Run redacted tracked-repository scan (five existing fixture-only matches in three untouched test files; no credentials) and staged-diff scan (zero high-confidence matches); stage only verified source/tests/docs and the required manifest. Build/CTest logs remain workspace-only.
 - [x] Commit and push the verified slice as `f10ebf094b570279b1f62a1a1bd8beea80cefebc`; confirm `origin/sprint-1060-memory-provenance` matches.
 - [x] Verify hosted CI and integrate to `main`: GitHub run `36792365682` passed all five jobs on exact `main` SHA `e2035fddaf39c22ebb24202e2bde7fad59b09b8d`. PR merge API returned 403; user-authorized fast-forward push was used and verified.
-- [ ] Remaining schema/write-gate work stays open: source event IDs from authoritative transcript events, generated-memory extraction and authorization, contradiction/supersession, and last-verified/decay.
+- [x] Source event IDs now come from authoritative transcript events (Sprint 1063); Sprint 1064 implements explicit supersession and verification. Automatic extraction authorization and decay policy remain open.
 
 
 ### Sprint 1059 — spatially bounded project inspection (pushed; hosted CI pending)
