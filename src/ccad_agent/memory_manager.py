@@ -356,7 +356,8 @@ class MemoryManager:
                     "created_at": str(entry.get("created_at", "")),
                     "last_used_at": str(entry.get("last_used_at", "")),
                     "updated_at": str(entry.get("updated_at", "")),
-                    "use_count": entry.get("use_count", 0)})
+                    "use_count": entry.get("use_count", 0),
+                    "pinned": bool(entry.get("provenance", {}).get("pinned", False))})
         query_term_count = len(set(self._word.findall(str(query).casefold())))
         ranked_by_tier = {}
         candidate_count_by_tier = {}
@@ -393,6 +394,12 @@ class MemoryManager:
                     {**lexical_channels_by_field, "semantic": semantic_ranked},
                     weights={"title": 1.2, "content": 1.0,
                              "tags": 0.8, "semantic": 1.0})
+            fused_ids = {item["document"]["entry"]["id"] for item in fused}
+            for candidate in candidates:
+                if candidate["pinned"] and candidate["entry"]["id"] not in fused_ids:
+                    fused.append({"document": candidate, "score": 0.0,
+                                  "channel_ranks": {}, "matched_terms": [],
+                                  "ordinal": candidate["entry_index"]})
             # Rank, weight, and diversify within the tier: unrelated memories
             # in other namespaces cannot perturb this tier's document stats.
             for item in fused:
@@ -406,10 +413,17 @@ class MemoryManager:
                 item["usage_weight"] = self._usage_weight(document.get("use_count", 0))
                 item["score"] *= (item["importance_weight"] * item["recency_weight"] *
                                   item["usage_weight"])
-            fused.sort(key=lambda item: (-item["score"], item["ordinal"]))
+            fused.sort(key=lambda item: (
+                not item["document"]["pinned"], -item["score"], item["ordinal"]))
             candidate_count_by_tier[tier] = len(fused)
-            ranked_by_tier[tier] = diversify_ranked(
-                fused, limit=result_limit, text_key="text", relevance_weight=0.7,
+            pinned_rows = [item for item in fused if item["document"]["pinned"]]
+            ordinary_rows = [item for item in fused if not item["document"]["pinned"]]
+            for item in pinned_rows:
+                item["diversity_score"] = 0.0
+                item["redundancy_score"] = 0.0
+            ranked_by_tier[tier] = pinned_rows[:result_limit] + diversify_ranked(
+                ordinary_rows, limit=max(0, result_limit - len(pinned_rows)),
+                text_key="text", relevance_weight=0.7,
                 similarity_fn=self._candidate_similarity)
             lexical_scores_by_tier[tier] = {
                 item["document"]["entry"]["id"]: item["score"] for item in lexical}
@@ -417,25 +431,31 @@ class MemoryManager:
                 entry_id: item["score"] for entry_id, item in semantic_by_id.items()}
 
         # Interleave tier-local rankings so one larger tier cannot crowd every
-        # other enabled tier out of the bounded provider context.
+        # other enabled tier out of the bounded provider context. Explicitly
+        # pinned records form the first pass across tiers; unpinned records fill
+        # the remaining slots by the existing tier-fair ranking.
         selected = []
-        tier_rank = 0
-        while len(selected) < result_limit:
-            appended = False
-            for tier in self.TIERS:
-                ranked = ranked_by_tier[tier]
-                if tier_rank >= len(ranked):
-                    continue
-                item = ranked[tier_rank]
-                item["tier_rank"] = tier_rank + 1
-                item["tier_candidate_count"] = candidate_count_by_tier[tier]
-                selected.append(item)
-                appended = True
-                if len(selected) >= result_limit:
+        for pinned_pass in (True, False):
+            tier_rank = 0
+            while len(selected) < result_limit:
+                appended = False
+                for tier in self.TIERS:
+                    ranked = [item for item in ranked_by_tier[tier]
+                              if item["document"]["pinned"] is pinned_pass]
+                    if tier_rank >= len(ranked):
+                        continue
+                    item = ranked[tier_rank]
+                    item["tier_rank"] = tier_rank + 1
+                    item["tier_candidate_count"] = candidate_count_by_tier[tier]
+                    selected.append(item)
+                    appended = True
+                    if len(selected) >= result_limit:
+                        break
+                if not appended:
                     break
-            if not appended:
+                tier_rank += 1
+            if len(selected) >= result_limit:
                 break
-            tier_rank += 1
         durable_ids = [item["document"]["entry"]["id"] for item in selected
                        if item["document"]["tier"] != "working_memory"]
         try:
@@ -645,7 +665,7 @@ class MemoryManager:
         return self.retrieve(query, limit=8)
 
     def add(self, content: str, *, tier="ltm", title="", scope=None, tags=None,
-            kind=None,
+            kind=None, pinned=None,
             expires_at="", importance=None, source_evidence_class="",
             source_thread_id="", source_turn_id=""):
         tier = self._check_tier(tier)
@@ -655,6 +675,8 @@ class MemoryManager:
                 (isinstance(importance, bool) or not isinstance(importance, int)
                  or not 1 <= importance <= 5)):
             raise ValueError("memory importance must be an integer from 1 to 5")
+        if pinned is not None and type(pinned) is not bool:
+            raise ValueError("memory pinned state must be boolean")
         if tier == "working_memory" and not self._retain_working_memory_task:
             raise RuntimeError("Working Memory requires an active task; use /task start")
         scope = str(scope or {"working_memory": "task", "ltm": "conversation",
@@ -663,6 +685,9 @@ class MemoryManager:
         importance = 3 if importance is None else importance
         provenance = self._user_provenance(
             source_evidence_class, source_thread_id, source_turn_id)
+        if pinned is not None:
+            provenance = dict(provenance or {})
+            provenance["pinned"] = pinned
         entry = self.store.normalise(content, title=title, scope=scope, tags=tags,
                                      tier=tier, kind=kind or "fact", namespace=namespace,
                                      expires_at=expires_at, importance=importance,
@@ -674,9 +699,12 @@ class MemoryManager:
             if ((kind is not None and existing.get("kind", "fact") != kind) or
                     (importance is not None and
                      existing.get("importance", 3) != importance) or
+                    (pinned is not None and
+                     bool(existing.get("provenance", {}).get("pinned", False)) != pinned) or
                     source_evidence_class):
                 return self.update(existing["id"], content, kind=kind,
                                    importance=importance,
+                                   pinned=pinned,
                                    source_evidence_class=source_evidence_class,
                                    source_thread_id=source_thread_id,
                                    source_turn_id=source_turn_id)
@@ -797,8 +825,11 @@ class MemoryManager:
                         self.store.delete(entry_id)
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
-               expires_at=None, kind=None, importance=None, source_evidence_class="",
+               expires_at=None, kind=None, importance=None, pinned=None,
+               source_evidence_class="",
                source_thread_id="", source_turn_id=""):
+        if pinned is not None and type(pinned) is not bool:
+            raise ValueError("memory pinned state must be boolean")
         for tier in self.TIERS:
             if not self.enabled[tier]:
                 if tier != "working_memory" and any(
@@ -825,6 +856,10 @@ class MemoryManager:
             if provenance is not None:
                 fields["provenance"] = self.store._merge_provenance(
                     entry.get("provenance"), provenance)
+            if pinned is not None:
+                fields.setdefault("provenance", self.store._normalise_provenance(
+                    entry.get("provenance")))
+                fields["provenance"]["pinned"] = pinned
             candidate = self.store.normalise(content, **fields)
             duplicate = self._near_duplicate(candidate["content"], tier,
                                              exclude_id=entry_id, scope=target_scope)
@@ -843,11 +878,14 @@ class MemoryManager:
                         replacement[field] = entry[field]
                 replacement["provenance"] = self.store._merge_provenance(
                     entry.get("provenance"), candidate.get("provenance"))
+                if pinned is not None:
+                    replacement["provenance"]["pinned"] = pinned
             else:
                 store_fields = dict(fields)
                 store_fields.pop("provenance", None)
                 replacement = self.store.update(
-                    entry_id, content, provenance=provenance, **store_fields)
+                    entry_id, content, provenance=provenance, pinned=pinned,
+                    **store_fields)
                 if replacement is None:
                     return None
                 replacement["project_id"] = self.project_id

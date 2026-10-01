@@ -1,5 +1,16 @@
 # CCad Agent production TODO
 
+### Sprint 1061 — memory pin/unpin lifecycle (local verification passed; publication pending)
+
+- [x] Complete verified `main` integration for Sprints 1056–1060: direct fast-forward push at `e2035fddaf39c22ebb24202e2bde7fad59b09b8d`; hosted workflow run `36792365682` passed all five jobs on that exact SHA; only `main` remains as a local/remote branch. PR merge API was unavailable, so the authorized fast-forward push was used and verified.
+- [x] Expose provenance pin state in Manage Memories and allow explicit pin/unpin without changing memory content, scope, or provenance lineage.
+- [x] Ensure pinned records are candidates without lexical matches, rank before unpinned retrieval candidates across tiers, and remain subject to the existing context budget.
+- [x] Contract-test pin validation, persistence, explicit unpin after provenance merge, retrieval priority over lexical matches, and GUI state updates.
+- [x] Run Qt MinGW Release/full CTest (126/126) and the official mapped memory-manager mouse/keyboard flow (29 successful interactions, 10 distinct images); inspect each image plus report and both captured process logs.
+- [x] Update evidence manifest, handover/progress/feature/backlog docs, and interaction plan. Passing manifest `artifacts/evidence/sprint1061-memory-pins-r2.json`, SHA-256 `6EE403F2DBA6F96345F668EA2C28A3AA349C76C8DF943FFE15536129205452DA`; build/CTest and GUI payloads remain workspace-only. Pyright is clean; clangd was invoked with the real Qt/MinGW compile database but did not complete before timeout, so its result is unverified and the successful MinGW build is the compiler evidence.
+- [ ] Run redacted repository and staged-diff scans, commit/push the verified slice, confirm exact-SHA hosted CI, then integrate and clean its branch.
+- [ ] Continue remaining Tier-1 memory provenance work: authoritative event IDs, generated-memory extraction authorization, contradiction/supersession policy, last-verified/decay, and lifecycle controls.
+
 ### Sprint 1060 — explicit memory provenance (local gate passed; branch pushed)
 
 - [x] Persist validated memory authorship, explicit-user-evidence, evidence class, thread/turn IDs, optional confidence, pinned state, and bounded source-memory lineage; legacy entries default to unknown provenance without rewriting their files.
@@ -9,8 +20,8 @@
 - [x] Run official Qt MinGW Release/full CTest gate (126/126), inspect logs/manifest, and run changed-module Pyright (0 diagnostics). Final manifest `artifacts/evidence/sprint1060-memory-provenance-r2.json`, SHA-256 `0B4C7427659787B21D29A9BAD22398A25034C29A8D91E781BC84800F4A897719`.
 - [x] Run redacted tracked-repository scan (five existing fixture-only matches in three untouched test files; no credentials) and staged-diff scan (zero high-confidence matches); stage only verified source/tests/docs and the required manifest. Build/CTest logs remain workspace-only.
 - [x] Commit and push the verified slice as `f10ebf094b570279b1f62a1a1bd8beea80cefebc`; confirm `origin/sprint-1060-memory-provenance` matches.
-- [ ] Verify hosted CI and merge through an authorized main-target PR; branch push alone does not run the repository's main/PR CI workflow.
-- [ ] Remaining schema/write-gate work stays open: source event IDs from authoritative transcript events, generated-memory extraction and authorization, contradiction/supersession, last-verified/decay, and user-facing pin controls.
+- [x] Verify hosted CI and integrate to `main`: GitHub run `36792365682` passed all five jobs on exact `main` SHA `e2035fddaf39c22ebb24202e2bde7fad59b09b8d`. PR merge API returned 403; user-authorized fast-forward push was used and verified.
+- [ ] Remaining schema/write-gate work stays open: source event IDs from authoritative transcript events, generated-memory extraction and authorization, contradiction/supersession, and last-verified/decay.
 
 
 ### Sprint 1059 — spatially bounded project inspection (pushed; hosted CI pending)

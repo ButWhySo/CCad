@@ -31,6 +31,16 @@ with tempfile.TemporaryDirectory() as temp:
     assert item["provenance"]["explicit_user_evidence"] is True
     assert item["provenance"]["source_thread_ids"] == ["thread-a"]
     assert item["provenance"]["source_turn_ids"] == ["turn-a"]
+    pinned = store.update(item["id"], item["content"], pinned=True)
+    assert pinned["provenance"]["pinned"] is True
+    unpinned = store.update(item["id"], item["content"], pinned=False)
+    assert unpinned["provenance"]["pinned"] is False
+    try:
+        store.update(item["id"], item["content"], pinned="yes")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("non-boolean memory pin state was accepted")
     assert store.list(scope="other") == []
     updated = store.update(item["id"], "Use 0.30 mm minimum track width", title="updated")
     assert updated["id"] == item["id"]

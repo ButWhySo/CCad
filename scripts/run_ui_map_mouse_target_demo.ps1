@@ -942,7 +942,8 @@ if ($Name.StartsWith("sprint974-memory")) {
     }
     $reportPath = Join-Path $ScreenshotDir "$Name-target-sequence.json"
     $reportData = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
-    foreach ($field in @("memory_empty_write_rejected", "memory_added", "memory_updated", "memory_deleted")) {
+    foreach ($field in @("memory_empty_write_rejected", "memory_added", "memory_updated",
+                         "memory_pin_visible", "memory_unpin_visible", "memory_deleted")) {
       if (-not ($reportData.entries | Where-Object { $_.$field -eq $true })) {
         throw "Mapped memory CRUD scenario did not verify '$field'. Report: $reportPath"
       }

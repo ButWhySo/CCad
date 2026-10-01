@@ -157,6 +157,14 @@ with tempfile.TemporaryDirectory() as temp:
     assert [item["importance"] for item in ranked] == [5, 1]
     assert [item["importance_weight"] for item in ranking] == [1.1, 0.9]
     assert unrelated["id"] not in {item["id"] for item in ranked}
+    manager.update(unrelated["id"], unrelated["content"], pinned=True)
+    ranked, _ = manager.retrieve_with_metadata("return path U3", limit=1,
+                                               channels={"lexical"})
+    assert ranked[0]["id"] == unrelated["id"], "pinned memory must outrank query matches"
+    manager.update(unrelated["id"], unrelated["content"], pinned=False)
+    ranked, _ = manager.retrieve_with_metadata("return path U3", limit=1,
+                                               channels={"lexical"})
+    assert ranked[0]["id"] == high_priority["id"], "unpin restores relevance ranking"
     manager.update(low_priority["id"],
                    "Return path near U3 should leave more test access",
                    importance=4)

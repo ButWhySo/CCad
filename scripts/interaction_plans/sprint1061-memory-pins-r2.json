@@ -1,0 +1,23 @@
+{
+  "target_sequence": "sprint975-memory-ui-r2",
+  "project": "..\\..\\CCad\\artifacts\\demos\\sprint160-placement-crash-ci-final.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "tab:agent",
+    "action:settingsBtn",
+    "control:categoryList",
+    "action:agent_memory_manage",
+    "control:memoryPinned",
+    "action:saveMemory",
+    "control:memoryEntries",
+    "action:deleteMemory",
+    "action:agent_memory_reset",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [
+    "control:memoryContent"
+  ],
+  "meaningful_screenshots": 10
+}

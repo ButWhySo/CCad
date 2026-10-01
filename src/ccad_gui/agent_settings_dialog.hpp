@@ -95,6 +95,7 @@ private:
   QComboBox* memory_tier_{nullptr};
   QComboBox* memory_kind_{nullptr};
   QComboBox* memory_importance_{nullptr};
+  QCheckBox* memory_pinned_{nullptr};
   QComboBox* hooks_combo_{nullptr};
 
   // General settings

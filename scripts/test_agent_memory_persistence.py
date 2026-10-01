@@ -64,6 +64,8 @@ with tempfile.TemporaryDirectory() as temp:
     env["CCAD_AGENT_CHECKPOINT_DB"] = str(checkpoint_path)
     env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
     requests = [
+        {"method": "agent.set_thread_id", "params": {
+            "thread_id": "rpc-thread-provenance"}},
         {"method": "agent.memory_set_enabled", "params": {
             "tier": "ltm", "enabled": True}},
         {"method": "agent.memory_add", "params": {
@@ -107,7 +109,6 @@ with tempfile.TemporaryDirectory() as temp:
 
     assert matching("memory_added")[0]["kind"] == "preference"
     assert matching("memory_added")[0]["importance"] == 5
-
     toggles = matching("memory_state")
     assert any(state.get("tier") == "ltm" and state.get("enabled") is True
                and state.get("persisted") is True for state in toggles)
@@ -130,6 +131,54 @@ with tempfile.TemporaryDirectory() as temp:
     with sqlite3.connect(checkpoint_path) as database:
         assert database.execute("SELECT value FROM protected_checkpoint").fetchone() == ("retain",)
     database.close()
+
+with tempfile.TemporaryDirectory() as temp:
+    memory_path = Path(temp) / "memory.json"
+    env = os.environ.copy()
+    env["APPDATA"] = str(Path(temp) / "roaming")
+    env["CCAD_AGENT_MEMORY_PATH"] = str(memory_path)
+    env["CCAD_AGENT_THREAD_ID"] = "rpc-thread-pinning"
+    env["CCAD_AGENT_DEFER_PROVIDER_INIT"] = "1"
+    setup = [
+        {"method": "agent.set_thread_id", "params": {"thread_id": "rpc-thread-pinning"}},
+        {"method": "agent.memory_set_enabled", "params": {"tier": "ltm", "enabled": True}},
+        {"method": "agent.memory_add", "params": {
+            "tier": "ltm", "scope": "conversation",
+            "content": "Persist an independently controlled pinned memory."}},
+    ]
+    setup_process = subprocess.run(
+        [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
+        input="".join(json.dumps(request) + "\n" for request in setup),
+        capture_output=True, text=True, env=env, timeout=45, check=False)
+    assert setup_process.returncode == 0, setup_process.stderr[-2000:]
+    setup_events = [json.loads(line) for line in setup_process.stdout.splitlines()
+                    if line.startswith("{")]
+    added = next(event["params"] for event in setup_events
+                 if event.get("method") == "memory_added")
+    updates_request = [
+        {"method": "agent.set_thread_id", "params": {"thread_id": "rpc-thread-pinning"}},
+        {"method": "agent.memory_set_enabled", "params": {"tier": "ltm", "enabled": True}},
+        {"method": "agent.memory_update", "params": {
+            "id": added["id"], "content": "Persist an independently controlled pinned memory.",
+            "pinned": True}},
+        {"method": "agent.memory_update", "params": {
+            "id": added["id"], "content": "Persist an independently controlled pinned memory.",
+            "pinned": False}},
+    ]
+    update_process = subprocess.run(
+        [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
+        input="".join(json.dumps(request) + "\n" for request in updates_request),
+        capture_output=True, text=True, env=env, timeout=45, check=False)
+    assert update_process.returncode == 0, update_process.stderr[-2000:]
+    update_events = [json.loads(line) for line in update_process.stdout.splitlines()
+                     if line.startswith("{")]
+    updates = [event["params"] for event in update_events
+               if event.get("method") == "memory_updated"]
+    assert [(item.get("updated"), item.get("pinned")) for item in updates] == [
+        (True, True), (True, False)], update_process.stdout[-3000:]
+    persisted_entry = next(entry for entry in json.loads(memory_path.read_text(encoding="utf-8"))
+                           if entry["id"] == added["id"])
+    assert persisted_entry["provenance"]["pinned"] is False
 
 with tempfile.TemporaryDirectory() as temp:
     memory_path = Path(temp) / "memory.json"

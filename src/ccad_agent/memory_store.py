@@ -246,9 +246,11 @@ class MemoryStore:
 
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
                tier=None, namespace=None, expires_at=None, kind=None, importance=None,
-               provenance=None):
+               provenance=None, pinned=None):
         if SECRET_MARKERS.search(str(entry_id or "")):
             return None
+        if pinned is not None and type(pinned) is not bool:
+            raise ValueError("memory pinned state must be boolean")
         entries = self._read()
         for index, current in enumerate(entries):
             if current.get("id") == entry_id:
@@ -274,6 +276,8 @@ class MemoryStore:
                         replacement[field] = current[field]
                 replacement["provenance"] = self._merge_provenance(
                     current.get("provenance"), replacement.get("provenance"))
+                if pinned is not None:
+                    replacement["provenance"]["pinned"] = pinned
                 entries[index] = replacement
                 self._write(entries)
                 return replacement

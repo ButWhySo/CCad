@@ -1398,6 +1398,8 @@ int main(int argc, char** argv) {
           ok = interact("ui.type_text",
                         "{\"id\":\"control:memoryContent\",\"text\":\"Preserve the current ground return path around U3.\"}",
                         "control:memoryContent", "memory-ui-content") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:memoryPinned\"}",
+                        "control:memoryPinned", "memory-ui-pin-new-record") && ok;
           ok = interact("ui.click", "{\"id\":\"action:saveMemory\"}",
                         "action:saveMemory", "memory-ui-add-request") && ok;
           for (int attempt = 0; attempt < 40; ++attempt) {
@@ -1408,9 +1410,35 @@ int main(int argc, char** argv) {
           const bool added = memoryStatus() && memoryStatus()->text() == "Memory added.";
           entries << QString("{\"memory_added\":%1}").arg(added ? "true" : "false");
           ok = added && ok;
+          const auto hasPinnedRow = [](bool should_be_pinned) {
+            for (QWidget* widget : QApplication::allWidgets()) {
+              auto* list = qobject_cast<QListWidget*>(widget);
+              if (!list || list->objectName() != "control:memoryEntries") continue;
+              for (int row = 0; row < list->count(); ++row) {
+                const auto* item = list->item(row);
+                if (item && item->text().contains("priority") &&
+                    item->data(Qt::UserRole + 7).toBool() == should_be_pinned)
+                  return true;
+              }
+            }
+            return false;
+          };
+          bool pin_visible = false;
+          for (int attempt = 0; attempt < 40 && !pin_visible; ++attempt) {
+            pin_visible = hasPinnedRow(true);
+            if (!pin_visible) {
+              QThread::msleep(100);
+              QApplication::processEvents();
+            }
+          }
+          entries << QString("{\"memory_pin_visible\":%1}")
+                         .arg(pin_visible ? "true" : "false");
+          ok = pin_visible && ok;
           ok = captureMemoryResult() && ok;
           ok = interact("ui.click", "{\"id\":\"control:memoryEntries\",\"row\":0}",
                         "control:memoryEntries", "memory-ui-select-record") && ok;
+          ok = interact("ui.click", "{\"id\":\"control:memoryPinned\"}",
+                        "control:memoryPinned", "memory-ui-unpin-record") && ok;
           ok = interact("ui.type_text",
                         "{\"id\":\"control:memoryTitle\",\"text\":\"Updated UI lifecycle record\"}",
                         "control:memoryTitle", "memory-ui-update-title") && ok;
@@ -1427,6 +1455,17 @@ int main(int argc, char** argv) {
           const bool updated = memoryStatus() && memoryStatus()->text() == "Memory updated.";
           entries << QString("{\"memory_updated\":%1}").arg(updated ? "true" : "false");
           ok = updated && ok;
+          bool unpin_visible = false;
+          for (int attempt = 0; attempt < 40 && !unpin_visible; ++attempt) {
+            unpin_visible = hasPinnedRow(false);
+            if (!unpin_visible) {
+              QThread::msleep(100);
+              QApplication::processEvents();
+            }
+          }
+          entries << QString("{\"memory_unpin_visible\":%1}")
+                         .arg(unpin_visible ? "true" : "false");
+          ok = unpin_visible && ok;
           ok = captureMemoryResult() && ok;
           const auto* selected_memory = window->findChild<QListWidget*>("control:memoryEntries");
           const QString selected_memory_id = selected_memory && selected_memory->currentItem()

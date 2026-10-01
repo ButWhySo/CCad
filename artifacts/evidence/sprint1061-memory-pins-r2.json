@@ -1,0 +1,123 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1061-memory-pins-r2",
+    "feature":  "Persistent Manage Memories pin and unpin state with pinned-first bounded retrieval",
+    "validation_mode":  "gui",
+    "interaction_plan":  "scripts/interaction_plans/sprint1061-memory-pins-r2.json",
+    "target_sequence":  "sprint975-memory-ui-r2-sprint1061-memory-pins-r2",
+    "visual_validation":  "required",
+    "started_utc":  "2026-10-01T00:31:53.4450355Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.15 log=artifacts/evidence/sprint1061-memory-pins-r2/preflight.log",
+                      "finished_utc":  "2026-10-01T00:31:54.6919889Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint1061-memory-pins; source timestamps precede test log",
+                      "finished_utc":  "2026-10-01T00:31:55.7091671Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "reused verified prior run sprint1061-memory-pins; 126/126 passed",
+                      "finished_utc":  "2026-10-01T00:31:55.7091671Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=37.08 log=artifacts/evidence/sprint1061-memory-pins-r2/ui_harness.log",
+                      "finished_utc":  "2026-10-01T00:32:32.7927410Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=29; screenshots=10",
+                      "finished_utc":  "2026-10-01T00:32:32.9862795Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-10-01T00:32:33.0262797Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/build.log",
+                                         "sha256":  "BA313DC67980DAB721C8884B25F889B293DC9EEBCA0363D9A624E966AE16CDA2"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/ctest.log",
+                                         "sha256":  "3C716EA7B61B463EBC0BA69C6014717E5377A3C55CCE0A726682176E79145994"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2.stdout.log",
+                                         "sha256":  "34C1E521B27BCDD10D0A4BB84E2338A03EA2F50C938B9349B5813236398172F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-12-result.png",
+                                         "sha256":  "439CF3E0E91B3C018E3EBF4F7E469939F0C503E9C4D48B45AB8997076222CE3C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-18-result.png",
+                                         "sha256":  "93193BDA6E88695F95DAC2EDA09A4380A50CE3E75810E672412D98593319D787"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-26-result.png",
+                                         "sha256":  "8220B14DA32854B807BA79ECE8B53EBCCF9C000CDCA825D8FEB5288BDC40A59A"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-28-result.png",
+                                         "sha256":  "FCD33D7C36D4246A50019F3870106325722B27B625B33528A8440B7141C61826"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-40-result.png",
+                                         "sha256":  "D2412F4E456EF4AE7D2298FBDE4A429C9CC7D266A4E648387EF813D566051C9B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-delete-confirmation.png",
+                                         "sha256":  "C29CD046BA16AF5453D1516A50108D0D3BAA6D29FF5A08365B2BA662F3124913"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-manager-open.png",
+                                         "sha256":  "5CCCF523C4DE13D2E107812E33537BA04A0BF67F145A8E72970B172287CF4CCF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-reset-confirmation.png",
+                                         "sha256":  "5EE6DB81063BDF9F39F49395BA75BAF582974D7408CB847CE21506AC2E171702"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-settings-closed.png",
+                                         "sha256":  "4303F29ED30C40CF3E4B5D5BF121BBB485E0C077E100A4CBC3AF65D0DE2C0456"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-memory-ui-settings-open.png",
+                                         "sha256":  "8E71B68E70A27000374439C34643651AB47265E5DCDD60EE72B9161E072CEE36"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/sprint975-memory-ui-r2-sprint1061-memory-pins-r2-target-sequence.json",
+                                         "sha256":  "44E5F7DE5F95AA5391C4A35F198B21A0271B8842017E7251C215508B37092890"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1061-memory-pins-r2/ui_harness.log",
+                                         "sha256":  "D0D287477A30C505503A66352470D7DA4A9B8AB0A118CD734F82E7A9B824C440"
+                                     }
+                                 ],
+    "finished_utc":  "2026-10-01T00:32:33.1012819Z"
+}

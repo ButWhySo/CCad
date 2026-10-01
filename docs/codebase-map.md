@@ -2495,6 +2495,23 @@ include target ordinals for this scenario so repeated controls do not overwrite
 earlier visual states. Release/full CTest and the exact workspace-only evidence
 manifest are recorded in the Sprint 1007 checklist.
 
+## Sprint 1061 memory pin controls (active)
+
+`MemoryStore.update(..., pinned=...)` treats an explicit boolean as an
+authoritative user choice after provenance merge, which makes unpin reversible
+instead of sticky. `MemoryManager` adds pinned entries even without lexical
+matches and prioritizes them across tiers before filling remaining bounded
+retrieval slots. The native memory add/update schemas and orchestrator RPC
+preserve pin state; Manage Memories uses `control:memoryPinned` and shows a
+Pinned row marker. The app-owned `sprint975-memory-ui-r2` sequence covers pin
+and unpin with mouse interactions, followed by update/delete/reset. Focused
+tests and Pyright pass; Qt MinGW Release and full CTest pass 126/126, and 29
+mapped interactions plus 10 distinct inspected screenshots pass. Manifest
+`artifacts/evidence/sprint1061-memory-pins-r2.json` has SHA-256
+`6EE403F2DBA6F96345F668EA2C28A3AA349C76C8DF943FFE15536129205452DA`.
+Clangd did not complete its bounded check, so only the actual MinGW build is
+claimed as C++ compilation evidence. Hosted CI/branch integration remain open.
+
 ## Sprint 1008 bounded stable Memory Summary
 
 `ContextBroker._summary()` creates a deterministic bounded provider-facing synopsis from retrieved durable LTM/episodic preferences and corrections, plus explicitly high-importance facts. It excludes task-lifetime STM, low-importance facts, and secret-bearing rows. This is source-backed projection, not model-generated semantic summarization; no network call is added. `scripts/test_context_broker.py` proves summary content reaches the serialized provider context package and stays within its bound. Changed-module Pyright reports zero diagnostics. The Qt/MinGW Release build and full CTest pass 119/119; `tests/test_visual_harness_policy.cpp` normalizes CRLF when comparing PowerShell source fragments. Workspace-only manifest `artifacts/evidence/sprint1008-memory-summary-r2.json` (SHA-256 `CEAC8CE780EC8DFDBB7E5B09FA494ECB29D4B07CC1DEAC98536C8D3D5A12433D`).

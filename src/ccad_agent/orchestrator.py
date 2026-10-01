@@ -2960,6 +2960,9 @@ def handle_provider_and_state_request(req, executor):
                           "tier": tier or "all", "secret_value_visible": False}
                 event = "memory_state"
             elif method == "agent.memory_add":
+                pinned = params.get("pinned")
+                if pinned is not None and type(pinned) is not bool:
+                    raise ValueError("memory pinned state must be boolean")
                 tier = memory_manager.normalize_tier(str(params.get("tier", "ltm")))
                 if tier == "working_memory" and not memory_task_scopes.is_active(
                         memory_manager.identities["working_memory"]):
@@ -2970,6 +2973,7 @@ def handle_provider_and_state_request(req, executor):
                     scope=str(params.get("scope", "")),
                     title=str(params.get("title", "")),
                     kind=params.get("kind"), importance=params.get("importance"),
+                    pinned=pinned,
                     source_evidence_class="memory_manager_ui",
                     source_thread_id=memory_manager.identities.get("ltm", ""))
                 if entry is None:
@@ -2977,18 +2981,25 @@ def handle_provider_and_state_request(req, executor):
                 result = {"id": entry["id"], "tier": entry["tier"],
                           "scope": entry["scope"], "kind": entry["kind"],
                           "importance": entry["importance"],
+                          "pinned": bool(entry.get("provenance", {}).get("pinned", False)),
                           "secret_value_visible": False}
                 event = "memory_added"
             elif method == "agent.memory_update":
+                pinned = params.get("pinned")
+                if pinned is not None and type(pinned) is not bool:
+                    raise ValueError("memory pinned state must be boolean")
                 entry = memory_manager.update(
                     str(params.get("id", "")), str(params.get("content", "")),
                     title=params.get("title"), scope=params.get("scope"),
                     kind=params.get("kind"), importance=params.get("importance"),
+                    pinned=pinned,
                     source_evidence_class="memory_manager_ui",
                     source_thread_id=memory_manager.identities.get("ltm", ""))
                 result = {"id": str(params.get("id", "")), "updated": entry is not None,
                           "kind": entry.get("kind", "fact") if entry else "",
                           "importance": entry.get("importance", 3) if entry else None,
+                          "pinned": bool(entry.get("provenance", {}).get("pinned", False))
+                          if entry else False,
                           "secret_value_visible": False}
                 event = "memory_updated"
             else:

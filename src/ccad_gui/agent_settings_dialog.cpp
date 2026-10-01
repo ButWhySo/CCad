@@ -1294,7 +1294,9 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
       const QJsonObject entry = value.toObject();
       const QString kind = entry.value("kind").toString("fact");
       const int importance = entry.value("importance").toInt(3);
-      const QString label = QString("%1 · %2 memory  ·  priority %3/5  ·  record %4")
+      const bool pinned = entry.value("provenance").toObject().value("pinned").toBool();
+      const QString label = QString("%1%2 · %3 memory  ·  priority %4/5  ·  record %5")
+          .arg(pinned ? "Pinned · " : "")
           .arg(kind, entry.value("tier").toString())
           .arg(importance)
           .arg(entry.value("id").toString().right(8));
@@ -1306,6 +1308,7 @@ void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
       row->setData(Qt::UserRole + 4, entry.value("title").toString());
       row->setData(Qt::UserRole + 5, kind);
       row->setData(Qt::UserRole + 6, importance);
+      row->setData(Qt::UserRole + 7, pinned);
       if (row->data(Qt::UserRole).toString() == selected)
         memory_entries_->setCurrentItem(row);
     }
@@ -1398,6 +1401,8 @@ void AgentSettingsDialog::openMemoryManager() {
   memory_importance_->addItem("4 · Important", 4);
   memory_importance_->addItem("5 · Highest priority", 5);
   memory_importance_->setCurrentIndex(memory_importance_->findData(3));
+  memory_pinned_ = new QCheckBox("Pin for context retrieval", dialog);
+  memory_pinned_->setObjectName("control:memoryPinned");
   memory_title_ = new QLineEdit(dialog);
   memory_title_->setObjectName("control:memoryTitle");
   memory_scope_ = new QLineEdit(dialog);
@@ -1408,6 +1413,7 @@ void AgentSettingsDialog::openMemoryManager() {
   form->addRow("Tier:", memory_tier_);
   form->addRow("Memory type:", memory_kind_);
   form->addRow("User-set importance:", memory_importance_);
+  form->addRow("Keep in context:", memory_pinned_);
   form->addRow("Title:", memory_title_);
   form->addRow("Scope:", memory_scope_);
   form->addRow("Content:", memory_content_);
@@ -1449,6 +1455,8 @@ void AgentSettingsDialog::openMemoryManager() {
               stored_importance >= 1 && stored_importance <= 5 ? stored_importance : 3)
         : -1;
     if (importance >= 0) memory_importance_->setCurrentIndex(importance);
+    if (memory_pinned_)
+      memory_pinned_->setChecked(current->data(Qt::UserRole + 7).toBool());
   });
   connect(add, &QPushButton::clicked, this, [this]() {
     if (memory_entries_) memory_entries_->clearSelection();
@@ -1458,6 +1466,7 @@ void AgentSettingsDialog::openMemoryManager() {
     if (memory_kind_) memory_kind_->setCurrentIndex(memory_kind_->findData("fact"));
     if (memory_importance_)
       memory_importance_->setCurrentIndex(memory_importance_->findData(3));
+    if (memory_pinned_) memory_pinned_->setChecked(false);
   });
   connect(save, &QPushButton::clicked, this, [this]() {
     if (!agent_panel_ || !memory_tier_ || !memory_content_ || !memory_scope_) return;
@@ -1465,6 +1474,7 @@ void AgentSettingsDialog::openMemoryManager() {
                        {"kind", memory_kind_ ? memory_kind_->currentData().toString() : "fact"},
                        {"importance", memory_importance_
                            ? memory_importance_->currentData().toInt() : 3},
+                       {"pinned", memory_pinned_ && memory_pinned_->isChecked()},
                        {"scope", memory_scope_->text().trimmed()},
                        {"title", memory_title_ ? memory_title_->text().trimmed() : QString()},
                        {"content", memory_content_->toPlainText()}};
@@ -1517,6 +1527,7 @@ void AgentSettingsDialog::openMemoryManager() {
     memory_scope_ = nullptr;
     memory_tier_ = nullptr;
     memory_importance_ = nullptr;
+    memory_pinned_ = nullptr;
     memory_manager_status_label_ = nullptr;
     memory_save_button_ = nullptr;
     memory_delete_button_ = nullptr;
