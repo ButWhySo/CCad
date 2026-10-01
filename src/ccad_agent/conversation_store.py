@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -19,7 +20,8 @@ from tool_audit_metadata import safe_approval_metadata
 _WORDS = re.compile(r"[a-z0-9_]{2,}", re.IGNORECASE)
 _SECRET_KEY = re.compile(r"api.?key|authorization|credential|password|secret|access.?token|headers", re.I)
 _SECRET_VALUE = re.compile(
-    r"(?:api[_-]?key|secret|password|access[_-]?token)\s*[:=]\s*\S+"
+    r"[\"']?(?:api[_-]?key|secret|password|access[_-]?token)[\"']?"
+    r"\s*[:=]\s*[\"']?[^\"',\s}]+"
     r"|\b(?:sk|csk|gsk|xai|sk-or)-[A-Za-z0-9_-]{12,}\b"
     r"|\bgh[pousr]_[A-Za-z0-9_]{20,}\b|\bAIza[A-Za-z0-9_-]{20,}\b"
     r"|\bBearer\s+[A-Za-z0-9._~+/=-]{12,}", re.IGNORECASE)
@@ -120,6 +122,36 @@ def _content_text(value: Any) -> str:
         return " ".join(str(item.get("text", "")) for item in value
                         if isinstance(item, dict) and isinstance(item.get("text"), str))
     return ""
+
+
+def _memory_extraction_messages(db, thread_id: str, *, max_messages=256,
+                                max_chars=24000) -> list[dict[str, str]]:
+    """Project only bounded, redacted user text eligible for extraction."""
+    thread = db.execute("SELECT no_memory FROM threads WHERE thread_id=?",
+                        (str(thread_id),)).fetchone()
+    if thread is None or bool(thread["no_memory"]):
+        return []
+    rows = db.execute("""SELECT message_id,turn_id,payload_json
+        FROM messages WHERE thread_id=? AND role='user'
+        ORDER BY sequence DESC LIMIT ?""",
+        (str(thread_id), max(1, min(512, int(max_messages))))).fetchall()
+    selected = []
+    used = 0
+    for row in reversed(rows):
+        try:
+            payload = json.loads(row["payload_json"])
+        except (json.JSONDecodeError, TypeError) as error:
+            raise ConversationStoreError("conversation_store_corrupt") from error
+        content = _content_text(payload.get("content", ""))
+        if not content or content.lstrip().startswith("/"):
+            continue
+        content = str(_safe(content, "content"))
+        if used + len(content) > max(1, min(64000, int(max_chars))):
+            continue
+        selected.append({"message_id": str(row["message_id"]),
+            "turn_id": str(row["turn_id"]), "role": "user", "content": content})
+        used += len(content)
+    return selected
 
 
 _EVENT_FIELDS = frozenset({"transaction_id", "project_revision", "revision", "status"})
@@ -260,7 +292,7 @@ def budgeted_history_window(messages: Iterable[Any], *, token_budget: int = 8192
 class ConversationStore:
     """SQLite source of truth for full message history and derived TurnRecords."""
 
-    SCHEMA_VERSION = 4
+    SCHEMA_VERSION = 5
 
     def __init__(self, path: str | Path | None = None):
         self.path = Path(path) if path is not None else conversation_path()
@@ -324,10 +356,29 @@ class ConversationStore:
                 source_sequence_start INTEGER,
                 source_sequence_end INTEGER,
                 summary_message_id TEXT NOT NULL DEFAULT '');
+            CREATE TABLE IF NOT EXISTS memory_extraction_jobs(
+                job_id TEXT PRIMARY KEY,
+                thread_id TEXT NOT NULL REFERENCES threads(thread_id) ON DELETE CASCADE,
+                source_digest TEXT NOT NULL,
+                state TEXT NOT NULL CHECK(state IN
+                    ('queued','claimed','succeeded','no_memory','stale','failed')),
+                attempt_count INTEGER NOT NULL DEFAULT 0 CHECK(attempt_count>=0),
+                next_attempt_at TEXT NOT NULL,
+                claim_token TEXT NOT NULL DEFAULT '',
+                claimed_at TEXT NOT NULL DEFAULT '',
+                last_error TEXT NOT NULL DEFAULT '',
+                candidate_count INTEGER NOT NULL DEFAULT 0 CHECK(candidate_count>=0),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(thread_id,source_digest));
+            CREATE INDEX IF NOT EXISTS memory_extraction_jobs_ready
+                ON memory_extraction_jobs(state,next_attempt_at,created_at);
         """)
         thread_columns = {str(row[1]) for row in db.execute("PRAGMA table_info(threads)")}
         if "history_visible" not in thread_columns:
             db.execute("ALTER TABLE threads ADD COLUMN history_visible INTEGER NOT NULL DEFAULT 0")
+        if "no_memory" not in thread_columns:
+            db.execute("ALTER TABLE threads ADD COLUMN no_memory INTEGER NOT NULL DEFAULT 0 CHECK(no_memory IN (0,1))")
         projection_columns = {str(row[1]) for row in db.execute(
             "PRAGMA table_info(projections)")}
         for name, declaration in (
@@ -383,7 +434,7 @@ class ConversationStore:
             db.close()
 
     def ensure_thread(self, thread_id: str, *, session_id="", project_id="",
-                      show_in_history=False) -> None:
+                      show_in_history=False, no_memory=False) -> None:
         """Register a new/resumed conversation without storing prompt content."""
         thread_id = str(thread_id).strip()
         if not thread_id:
@@ -393,16 +444,17 @@ class ConversationStore:
         try:
             with db:
                 db.execute("""INSERT INTO threads
-                    (thread_id,session_id,project_id,created_at,updated_at,history_visible)
-                    VALUES(?,?,?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
+                    (thread_id,session_id,project_id,created_at,updated_at,history_visible,no_memory)
+                    VALUES(?,?,?,?,?,?,?) ON CONFLICT(thread_id) DO UPDATE SET
                     session_id=CASE WHEN excluded.session_id='' THEN threads.session_id
                                     ELSE excluded.session_id END,
                     project_id=CASE WHEN excluded.project_id='' THEN threads.project_id
                                     ELSE excluded.project_id END,
                     history_visible=MAX(threads.history_visible,excluded.history_visible),
+                    no_memory=MAX(threads.no_memory,excluded.no_memory),
                     updated_at=excluded.updated_at""",
                     (thread_id, str(session_id or ""), str(project_id or ""), now, now,
-                     int(bool(show_in_history))))
+                     int(bool(show_in_history)), int(bool(no_memory))))
         except sqlite3.Error as error:
             raise ConversationStoreError("conversation_store_write_failed") from error
         finally:
@@ -459,7 +511,7 @@ class ConversationStore:
         db = self._connect()
         try:
             row = db.execute("""SELECT thread_id,session_id,project_id,title,created_at,
-                updated_at,message_count FROM threads WHERE thread_id=?""",
+                updated_at,message_count,no_memory FROM threads WHERE thread_id=?""",
                 (str(thread_id),)).fetchone()
             return dict(row) if row else None
         except sqlite3.Error as error:
@@ -970,5 +1022,208 @@ class ConversationStore:
             return [dict(row) for row in rows]
         except sqlite3.Error as error:
             raise ConversationStoreError("conversation_store_read_failed") from error
+        finally:
+            db.close()
+
+    @staticmethod
+    def _parse_utc(value: str) -> datetime:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise ValueError("timestamp_timezone_required")
+        return parsed.astimezone(timezone.utc)
+
+    def enqueue_idle_memory_jobs(self, *, now=None, idle_seconds=300,
+                                 max_jobs=32, max_queue=128) -> int:
+        """Queue one extraction per changed, durable, idle, non-opted-out thread."""
+        current = self._parse_utc(now or _now())
+        cutoff = (current - timedelta(seconds=max(60, min(86400, int(idle_seconds))))).isoformat()
+        current_text = current.isoformat()
+        batch_limit = max(1, min(64, int(max_jobs)))
+        queue_limit = max(1, min(512, int(max_queue)))
+        db = self._connect()
+        try:
+            with db:
+                pending = db.execute("""SELECT COUNT(*) FROM memory_extraction_jobs
+                    WHERE state IN ('queued','claimed')""").fetchone()[0]
+                available = max(0, queue_limit - int(pending))
+                if not available:
+                    return 0
+                rows = db.execute("""SELECT thread_id FROM threads
+                    WHERE message_count>0 AND no_memory=0 AND updated_at<=?
+                    ORDER BY updated_at ASC LIMIT ?""",
+                    (cutoff, min(batch_limit, available))).fetchall()
+                inserted = 0
+                for row in rows:
+                    thread_id = str(row["thread_id"])
+                    latest = db.execute("""SELECT turn_id FROM messages
+                        WHERE thread_id=? ORDER BY sequence DESC LIMIT 1""",
+                        (thread_id,)).fetchone()
+                    if latest is None or not str(latest["turn_id"]):
+                        continue
+                    terminal = db.execute("""SELECT record_json FROM turn_records
+                        WHERE thread_id=? AND turn_id=?""",
+                        (thread_id, str(latest["turn_id"]))).fetchone()
+                    if terminal is None:
+                        continue
+                    try:
+                        record = json.loads(terminal["record_json"])
+                    except (json.JSONDecodeError, TypeError, RecursionError) as error:
+                        raise ConversationStoreError(
+                            "conversation_store_corrupt") from error
+                    if not isinstance(record, dict) or record.get("outcome") != "completed":
+                        continue
+                    projected = _memory_extraction_messages(db, thread_id)
+                    if not projected:
+                        continue
+                    digest_source = json.dumps(
+                        projected, ensure_ascii=False, separators=(",", ":"))
+                    source_digest = hashlib.sha256(
+                        digest_source.encode("utf-8")).hexdigest()
+                    cursor = db.execute("""INSERT OR IGNORE INTO memory_extraction_jobs
+                        (job_id,thread_id,source_digest,state,next_attempt_at,created_at,updated_at)
+                        VALUES(?,?,?,'queued',?,?,?)""",
+                        (uuid.uuid4().hex, thread_id, source_digest,
+                         current_text, current_text, current_text))
+                    inserted += cursor.rowcount
+                return inserted
+        except (sqlite3.Error, ValueError, TypeError) as error:
+            raise ConversationStoreError("memory_extraction_queue_failed") from error
+        finally:
+            db.close()
+
+    def claim_memory_extraction_job(self, *, now=None, lease_seconds=900,
+                                    max_attempts=4) -> dict[str, Any] | None:
+        """Atomically claim one ready job; expired worker leases can be retried."""
+        current = self._parse_utc(now or _now())
+        current_text = current.isoformat()
+        expired = (current - timedelta(seconds=max(30, min(3600, int(lease_seconds))))).isoformat()
+        attempts = max(1, min(8, int(max_attempts)))
+        token = uuid.uuid4().hex
+        db = self._connect()
+        try:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("""UPDATE memory_extraction_jobs SET
+                state=CASE WHEN attempt_count>=? THEN 'failed' ELSE 'queued' END,
+                claim_token='',claimed_at='',
+                last_error=CASE WHEN attempt_count>=? THEN 'worker_lease_expired' ELSE last_error END,
+                next_attempt_at=?,updated_at=?
+                WHERE state='claimed' AND claimed_at<=?""",
+                (attempts, attempts, current_text, current_text, expired))
+            active = db.execute("""SELECT job_id FROM memory_extraction_jobs
+                WHERE state='claimed' LIMIT 1""").fetchone()
+            if active is not None:
+                db.commit()
+                return None
+            row = db.execute("""SELECT job_id,thread_id,source_digest,attempt_count
+                FROM memory_extraction_jobs WHERE state='queued' AND next_attempt_at<=?
+                ORDER BY created_at,job_id LIMIT 1""", (current_text,)).fetchone()
+            if row is None:
+                db.commit()
+                return None
+            updated = db.execute("""UPDATE memory_extraction_jobs SET state='claimed',
+                attempt_count=attempt_count+1,claim_token=?,claimed_at=?,updated_at=?
+                WHERE job_id=? AND state='queued'""",
+                (token, current_text, current_text, row["job_id"]))
+            if updated.rowcount != 1:
+                db.rollback()
+                return None
+            db.commit()
+            return {"job_id": str(row["job_id"]),
+                    "thread_id": str(row["thread_id"]),
+                    "source_digest": str(row["source_digest"]),
+                    "attempt_count": int(row["attempt_count"]) + 1,
+                    "claim_token": token}
+        except (sqlite3.Error, ValueError, TypeError) as error:
+            db.rollback()
+            raise ConversationStoreError("memory_extraction_claim_failed") from error
+        finally:
+            db.close()
+
+    def load_memory_extraction_messages(self, thread_id: str, *, max_messages=256,
+                                        max_chars=24000) -> list[dict[str, str]]:
+        """Return bounded, redacted user events; omit assistant/tool payloads."""
+        db = self._connect()
+        try:
+            return _memory_extraction_messages(
+                db, thread_id, max_messages=max_messages, max_chars=max_chars)
+        except sqlite3.Error as error:
+            raise ConversationStoreError("conversation_store_read_failed") from error
+        finally:
+            db.close()
+
+    def memory_extraction_source_digest(self, thread_id: str) -> str:
+        """Return current canonical transcript digest for stale-job rejection."""
+        db = self._connect()
+        try:
+            projected = _memory_extraction_messages(db, thread_id)
+            source = json.dumps(projected, ensure_ascii=False, separators=(",", ":"))
+            return hashlib.sha256(source.encode("utf-8")).hexdigest() if projected else ""
+        except sqlite3.Error as error:
+            raise ConversationStoreError("conversation_store_read_failed") from error
+        finally:
+            db.close()
+
+    def complete_memory_extraction_job(self, job_id: str, claim_token: str,
+                                       state: str, *, candidate_count=0) -> bool:
+        if state not in {"succeeded", "no_memory", "stale"}:
+            raise ValueError("memory_extraction_terminal_state_invalid")
+        now = _now()
+        db = self._connect()
+        try:
+            with db:
+                cursor = db.execute("""UPDATE memory_extraction_jobs SET state=?,
+                    candidate_count=?,claim_token='',claimed_at='',last_error='',updated_at=?
+                    WHERE job_id=? AND state='claimed' AND claim_token=?""",
+                    (state, max(0, min(64, int(candidate_count))), now,
+                     str(job_id), str(claim_token)))
+                return cursor.rowcount == 1
+        except sqlite3.Error as error:
+            raise ConversationStoreError("memory_extraction_update_failed") from error
+        finally:
+            db.close()
+
+    def fail_memory_extraction_job(self, job_id: str, claim_token: str,
+                                   category: str, *, now=None,
+                                   max_attempts=4, retryable=True) -> str | None:
+        current = self._parse_utc(now or _now())
+        attempts = max(1, min(8, int(max_attempts)))
+        safe_category = str(category).casefold()
+        if not re.fullmatch(r"[a-z0-9_]{1,64}", safe_category):
+            safe_category = "extraction_failed"
+        db = self._connect()
+        try:
+            with db:
+                row = db.execute("""SELECT attempt_count FROM memory_extraction_jobs
+                    WHERE job_id=? AND state='claimed' AND claim_token=?""",
+                    (str(job_id), str(claim_token))).fetchone()
+                if row is None:
+                    return None
+                terminal = (not bool(retryable) or
+                            int(row["attempt_count"]) >= attempts)
+                delay = min(900, 30 * (2 ** max(0, int(row["attempt_count"]) - 1)))
+                next_state = "failed" if terminal else "queued"
+                next_at = current.isoformat() if terminal else (
+                    current + timedelta(seconds=delay)).isoformat()
+                db.execute("""UPDATE memory_extraction_jobs SET state=?,next_attempt_at=?,
+                    claim_token='',claimed_at='',last_error=?,updated_at=?
+                    WHERE job_id=? AND state='claimed' AND claim_token=?""",
+                    (next_state, next_at, safe_category, current.isoformat(),
+                     str(job_id), str(claim_token)))
+                return next_state
+        except (sqlite3.Error, ValueError, TypeError) as error:
+            raise ConversationStoreError("memory_extraction_update_failed") from error
+        finally:
+            db.close()
+
+    def memory_extraction_job_state(self) -> dict[str, int]:
+        states = {"queued": 0, "claimed": 0, "succeeded": 0,
+                  "no_memory": 0, "stale": 0, "failed": 0}
+        db = self._connect()
+        try:
+            rows = db.execute("SELECT state,COUNT(*) AS count FROM memory_extraction_jobs GROUP BY state").fetchall()
+            states.update({str(row["state"]): int(row["count"]) for row in rows})
+            return states
+        except sqlite3.Error as error:
+            raise ConversationStoreError("memory_extraction_read_failed") from error
         finally:
             db.close()

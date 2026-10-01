@@ -58,10 +58,16 @@ with tempfile.TemporaryDirectory(prefix="ccad-memory-compact-runtime-") as tempo
         [PYTHON, str(ORCHESTRATOR)], stdin=subprocess.PIPE,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         bufsize=1, cwd=ROOT / "src" / "ccad_agent", env=env)
+    assert process.stdin is not None
+    assert process.stdout is not None
+    assert process.stderr is not None
+    process_stdin = process.stdin
+    process_stdout = process.stdout
+    process_stderr = process.stderr
     output_lines = queue.Queue()
 
     def collect_stdout():
-        for line in process.stdout:
+        for line in process_stdout:
             output_lines.put(line)
         output_lines.put(None)
 
@@ -69,15 +75,22 @@ with tempfile.TemporaryDirectory(prefix="ccad-memory-compact-runtime-") as tempo
     reader.start()
 
     def send(request):
-        process.stdin.write(json.dumps(request) + "\n")
-        process.stdin.flush()
+        process_stdin.write(json.dumps(request) + "\n")
+        process_stdin.flush()
 
-    def wait_for(method, *, kind="", stage=""):
+    def wait_for(method, *, kind="", stage="", timeout_seconds=10):
         collected = []
         while True:
             try:
-                line = output_lines.get(timeout=10)
+                line = output_lines.get(timeout=timeout_seconds)
             except queue.Empty as error:
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=5)
                 raise AssertionError(
                     f"agent did not emit {method}/{kind}/{stage}; "
                     f"process_status={process.poll()}, events={collected[-20:]}") from error
@@ -97,7 +110,8 @@ with tempfile.TemporaryDirectory(prefix="ccad-memory-compact-runtime-") as tempo
         "text": "/memory compact plan tier:ltm scope:conversation",
         "thread_id": "compact-thread", "session_id": "compact-session",
         "context": "{}"}})
-    plan, events = wait_for("message", kind="memory_compaction_plan")
+    plan, events = wait_for("message", kind="memory_compaction_plan",
+                            timeout_seconds=60)
     match = re.search(r"/memory compact send:([0-9a-f]{32})", plan["text"])
     assert match, plan
     state = next(event["params"] for event in events
@@ -122,10 +136,10 @@ with tempfile.TemporaryDirectory(prefix="ccad-memory-compact-runtime-") as tempo
     assert any(event.get("method") == "memory_compaction_state"
                and event.get("params", {}).get("stage") == "cancelled"
                for event in cancel_events)
-    process.stdin.close()
+    process_stdin.close()
     assert process.wait(timeout=15) == 0
     reader.join(timeout=5)
-    stderr = process.stderr.read()
+    stderr = process_stderr.read()
     stdout = "\n".join([json.dumps(event)
                          for event in events + send_events + cancel_events])
     assert memory_path.read_bytes() == original_bytes

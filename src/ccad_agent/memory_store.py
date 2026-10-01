@@ -11,7 +11,9 @@ import math
 import os
 import re
 import tempfile
+import threading
 import uuid
+from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,6 +35,16 @@ _PROVENANCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
 _PROVENANCE_FIELDS = {"authorship", "explicit_user_evidence", "source_evidence_classes",
                       "source_thread_ids", "source_turn_ids", "source_event_ids",
                       "source_memory_ids", "confidence", "pinned"}
+_STORE_LOCKS: dict[str, threading.RLock] = {}
+_STORE_LOCKS_GUARD = threading.Lock()
+
+
+def _serialized_mutation(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return guarded
 
 
 class MemoryStoreError(RuntimeError):
@@ -55,6 +67,9 @@ def memory_path() -> Path:
 class MemoryStore:
     def __init__(self, path=None):
         self.path = Path(path) if path else memory_path()
+        identity = str(self.path.resolve())
+        with _STORE_LOCKS_GUARD:
+            self._lock = _STORE_LOCKS.setdefault(identity, threading.RLock())
 
     def _read(self):
         try:
@@ -194,6 +209,7 @@ class MemoryStore:
             if name and os.path.exists(name):
                 os.unlink(name)
 
+    @_serialized_mutation
     def ensure_namespace(self, tier, namespace):
         """Open the single JSON backing store and validate this logical namespace."""
         if tier not in {"ltm", "episodic"}:
@@ -209,6 +225,7 @@ class MemoryStore:
                 and entry.get("namespace", "project") == namespace
                 and not self.contains_secret(entry)]
 
+    @_serialized_mutation
     def add(self, content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
             namespace="project", expires_at="", importance=3, provenance=None):
         if str(tier).strip().lower() in {"stm", "working_memory"}:
@@ -221,6 +238,27 @@ class MemoryStore:
         entries.append(entry)
         self._write(entries)
         return entry
+
+    @_serialized_mutation
+    def add_if_absent(self, content, *, title="", scope="user", tags=None,
+                      tier="episodic", kind="fact", namespace="local-user",
+                      importance=3, provenance=None):
+        """Atomically insert one exact memory without replacing user-authored data."""
+        entry = self._normalise_entry(content, title=title, scope=scope, tags=tags,
+            tier=tier, kind=kind, namespace=namespace, importance=importance,
+            provenance=provenance)
+        normalized = " ".join(entry["content"].casefold().split())
+        entries = self._read()
+        for current in entries:
+            if (current.get("tier", "ltm") == tier and
+                    current.get("namespace", "project") == namespace and
+                    current.get("status", "active") == "active" and
+                    not self.contains_secret(current) and
+                    " ".join(str(current.get("content", "")).casefold().split()) == normalized):
+                return current, False
+        entries.append(entry)
+        self._write(entries)
+        return entry, True
 
     @staticmethod
     def normalise(content, *, title="", scope="project", tags=None, tier="ltm", kind="fact",
@@ -278,6 +316,7 @@ class MemoryStore:
             entry["expires_at"] = expiry.astimezone(timezone.utc).isoformat()
         return entry
 
+    @_serialized_mutation
     def update(self, entry_id, content, *, title=None, scope=None, tags=None,
                tier=None, namespace=None, expires_at=None, kind=None, importance=None,
                provenance=None, pinned=None):
@@ -331,6 +370,7 @@ class MemoryStore:
                 and (include_superseded or item.get("status", "active") == "active")
                 and not self.contains_secret(item)]
 
+    @_serialized_mutation
     def verify(self, entry_id, *, provenance=None, verified_at=None):
         """Record explicit user verification without changing memory content."""
         if SECRET_MARKERS.search(str(entry_id or "")):
@@ -356,6 +396,7 @@ class MemoryStore:
             return entry
         return None
 
+    @_serialized_mutation
     def supersede(self, entry_id, replacement):
         """Atomically retain the old record and activate its replacement."""
         if not isinstance(replacement, dict) or self.contains_secret(replacement):
@@ -395,6 +436,7 @@ class MemoryStore:
         self._write(entries)
         return replacement
 
+    @_serialized_mutation
     def record_usage(self, entry_ids, *, used_at=None):
         """Persist bounded retrieval-use metadata without changing memory content."""
         ids = {str(entry_id) for entry_id in entry_ids if str(entry_id)}
@@ -444,6 +486,7 @@ class MemoryStore:
                 return True
         return False
 
+    @_serialized_mutation
     def delete(self, entry_id):
         old = self._read()
         new = [item for item in old if item.get("id") != entry_id]
@@ -452,6 +495,7 @@ class MemoryStore:
         self._write(new)
         return True
 
+    @_serialized_mutation
     def clear(self, scope=None):
         old = self._read()
         new = [item for item in old if scope is not None and item.get("scope") != scope]
@@ -460,6 +504,7 @@ class MemoryStore:
             self._write(new)
         return removed
 
+    @_serialized_mutation
     def clear_tier(self, tier, namespace=None):
         old = self._read()
         new = [item for item in old if not (
@@ -470,6 +515,7 @@ class MemoryStore:
             self._write(new)
         return removed
 
+    @_serialized_mutation
     def clear_scope(self, scope, *, tier=None, namespace=None):
         old = self._read()
         new = [item for item in old if not (
@@ -481,6 +527,7 @@ class MemoryStore:
             self._write(new)
         return removed
 
+    @_serialized_mutation
     def keep_latest(self, tier, namespace, limit):
         entries = self._read()
         selected = [item for item in entries if item.get("tier", "ltm") == tier
@@ -504,6 +551,7 @@ class MemoryStore:
             fields, ensure_ascii=False, sort_keys=True,
             separators=(",", ":")).encode("utf-8")).hexdigest()
 
+    @_serialized_mutation
     def replace_with_compaction(self, source_entries, summary, *, tier,
                                 namespace, scope, title, tags, expires_at=""):
         """Atomically replace unchanged durable records with one reviewed summary."""

@@ -365,6 +365,29 @@ private slots:
     QTest::qWait(50);
   }
 
+  void testAutomaticMemoryGenerationControlIsExplicitAndInformative() {
+    AgentPanel panel;
+    AgentSettingsDialog settings(&panel);
+    auto* categories = settings.findChild<QListWidget*>("control:categoryList");
+    QVERIFY(categories != nullptr);
+    categories->setCurrentRow(2);
+    QCoreApplication::processEvents();
+    auto* enabled = settings.findChild<QCheckBox*>(
+        "control:generateEpisodicMemories");
+    auto* status = settings.findChild<QLabel*>("label:memoryGenerationState");
+    QVERIFY(enabled != nullptr);
+    QVERIFY(status != nullptr);
+    QVERIFY(enabled->toolTip().contains("provider quota"));
+    QVERIFY(enabled->toolTip().contains("no tools"));
+    QVERIFY(enabled->toolTip().contains("exact user evidence"));
+    QTest::mouseClick(enabled, Qt::LeftButton);
+    QVERIFY(enabled->isChecked());
+    QTest::mouseClick(enabled, Qt::LeftButton);
+    QVERIFY(!enabled->isChecked());
+    QVERIFY(status->text().contains("Automatic extraction"));
+    settings.close();
+  }
+
   void testSemanticMemorySettingsUseOptInLocalBackend() {
     AgentPanel panel;
     AgentSettingsDialog settings(&panel);

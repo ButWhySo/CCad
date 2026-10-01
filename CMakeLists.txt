@@ -347,6 +347,21 @@ if(Python3_Interpreter_FOUND)
   add_test(NAME agent_memory_store
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/test_memory_store.py")
   if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+    set(CCAD_MEMORY_EXTRACTION_PYTHON
+      "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
+  else()
+    set(CCAD_MEMORY_EXTRACTION_PYTHON "${Python3_EXECUTABLE}")
+  endif()
+  add_test(NAME agent_memory_extraction_jobs
+    COMMAND "${CCAD_MEMORY_EXTRACTION_PYTHON}"
+            "${CMAKE_SOURCE_DIR}/scripts/test_memory_extraction_jobs.py")
+  add_test(NAME agent_memory_extraction_policy
+    COMMAND "${CCAD_MEMORY_EXTRACTION_PYTHON}"
+            "${CMAKE_SOURCE_DIR}/scripts/test_memory_extraction_policy.py")
+  add_test(NAME agent_memory_extraction_worker
+    COMMAND "${CCAD_MEMORY_EXTRACTION_PYTHON}"
+            "${CMAKE_SOURCE_DIR}/scripts/test_memory_extraction_worker.py")
+  if(WIN32 AND EXISTS "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe")
     add_test(NAME agent_memory_persistence
       COMMAND "${CMAKE_SOURCE_DIR}/src/ccad_agent/venv/Scripts/python.exe"
               "${CMAKE_SOURCE_DIR}/scripts/test_agent_memory_persistence.py")

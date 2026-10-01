@@ -685,11 +685,21 @@ int main(int argc, char** argv) {
                !name.startsWith("sprint987-schematic-metadata") &&
                !name.startsWith("sprint998-functional-block-net-context") &&
                !name.startsWith("sprint1027-working-memory")) ||
-              memory_checkpoints.contains(action_name)) {
+              (memory_checkpoints.contains(action_name) &&
+               !(name.startsWith("sprint975-memory-ui") &&
+                 action_name == "memory-ui-manager-open"))) {
             screenshot_path = QString::fromStdString(
                 (output_dir / (name + "-" + action_name + ".png").toStdString()).string());
-            if (QScreen* screen = window->screen())
+            if (name.startsWith("sprint975-memory-ui")) {
+              QWidget* capture_target = QApplication::activeModalWidget();
+              if (!capture_target || !capture_target->isVisible())
+                capture_target = QApplication::activeWindow();
+              if (!capture_target || !capture_target->isVisible())
+                capture_target = window;
+              if (!capture_target->grab().save(screenshot_path)) return false;
+            } else if (QScreen* screen = window->screen()) {
               screen->grabWindow(0).save(screenshot_path);
+            }
           }
           QString popup_screenshot;
           if (auto* popup = window->findChild<QListWidget*>("panel:agent_slash_commands");
@@ -1345,8 +1355,12 @@ int main(int argc, char** argv) {
             const QString path = QString::fromStdString(
                 (output_dir / (name + "-memory-ui-" +
                     QString::number(entries.size()) + "-result.png").toStdString()).string());
-            QScreen* screen = window->screen();
-            if (!screen || !screen->grabWindow(0).save(path)) return false;
+            QWidget* capture_target = QApplication::activeModalWidget();
+            if (!capture_target || !capture_target->isVisible())
+              capture_target = QApplication::activeWindow();
+            if (!capture_target || !capture_target->isVisible())
+              capture_target = window;
+            if (!capture_target->grab().save(path)) return false;
             entries << QString("{\"memory_result_screenshot\":%1}")
                            .arg(jsonStringLocal(path));
             return true;
@@ -1361,6 +1375,57 @@ int main(int argc, char** argv) {
                         "action:settingsBtn", "memory-ui-settings-open") && ok;
           ok = interact("ui.click", "{\"id\":\"control:categoryList\",\"row\":2}",
                         "control:categoryList", "memory-ui-personalisation") && ok;
+          const auto generationStatus = []() -> QLabel* {
+            for (QWidget* widget : QApplication::allWidgets()) {
+              auto* label = qobject_cast<QLabel*>(widget);
+              if (label && label->objectName() == "label:memoryGenerationState" &&
+                  label->isVisible()) return label;
+            }
+            return nullptr;
+          };
+          ok = interact("ui.click", "{\"id\":\"control:generateEpisodicMemories\"}",
+                        "control:generateEpisodicMemories",
+                        "memory-generation-enable") && ok;
+          bool generation_enabled = false;
+          for (int attempt = 0; attempt < 60; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (generationStatus() &&
+                generationStatus()->text().startsWith("Automatic extraction: enabled")) {
+              generation_enabled = true;
+              break;
+            }
+          }
+          entries << QString("{\"memory_generation_enabled\":%1}")
+                         .arg(generation_enabled ? "true" : "false");
+          ok = generation_enabled && ok;
+          const auto generationScreenshot = QString::fromStdString(
+              (output_dir / (name + "-memory-generation-enabled.png").toStdString()).string());
+          QWidget* generationTarget = QApplication::activeModalWidget();
+          if (!generationTarget || !generationTarget->isVisible())
+            generationTarget = QApplication::activeWindow();
+          if (!generationTarget || !generationTarget->isVisible())
+            generationTarget = window;
+          const bool generationCaptured = generationTarget->grab().save(generationScreenshot);
+          entries << QString("{\"memory_generation_enabled_screenshot\":%1}")
+                         .arg(jsonStringLocal(generationScreenshot));
+          ok = generationCaptured && ok;
+          ok = interact("ui.click", "{\"id\":\"control:generateEpisodicMemories\"}",
+                        "control:generateEpisodicMemories",
+                        "memory-generation-disable") && ok;
+          bool generation_disabled = false;
+          for (int attempt = 0; attempt < 60; ++attempt) {
+            QThread::msleep(100);
+            QApplication::processEvents();
+            if (generationStatus() &&
+                generationStatus()->text().startsWith("Automatic extraction: disabled")) {
+              generation_disabled = true;
+              break;
+            }
+          }
+          entries << QString("{\"memory_generation_disabled\":%1}")
+                         .arg(generation_disabled ? "true" : "false");
+          ok = generation_disabled && ok;
           ok = interact("ui.click", "{\"id\":\"action:agent_memory_manage\"}",
                         "action:agent_memory_manage", "memory-ui-manager-open") && ok;
           ok = interact("ui.click", "{\"id\":\"action:addMemory\"}",
@@ -1394,7 +1459,6 @@ int main(int argc, char** argv) {
           entries << QString("{\"memory_empty_write_rejected\":%1}")
                          .arg(empty_rejected ? "true" : "false");
           ok = empty_rejected && ok;
-          ok = captureMemoryResult() && ok;
           ok = interact("ui.type_text",
                         "{\"id\":\"control:memoryContent\",\"text\":\"Preserve the current ground return path around U3.\"}",
                         "control:memoryContent", "memory-ui-content") && ok;
@@ -1466,7 +1530,6 @@ int main(int argc, char** argv) {
           entries << QString("{\"memory_unpin_visible\":%1}")
                          .arg(unpin_visible ? "true" : "false");
           ok = unpin_visible && ok;
-          ok = captureMemoryResult() && ok;
           const auto* selected_memory = window->findChild<QListWidget*>("control:memoryEntries");
           const QString selected_memory_id = selected_memory && selected_memory->currentItem()
               ? selected_memory->currentItem()->data(Qt::UserRole).toString() : QString();
@@ -1494,7 +1557,6 @@ int main(int argc, char** argv) {
             if (memoryStatus() && memoryStatus()->text() == "Memory deleted.") break;
           }
           const bool deleted = memoryStatus() && memoryStatus()->text() == "Memory deleted.";
-          ok = captureMemoryResult() && ok;
           entries << QString("{\"memory_deleted\":%1,\"memory_status\":%2,\"selected_memory_id\":%3,\"confirmation_result\":%4,\"confirmation_screenshot\":%5}")
                          .arg(deleted ? "true" : "false",
                               jsonStringLocal(memoryStatus() ? memoryStatus()->text() : QString("missing")),

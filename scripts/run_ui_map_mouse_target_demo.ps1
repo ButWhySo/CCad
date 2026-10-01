@@ -527,7 +527,7 @@ if ($Name.StartsWith("sprint975-memory-ui")) {
   $testConfig = [ordered]@{
     provider = "openai"
     model = "gpt-5.1"
-    memory = @{ stm = $false; ltm = $true; episodic = $false }
+    memory = @{ stm = $false; ltm = $true; episodic = $false; generate_episodic = $false }
     observability = @{ enabled = $false; backend = "langfuse"; environment = "development" }
   }
   [IO.File]::WriteAllText((Join-Path $configDir "agent_config.json"),
@@ -951,6 +951,23 @@ if ($Name.StartsWith("sprint974-memory")) {
     $confirmation = Join-Path $ScreenshotDir "$Name-memory-ui-delete-confirmation.png"
     if (-not (Test-Path -LiteralPath $confirmation)) {
       throw "Mapped memory deletion did not capture its confirmation dialog."
+    }
+    $configPath = Join-Path $isolatedMemoryProfile "CCad\agent_config.json"
+    $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
+    if ($config.memory.generate_episodic -ne $false) {
+      throw "Automatic episodic generation did not persist its disabled state after the mapped toggle flow."
+    }
+    foreach ($field in @("memory_generation_enabled", "memory_generation_disabled")) {
+      if (-not ($reportData.entries | Where-Object { $_.$field -eq $true })) {
+        throw "Mapped memory UI did not prove '$field'. Report: $reportPath"
+      }
+    }
+    $generationScreenshot = Join-Path $ScreenshotDir "$Name-memory-generation-enabled.png"
+    if (-not (Test-Path -LiteralPath $generationScreenshot)) {
+      throw "Mapped memory UI did not capture enabled background-extraction state."
+    }
+    if ($stdoutLog -and (Select-String -LiteralPath $stdoutLog -Pattern 'provider_request_sent":true' -Quiet)) {
+      throw "Provider request occurred in the deferred-provider memory UI test."
     }
   }
   if ($Name.StartsWith("sprint1027-working-memory")) {

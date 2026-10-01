@@ -30,6 +30,7 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
     def test_memory_runtime_contracts_are_typed_and_safety_distinguished(self):
         state = self.by_name["agent.memory_state"]
         toggle = self.by_name["agent.memory_set_enabled"]
+        generation = self.by_name["agent.memory_generation_set_enabled"]
         reset = self.by_name["agent.memory_reset"]
         self.assertEqual(state["params"]["tier"]["type"], "string")
         self.assertEqual(state["params"]["tier"]["enum"],
@@ -38,6 +39,10 @@ class OrchestratorMethodCatalogTests(unittest.TestCase):
                          ["working_memory", "ltm", "episodic"])
         self.assertIn("semantic", state["response"]["tier_fields"])
         self.assertIn("model_version", state["response"]["semantic_fields"])
+        self.assertIn("generation_fields", state["response"])
+        self.assertEqual(generation["params"]["enabled"]["type"], "boolean")
+        self.assertFalse(generation["approval_required"])
+        self.assertIn("generation", generation["response"]["fields"])
         self.assertEqual(toggle["params"]["enabled"]["type"], "boolean")
         self.assertEqual(toggle["read_only"], False)
         self.assertFalse(toggle["approval_required"])

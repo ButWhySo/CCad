@@ -83,6 +83,9 @@ with tempfile.TemporaryDirectory() as temp:
             "tier": "episodic", "enabled": True}},
         {"method": "agent.memory_set_enabled", "params": {
             "tier": "episodic", "enabled": False}},
+        {"method": "agent.memory_generation_set_enabled", "params": {"enabled": True}},
+        {"method": "agent.memory_state", "params": {}},
+        {"method": "agent.memory_generation_set_enabled", "params": {"enabled": False}},
     ]
     process = subprocess.run(
         [sys.executable, str(ROOT / "src" / "ccad_agent" / "orchestrator.py")],
@@ -119,6 +122,12 @@ with tempfile.TemporaryDirectory() as temp:
     assert any(state.get("tier") == "episodic" and state.get("enabled") is True
                and state.get("persistent_entries") == 0
                and state.get("persisted") is True for state in toggles)
+    generation_states = [state["generation"] for state in toggles
+                         if isinstance(state.get("generation"), dict)]
+    assert any(state.get("enabled") is True and state.get("persisted") is True
+               for state in generation_states)
+    assert any(state.get("enabled") is False and state.get("persisted") is True
+               for state in generation_states)
     resets = matching("memory_reset")
     assert any(state.get("removed") == 0 and "error" in state for state in resets)
     assert any(state.get("removed") == 1 and "error" not in state for state in resets)
@@ -126,6 +135,7 @@ with tempfile.TemporaryDirectory() as temp:
     persisted = json.loads(config_path.read_text(encoding="utf-8"))
     assert persisted["memory"]["ltm"] is False
     assert persisted["memory"]["episodic"] is False
+    assert persisted["memory"]["generate_episodic"] is False
     assert memory_path.is_file()
     assert project_path.read_bytes() == project_bytes
     with sqlite3.connect(checkpoint_path) as database:

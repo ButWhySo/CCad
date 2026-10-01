@@ -1,0 +1,111 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint-1066-memory-extraction-policy",
+    "feature":  "Opt-in, provenance-bound automatic episodic-memory extraction with truthful prompt and Settings state",
+    "validation_mode":  "gui",
+    "interaction_plan":  "scripts/interaction_plans/sprint1066-memory-extraction.json",
+    "target_sequence":  "sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy",
+    "visual_validation":  "required",
+    "started_utc":  "2026-10-01T09:13:28.6837670Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.64 log=artifacts/evidence/sprint-1066-memory-extraction-policy/preflight.log",
+                      "finished_utc":  "2026-10-01T09:13:29.4118570Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=1.15 log=artifacts/evidence/sprint-1066-memory-extraction-policy/build.log",
+                      "finished_utc":  "2026-10-01T09:13:30.5847134Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=186.49 log=artifacts/evidence/sprint-1066-memory-extraction-policy/ctest.log",
+                      "finished_utc":  "2026-10-01T09:16:37.0778196Z"
+                  },
+                  {
+                      "name":  "official_ui_map_target_sequence",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=40.63 log=artifacts/evidence/sprint-1066-memory-extraction-policy/ui_harness.log",
+                      "finished_utc":  "2026-10-01T09:17:17.7169772Z"
+                  },
+                  {
+                      "name":  "mapped_interaction_contract",
+                      "passed":  true,
+                      "detail":  "successful_interactions=31; screenshots=7",
+                      "finished_utc":  "2026-10-01T09:17:17.8996757Z"
+                  },
+                  {
+                      "name":  "captured_gui_logs_and_images",
+                      "passed":  true,
+                      "detail":  "stdout, stderr, action report, and every scoped PNG copied into evidence folder",
+                      "finished_utc":  "2026-10-01T09:17:17.9477264Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/ctest.log",
+                                         "sha256":  "DB856E4F6A0F64F5E90C7462F59E120104E79D1B6611605E01B662F16A29642B"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy.stderr.log",
+                                         "sha256":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy.stdout.log",
+                                         "sha256":  "A6DF1ECF75A6C5C13AEE1E7B116D35295A444EE888D61739D6448D468A3B7B45"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-generation-enabled.png",
+                                         "sha256":  "F4E3BFED0D739FE0C72797E1B88AAF424CCA84232EF6B1E4D6AA5B06EB7AB6AB"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-ui-22-result.png",
+                                         "sha256":  "4C7FB338EB58167AA1BD87C853C7EB53E5EF85DE043E480E0103E32127B57D3D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-ui-42-result.png",
+                                         "sha256":  "91DEF11B2A5DF695DF61778F52A89494080360D7D3001D3D4B8BF6B1912B72FF"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-ui-delete-confirmation.png",
+                                         "sha256":  "8D82938AE25693B3190D855E8C223DBD605C5751BFC370C0E8299352405061DD"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-ui-reset-confirmation.png",
+                                         "sha256":  "5EE6DB81063BDF9F39F49395BA75BAF582974D7408CB847CE21506AC2E171702"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-ui-settings-closed.png",
+                                         "sha256":  "20B3C693C9B46A8B4DA382EB44B3735C15E22AAD6F31ED95189F958397872C2C"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-memory-ui-settings-open.png",
+                                         "sha256":  "88BCDD4A7DF5F510AEF0354FBAE750048C7FD31A887BA4A85405206D481F9228"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/sprint975-memory-ui-extraction-sprint-1066-memory-extraction-policy-target-sequence.json",
+                                         "sha256":  "729F451CBA4282DEFC08204EE06F1B995B58DF26BA54DE671EF81190A387FD6D"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint-1066-memory-extraction-policy/ui_harness.log",
+                                         "sha256":  "CA1CCC0A50293289263C521DA916B8343F419ACB088B94DD1E5E1D50FE950AE4"
+                                     }
+                                 ],
+    "finished_utc":  "2026-10-01T09:17:18.0042701Z"
+}

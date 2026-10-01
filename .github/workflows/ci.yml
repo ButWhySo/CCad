@@ -51,6 +51,9 @@ jobs:
           python scripts/test_agent_broker_cancellation_contract.py
           python scripts/test_agent_pending_calls_contract.py
           python scripts/test_memory_store.py
+          python scripts/test_memory_extraction_jobs.py
+          python scripts/test_memory_extraction_policy.py
+          python scripts/test_memory_extraction_worker.py
           python scripts/test_memory_command_contract.py
           python scripts/test_memory_context_contract.py
           python scripts/test_agent_config_persistence.py

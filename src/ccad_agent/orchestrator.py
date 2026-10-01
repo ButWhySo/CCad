@@ -74,6 +74,8 @@ from provider_usage import (account_response, collect_turn_usage,
 from provider_token_count import count_gemini_input_tokens
 from conversation_store import (ConversationStore, ConversationStoreError,
                                 budgeted_history_window)
+from memory_extraction import (EXTRACTION_SYSTEM_PROMPT, MemoryExtractionError,
+                               MemoryExtractionWorker)
 from tool_audit_metadata import (checkpoint_resume_value,
                                  checkpointed_tool_output,
                                  safe_approval_metadata,
@@ -1755,8 +1757,11 @@ def initialize_agent_process():
     provider_initialized = False
     observability = reconfigure_observability()
     atexit.register(telemetry_runtime.shutdown)
+    atexit.register(memory_extraction_worker.stop)
     if os.environ.get("CCAD_AGENT_DEFER_PROVIDER_INIT", "").lower() not in {"1", "true", "yes"}:
         provider_initialized = init_provider()
+    if _memory_generation_enabled():
+        memory_extraction_worker.start()
     # Runtime readiness is independent from provider readiness. Harnesses can
     # distinguish "Python agent process is alive" from "selected API adapter
     # works" without making module import perform provider initialization.
@@ -1834,13 +1839,23 @@ def get_system_prompt(role_desc: str,
         parts.append(
             "Memory retrieval: Do not claim to search or inspect memory; use "
             "only memory evidence already present in supplied context.")
+    memory_preferences = config_manager.get("memory", {})
+    generation_enabled = (isinstance(memory_preferences, dict) and
+                          memory_preferences.get("generate_episodic") is True)
     parts.append(
-        "Memory writes are user-controlled and are not available as model tools. "
-        "Never autonomously add, update, delete, verify, or supersede a memory, "
-        "and do not claim a memory was saved unless an authoritative completion "
-        "result confirms it. Memory changes require an explicit user `/memory "
-        "add`, `/memory update`, `/memory verify`, or `/memory supersede` command. "
-        "Do not store secrets or transient one-turn details.")
+        "Manual memory writes are not model tools. Never add, update, delete, "
+        "verify, or supersede memory during this chat turn; manual changes require "
+        "the user's explicit `/memory add <text>`, `/memory update <id> <text>`, "
+        "`/memory delete <id>`, `/memory verify <id>`, or "
+        "`/memory supersede <id> <replacement>` command, or Manage Memories UI, "
+        "and an authoritative success result. "
+        "Automatic episodic extraction is "
+        f"{'enabled' if generation_enabled else 'disabled'} in the separate background "
+        "worker. When enabled, that worker may send redacted user-authored text from "
+        "completed idle conversations to the selected provider, without tools or "
+        "project-write access, and save only validated exact-quote candidates. It is "
+        "asynchronous; do not claim any memory was generated unless memory-state "
+        "confirms it. Secrets and one-off details must not become memories.")
     if tools is None or tools is agent_tools:
         parts.append(
              "Read the typed project context and project_retrieval matches before design-specific work. "
@@ -2133,6 +2148,7 @@ def checkpoint_run_state(snapshot: Any) -> str:
 
 session_messages = []
 conversation_store = ConversationStore()
+memory_refresh_requested = threading.Event()
 active_conversation_thread_id = ""
 active_conversation_session_id = ""
 active_conversation_project_id = ""
@@ -2144,6 +2160,54 @@ schedules = []
 context_revisions = {}
 CONTEXT_REVISION_THREAD_LIMIT = 128
 provider_model_context_limits = ModelContextLimitRegistry()
+
+
+def _memory_generation_enabled() -> bool:
+    value = config_manager.get("memory", {})
+    return isinstance(value, dict) and value.get("generate_episodic") is True
+
+
+def _extract_memory_candidates(prompt: str) -> str:
+    """Use selected raw provider without project context or bound tools."""
+    if llm is None:
+        raise MemoryExtractionError("provider_unavailable")
+    response = llm.invoke([
+        SystemMessage(content=EXTRACTION_SYSTEM_PROMPT),
+        HumanMessage(content=prompt),
+    ], config={"callbacks": active_callbacks()} if active_callbacks() else {})
+    content = getattr(response, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(str(part.get("text", "")) for part in content
+                       if isinstance(part, dict) and part.get("type") == "text")
+    return ""
+
+
+def _memory_extraction_observation(thread_id: str, metadata: dict[str, str]):
+    return telemetry_runtime.background_observation(
+        "ccad.memory.extraction", metadata, session_id=thread_id)
+
+
+def _memory_extraction_written() -> None:
+    memory_refresh_requested.set()
+
+
+def _memory_extraction_state_changed(state: dict[str, Any]) -> None:
+    emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+        "generation": state, "secret_value_visible": False}})
+
+
+memory_extraction_worker = MemoryExtractionWorker(
+    conversation_store, memory_store, provider=_extract_memory_candidates,
+    enabled=_memory_generation_enabled,
+    namespace=lambda: str(memory_manager.identities["episodic"]),
+    on_memory_written=_memory_extraction_written,
+    classify_error=classify_provider_error,
+    observe=_memory_extraction_observation,
+    provider_ready=lambda: llm is not None,
+    on_state_changed=_memory_extraction_state_changed,
+)
 
 
 def active_model_context_limit() -> int | None:
@@ -2737,7 +2801,8 @@ def handle_provider_and_state_request(req, executor):
             try:
                 conversation_store.ensure_thread(
                     thread_id, session_id=session_id, project_id=project_id,
-                    show_in_history=bool(params.get("show_in_history", False)))
+                    show_in_history=bool(params.get("show_in_history", False)),
+                    no_memory=bool(params.get("no_memory", False)))
                 migrated_message_count = migrate_checkpoint_conversation(
                     thread_id, executor, session_id, project_id)
                 activate_conversation(thread_id, session_id, project_id)
@@ -2897,11 +2962,40 @@ def handle_provider_and_state_request(req, executor):
             state = memory_manager.state(str(tier)) if tier else memory_manager.state()
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                 "tiers": state if tier is None else {str(tier): state},
+                "generation": memory_extraction_worker.state(),
                 "secret_value_visible": False,
             }})
         except (TypeError, ValueError) as error:
             emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                 "tiers": {}, "error": str(error), "secret_value_visible": False}})
+    elif method == "agent.memory_generation_set_enabled":
+        params = req.get("params", {})
+        requested = params.get("enabled") if isinstance(params, dict) else None
+        if not isinstance(requested, bool):
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "generation": {**memory_extraction_worker.state(),
+                               "error": "invalid_memory_preference",
+                               "persisted": False},
+                "secret_value_visible": False}})
+            return True
+        memory_config = dict(config_manager.get("memory", {}))
+        memory_config["generate_episodic"] = requested
+        try:
+            memory_extraction_worker.set_enabled(
+                requested,
+                persist=lambda: config_manager.update_checked("memory", memory_config))
+            if requested:
+                memory_extraction_worker.start()
+            else:
+                memory_extraction_worker.wake()
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "generation": {**memory_extraction_worker.state(), "persisted": True},
+                "secret_value_visible": False}})
+        except ConfigPersistenceError as error:
+            emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
+                "generation": {**memory_extraction_worker.state(),
+                               "persisted": False, "error": error.category},
+                "secret_value_visible": False}})
     elif method == "agent.memory_set_enabled":
         params = req.get("params", {})
         requested_tier = str(params.get("tier", ""))
@@ -3048,6 +3142,7 @@ def handle_provider_and_state_request(req, executor):
         "agent.context_state",
         "agent.memory_state",
         "agent.memory_set_enabled",
+        "agent.memory_generation_set_enabled",
         "agent.memory_reset",
         "agent.memory_list",
         "agent.memory_add",
@@ -3102,6 +3197,11 @@ def handle_human_message(req):
     if previous_thread != requested_thread:
         invalidate_thread_context(previous_thread)
     memory_manager.configure(config_manager.get("memory", {}))
+    if memory_refresh_requested.is_set():
+        memory_refresh_requested.clear()
+        if memory_manager.enabled.get("episodic", False):
+            memory_manager.enable("episodic")
+            invalidate_thread_context(requested_thread)
     memory_compaction_plans.retain_current(
         memory_manager.compaction_identities(), memory_manager.enabled)
     if not isinstance(raw_context, str):
@@ -4094,7 +4194,16 @@ if __name__ == "__main__":
                 for k, v in clean_config.items():
                     try:
                         if k == "memory":
-                            config_manager.update_checked(k, v)
+                            if not isinstance(v, dict):
+                                raise ValueError("memory configuration must be an object")
+                            generation_enabled = v.get("generate_episodic") is True
+                            memory_extraction_worker.set_enabled(
+                                generation_enabled,
+                                persist=lambda: config_manager.update_checked(k, v))
+                            if generation_enabled:
+                                memory_extraction_worker.start()
+                            else:
+                                memory_extraction_worker.wake()
                         else:
                             config_manager.update(k, v)
                     except ConfigPersistenceError as error:
@@ -4124,6 +4233,7 @@ if __name__ == "__main__":
                         memory_manager.compaction_identities(), memory_manager.enabled)
                     emit({"jsonrpc": "2.0", "method": "memory_state", "params": {
                         "tiers": memory_manager.state(), "storage_errors": failures,
+                        "generation": memory_extraction_worker.state(),
                         "persisted": True, "secret_value_visible": False}})
             elif method == "agent.get_config":
                 emit({"jsonrpc": "2.0", "method": "config_state", "params": config_manager.config})

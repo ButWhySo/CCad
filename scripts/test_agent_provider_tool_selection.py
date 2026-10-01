@@ -173,16 +173,37 @@ class ProviderToolSelectionTests(unittest.TestCase):
         self.assertIn("Never infer an ID from a display name", prompt)
 
     def test_system_prompt_explains_memory_retrieval_and_user_controlled_writes(self):
+        original_memory = orchestrator.config_manager.config.get("memory")
         prompt = orchestrator.get_system_prompt(
             "the CCad PCB Routing Expert.", orchestrator.agent_tools)
         self.assertIn("Relevant enabled memories may already be present", prompt)
         self.assertIn("ccad_search_memory", prompt)
         self.assertIn("only when a specific needed fact is absent", prompt)
-        self.assertIn("Memory writes are user-controlled", prompt)
-        self.assertIn("do not claim a memory was saved", prompt)
+        self.assertIn("Manual memory writes are not model tools", prompt)
+        self.assertIn("manual changes require the user's explicit `/memory add <text>`", prompt)
+        self.assertIn("do not claim any memory was generated", prompt)
         self.assertIn("/memory add", prompt)
         self.assertIn("/memory verify", prompt)
         self.assertIn("/memory supersede", prompt)
+        self.assertIn("Automatic episodic extraction is disabled", prompt)
+        self.assertIn("completed idle conversations", prompt)
+        self.assertIn("exact-quote candidates", prompt)
+        try:
+            orchestrator.config_manager.config["memory"] = {
+                "episodic": False, "generate_episodic": True}
+            self.assertTrue(orchestrator._memory_generation_enabled())
+            enabled_prompt = orchestrator.get_system_prompt(
+                "the CCad PCB Routing Expert.", orchestrator.agent_tools)
+            self.assertIn("Automatic episodic extraction is enabled", enabled_prompt)
+            self.assertIn("do not claim any memory was generated", enabled_prompt)
+            orchestrator.config_manager.config["memory"] = {
+                "episodic": True, "generate_episodic": False}
+            self.assertFalse(orchestrator._memory_generation_enabled())
+        finally:
+            if original_memory is None:
+                orchestrator.config_manager.config.pop("memory", None)
+            else:
+                orchestrator.config_manager.config["memory"] = original_memory
 
     def test_system_prompt_does_not_claim_memory_search_when_tool_unbound(self):
         prompt = orchestrator.get_system_prompt(
@@ -196,8 +217,8 @@ class ProviderToolSelectionTests(unittest.TestCase):
         prompt = orchestrator.get_system_prompt(
             "the CCad PCB Routing Expert.", [])
         self.assertIn("The requested native tool has already returned", prompt)
-        self.assertIn("Memory writes are user-controlled", prompt)
-        self.assertIn("do not claim a memory was saved", prompt)
+        self.assertIn("Manual memory writes are not model tools", prompt)
+        self.assertIn("do not claim any memory was generated", prompt)
 
     def test_read_only_tool_calls_do_not_report_approval_pending(self):
         self.assertFalse(orchestrator.tool_calls_require_approval([{

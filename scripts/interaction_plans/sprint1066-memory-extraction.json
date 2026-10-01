@@ -1,0 +1,24 @@
+{
+  "target_sequence": "sprint975-memory-ui-extraction",
+  "project": "tests/fixtures/agent-undo-redo-board.ccad.json",
+  "minimum_mapped_interactions": 7,
+  "required_targets": [
+    "tab:pcb",
+    "tab:schematic",
+    "tab:agent",
+    "action:settingsBtn",
+    "control:categoryList",
+    "control:generateEpisodicMemories",
+    "action:agent_memory_manage",
+    "control:memoryPinned",
+    "action:saveMemory",
+    "control:memoryEntries",
+    "action:deleteMemory",
+    "action:agent_memory_reset",
+    "action:cancelSettingsButton"
+  ],
+  "required_text_entries": [
+    "control:memoryContent"
+  ],
+  "meaningful_screenshots": 7
+}

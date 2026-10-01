@@ -382,6 +382,23 @@ class TelemetryRuntime:
                 with self._lock:
                     self._active_trace_id = self._active_span_id = ""
 
+    @contextmanager
+    def background_observation(self, name, metadata=None, *, session_id=""):
+        """Trace background work without mutating the active chat-turn IDs."""
+        with self._lock:
+            client = self._langfuse_client
+        if client is None:
+            yield None
+            return
+        session_context = self.session(session_id) if session_id else nullcontext()
+        with session_context:
+            with client.start_as_current_observation(
+                    name=name, as_type="span",
+                    metadata=_string_metadata(metadata or {})) as observation:
+                if observation is None:
+                    raise RuntimeError("observation_not_created")
+                yield cast(Any, observation)
+
     def session(self, thread_id, *, turn_id=""):
         if self._langfuse_client is None:
             return nullcontext()

@@ -1436,6 +1436,26 @@ or `correction`; legacy kind-less rows load as `fact` without a read-time rewrit
 Orchestrator `/memory` commands are explicit;
 memory enters provider context only from enabled tiers managed by `MemoryManager`.
 
+### Opt-in automatic episodic extraction (Sprint 1066)
+
+`src/ccad_agent/memory_extraction.py` owns user-evidence filtering, exact-quote
+validation, and the single-worker durable extraction lifecycle. The GUI preference
+`memory.generate_episodic` defaults off and is independent of retrieval. Eligible
+completed idle threads are queued/claimed by `ConversationStore`; only bounded,
+redacted canonical user text reaches the selected provider, with no bound tools or
+project context. Candidates must pass deterministic durable/global-language,
+secret, exact-source, and freshness checks before `MemoryStore.add_if_absent` writes
+automatic authorship and source event/thread/turn provenance. Worker state exposes
+counts and safe error categories; Langfuse background observation uses a hashed
+thread identity. This does not implement dedicated extraction-model settings,
+kind-specific expiry/decay, global consolidation, or cloud-receipt proof.
+Sprint 1066 local gate: Qt/MinGW Release current, CTest 129/129, official UI-map
+31 interactions, seven screenshots and stdout/stderr inspected. Evidence manifest
+`artifacts/evidence/sprint-1066-memory-extraction-policy.json` (SHA-256
+`9965886F24CC9C9DEBCCEDDB10CBCBC72B607E64323A6D09AA84532B07DEB1CB`). Fresh
+Pyright rerun, secret scans, hosted CI, and branch delivery remain open; do not
+infer cloud trace receipt from the local safe-metadata contract.
+
 ### Sprint 1001 explicit memory kind path
 
 `MemoryManager.add/update` preserves the kind enum through STM/LTM/episodic storage.

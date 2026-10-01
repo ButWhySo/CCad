@@ -714,6 +714,19 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
   mem_layout->addWidget(stm_cb_);
   mem_layout->addWidget(ltm_cb_);
   mem_layout->addWidget(episodic_cb_);
+  generate_episodic_cb_ = new QCheckBox(
+      "Generate episodic memories in background", mem_group);
+  generate_episodic_cb_->setObjectName("control:generateEpisodicMemories");
+  generate_episodic_cb_->setToolTip(
+      "When enabled, CCad sends redacted user-authored text from completed idle chats "
+      "to the selected provider. This can use provider quota. The worker has no tools "
+      "or project-write access; generated records require exact user evidence.");
+  mem_layout->addWidget(generate_episodic_cb_);
+  memory_generation_status_label_ = new QLabel(
+      "Automatic extraction: disabled", mem_group);
+  memory_generation_status_label_->setObjectName("label:memoryGenerationState");
+  memory_generation_status_label_->setWordWrap(true);
+  mem_layout->addWidget(memory_generation_status_label_);
   auto* semantic_group = new QGroupBox("Semantic retrieval (local Ollama)", mem_group);
   auto* semantic_form = new QFormLayout(semantic_group);
   semantic_memory_enabled_cb_ = new QCheckBox(
@@ -791,6 +804,17 @@ void AgentSettingsDialog::createPersonalisationTab(QWidget* parent_widget) {
           [setMemoryTier](bool enabled) { setMemoryTier("ltm", enabled); });
   connect(episodic_cb_, &QCheckBox::toggled, this,
           [setMemoryTier](bool enabled) { setMemoryTier("episodic", enabled); });
+  connect(generate_episodic_cb_, &QCheckBox::toggled, this,
+          [this](bool enabled) {
+    if (memory_generation_status_label_)
+      memory_generation_status_label_->setText("Automatic extraction: updating…");
+    if (!agent_panel_ || !agent_panel_->sendJsonRpc(
+            "agent.memory_generation_set_enabled", QJsonObject{{"enabled", enabled}})) {
+      if (memory_generation_status_label_)
+        memory_generation_status_label_->setText(
+            "Automatic extraction preference was not sent: Agent backend unavailable.");
+    }
+  });
   form->addRow(mem_group);
 
   layout->addLayout(form);
@@ -1193,6 +1217,10 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
     if (stm_cb_ && (memory.contains("working_memory") || memory.contains("stm"))) { const QSignalBlocker blocker(stm_cb_); stm_cb_->setChecked(memory.value(memory.contains("working_memory") ? "working_memory" : "stm").toBool()); }
     if (ltm_cb_ && memory.contains("ltm")) { const QSignalBlocker blocker(ltm_cb_); ltm_cb_->setChecked(memory["ltm"].toBool()); }
     if (episodic_cb_ && memory.contains("episodic")) { const QSignalBlocker blocker(episodic_cb_); episodic_cb_->setChecked(memory["episodic"].toBool()); }
+    if (generate_episodic_cb_) {
+        const QSignalBlocker blocker(generate_episodic_cb_);
+        generate_episodic_cb_->setChecked(memory.value("generate_episodic").toBool(false));
+    }
     const QJsonObject semantic = memory.value("semantic").toObject();
     if (semantic_memory_enabled_cb_ && semantic.contains("enabled")) {
         const QSignalBlocker blocker(semantic_memory_enabled_cb_);
@@ -1240,6 +1268,30 @@ void AgentSettingsDialog::applyConfigState(const QJsonObject& config) {
 }
 
 void AgentSettingsDialog::applyMemoryState(const QJsonObject& state) {
+  const QJsonObject generation = state.value("generation").toObject();
+  if (!generation.isEmpty()) {
+    const bool enabled = generation.value("enabled").toBool(false);
+    if (generate_episodic_cb_) {
+      const QSignalBlocker blocker(generate_episodic_cb_);
+      generate_episodic_cb_->setChecked(enabled);
+    }
+    if (memory_generation_status_label_) {
+      const QString error = generation.value("last_error").toString(
+          generation.value("error").toString());
+      QString status = QString("Automatic extraction: %1 | queued %2, processing %3, "
+                                "saved %4, no candidate %5, failed %6")
+          .arg(enabled ? "enabled" : "disabled")
+          .arg(generation.value("queued").toInt())
+          .arg(generation.value("claimed").toInt())
+          .arg(generation.value("succeeded").toInt())
+          .arg(generation.value("no_memory").toInt())
+          .arg(generation.value("failed").toInt());
+      if (!error.isEmpty()) status += " | " + error;
+      if (generation.contains("persisted") && !generation.value("persisted").toBool())
+        status += " | preference not saved";
+      memory_generation_status_label_->setText(status);
+    }
+  }
   QJsonObject tiers = state.value("tiers").toObject();
   if (tiers.isEmpty() && state.contains("tier"))
     tiers.insert(state.value("tier").toString(), state);
@@ -1615,6 +1667,8 @@ void AgentSettingsDialog::saveAllSettings() {
   if (stm_cb_) memory["working_memory"] = stm_cb_->isChecked();
   if (ltm_cb_) memory["ltm"] = ltm_cb_->isChecked();
   if (episodic_cb_) memory["episodic"] = episodic_cb_->isChecked();
+  if (generate_episodic_cb_)
+    memory["generate_episodic"] = generate_episodic_cb_->isChecked();
   QJsonObject semantic;
   semantic["enabled"] = semantic_memory_enabled_cb_ &&
                         semantic_memory_enabled_cb_->isChecked();

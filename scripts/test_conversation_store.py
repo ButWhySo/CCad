@@ -409,7 +409,7 @@ def run():
         assert projection["source_message_ids"] == []
         assert projection["summary_message_id"] == ""
         with sqlite3.connect(legacy_path) as db:
-            assert int(db.execute("PRAGMA user_version").fetchone()[0]) == 4
+            assert int(db.execute("PRAGMA user_version").fetchone()[0]) == 5
         db.close()
 
 

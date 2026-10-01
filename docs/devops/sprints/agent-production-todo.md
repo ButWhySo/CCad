@@ -1,5 +1,19 @@
 # CCad Agent production TODO
 
+### Sprint 1066 - opt-in episodic memory extraction
+
+- [x] Add independent Generate memories control; default off; disabling preserves stored records. Qt memory flow verifies control and live status.
+- [x] Queue only completed, idle, memory-enabled threads; bound queue/concurrency and claim jobs atomically.
+- [x] Extract only bounded, redacted user-authored evidence; reject one-off, project-only, question, secret, and non-exact candidates.
+- [x] Persist accepted exact quotes with automatic authorship and source event/thread/turn provenance.
+- [x] Prevent model tools/project writes; honor provider readiness, terminal quota failures, source freshness, and opt-out races.
+- [x] Expose truthful extraction status and safe Langfuse metadata; keep provider payload and conversation text out of diagnostics.
+- [x] Contract-test policy, durable queue/restart, duplicates, failure, stale input, opt-out, and prompt capability guidance.
+- [x] Run official Qt/MinGW Release and full CTest (129/129), mapped UI (31 interactions), and inspect seven screenshots plus stdout/stderr; manifest `artifacts/evidence/sprint-1066-memory-extraction-policy.json`, SHA-256 `9965886F24CC9C9DEBCCEDDB10CBCBC72B607E64323A6D09AA84532B07DEB1CB`.
+- [ ] Complete fresh Pyright and applicable language-server checks; Pyright did not return in the bounded run and clangd did not complete its translation-unit check.
+- [x] Update codebase map, feature inventory, progress, and this TODO with verified local evidence.
+- [ ] Run redacted secret scans; commit/push only scoped verified files and manifest; inspect exact-SHA hosted CI before merge/cleanup.
+
 ### Sprint 1065 - memory system-prompt policy (in progress)
 
 - [x] Explain auto-injected enabled memories and when bound `ccad_search_memory` is appropriate; avoid redundant discovery searches.
@@ -4011,18 +4025,18 @@ Verified evidence: Sprint 1027 Working Memory manifest `artifacts/evidence/sprin
 ### User controls
 
 - [ ] `Use memories`.
-- [ ] `Generate memories`.
+- [x] `Generate memories` (Sprint 1066; independent default-off preference and live status).
 - [ ] `Memory summary`.
-- [ ] `Manage memories`.
-- [ ] `Reset memories`.
+- [x] `Manage memories` (existing real CRUD exercised in Sprint 1066 GUI flow).
+- [x] `Reset memories` (existing confirmed destructive reset exercised in Sprint 1066 GUI flow).
 
 ### Semantics
 
 - [ ] `Use memories=off` stops future retrieval/injection but preserves stored memory.
-- [ ] `Generate memories=off` stops new automatic extraction but preserves existing memory.
+- [x] `Generate memories=off` stops new automatic extraction but preserves existing memory.
 - [ ] Allow `Use=on, Generate=off`.
 - [ ] Allow `Use=off, Generate=on`.
-- [ ] Manual memory CRUD remains available independently.
+- [x] Manual memory CRUD remains available independently of automatic generation.
 
 ---
 
@@ -4030,26 +4044,26 @@ Verified evidence: Sprint 1027 Working Memory manifest `artifacts/evidence/sprin
 
 Borrow the useful Codex pattern without coupling to Codex internals.
 
-- [ ] Process eligible completed/idle root threads.
-- [ ] Exclude ephemeral/no-memory threads.
-- [ ] Claim jobs atomically.
-- [ ] Prevent duplicate concurrent processing.
-- [ ] Bound job count.
-- [ ] Bound extraction concurrency.
-- [ ] Add retry/backoff.
-- [ ] Record success/no-memory/failure states.
-- [ ] Use no mutation tools.
-- [ ] Use no project-write capability.
-- [ ] Apply provider/quota policy.
+- [x] Process eligible completed/idle root threads.
+- [x] Exclude ephemeral/no-memory threads.
+- [x] Claim jobs atomically.
+- [x] Prevent duplicate concurrent processing.
+- [x] Bound job count.
+- [x] Bound extraction concurrency.
+- [x] Add retry/backoff.
+- [x] Record success/no-memory/failure states.
+- [x] Use no mutation tools.
+- [x] Use no project-write capability.
+- [x] Apply provider/quota policy.
 - [ ] Support dedicated memory-extraction model/configuration.
-- [ ] Redact input before provider call.
-- [ ] Trace safely in Langfuse.
+- [x] Redact input before provider call.
+- [x] Trace safely in Langfuse.
 
 ### Extraction priorities
 
-- [ ] Explicit user preferences.
-- [ ] User corrections.
-- [ ] stable user constraints.
+- [x] Explicit user preferences.
+- [x] User corrections.
+- [x] Stable user constraints.
 - [ ] important project decisions.
 - [ ] verified recurring project conventions.
 - [ ] reusable workflow lessons.
@@ -4665,15 +4679,15 @@ Complete together:
 
 Complete together:
 
-- [ ] Use/Generate controls.
-- [ ] eligible thread jobs.
-- [ ] job claiming.
-- [ ] extractor.
-- [ ] evidence filtering.
-- [ ] candidate schema.
-- [ ] write gate.
-- [ ] redaction.
-- [ ] tests/docs.
+- [x] Use/Generate controls.
+- [x] Eligible thread jobs.
+- [x] Job claiming.
+- [x] Extractor.
+- [x] Evidence filtering.
+- [x] Candidate schema.
+- [x] Write gate.
+- [x] Redaction.
+- [x] Tests/docs (Sprint 1066 local evidence; Pyright/LSP and hosted CI remain separately open above).
 
 ## Group M3 â€” Episodic consolidation
 

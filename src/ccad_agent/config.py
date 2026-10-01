@@ -103,6 +103,7 @@ class AgentConfigManager:
                 "working_memory": True,
                 "ltm": False,
                 "episodic": False,
+                "generate_episodic": False,
                 "semantic": {
                     "enabled": False,
                     "backend": "ollama_local",
