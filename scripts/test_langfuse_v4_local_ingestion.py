@@ -121,7 +121,11 @@ def main() -> None:
         root = by_name["agent.turn"]
         root_attrs = attributes(root)
         assert root_attrs.get("langfuse.observation.input", "").find("b" * 64) >= 0, root_attrs
-        assert root.end_time_unix_nano > root.start_time_unix_nano, root
+        # These short in-process spans can begin and end within one clock tick.
+        # Equal timestamps are valid; the contract is that export completed
+        # without an end time preceding the start time.
+        assert root.start_time_unix_nano > 0, root
+        assert root.end_time_unix_nano >= root.start_time_unix_nano, root
         trace_ids = {span.trace_id for span in spans}
         assert len(trace_ids) == 1
         assert by_name["tool.call"].parent_span_id == root.span_id

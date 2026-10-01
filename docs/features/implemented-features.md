@@ -1,8 +1,12 @@
 # Implemented Features
 
-## Sprint 1061 — Manage Memories pin controls (locally verified)
+## Sprint 1062 — Langfuse local-ingestion timing contract (local gate passed)
 
-Manage Memories now exposes a pin checkbox on add/edit. Pin state is persisted as explicit user-controlled provenance; unpin overrides the merged historical pin flag without erasing lineage. Pinned records remain retrieval candidates without lexical matches and sort ahead of unpinned candidates under the existing bounded selection policy. Store, manager, catalog, and orchestrator persistence contracts pass, and changed-module Pyright reports zero diagnostics. Qt MinGW Release and full CTest pass 126/126; the official mapped GUI flow completed 29 successful interactions and all 10 distinct inspected images. Passing manifest `artifacts/evidence/sprint1061-memory-pins-r2.json` has SHA-256 `6EE403F2DBA6F96345F668EA2C28A3AA349C76C8DF943FFE15536129205452DA`; build/test logs and screenshots remain workspace-only. Hosted CI and branch integration are pending.
+The local OTLP ingestion contract now permits equal root-span start/end timestamps, which are valid when a short in-process span completes within the clock's timestamp resolution. It still requires a nonzero start time and rejects end timestamps earlier than start. The focused contract passed five consecutive local runs; Qt MinGW Release and full CTest pass 128/128. Non-visual manifest `artifacts/evidence/sprint1062-langfuse-clock-contract-r3.json`, SHA-256 `22D3D574356661DFD06D14A2009EA8DCEA4C2510BD84D20B83EDCD589641CF69`; logs remain workspace-only. Hosted CI is pending.
+
+## Sprint 1061 — Manage Memories pin controls (merged; hosted CI green)
+
+Manage Memories now exposes a pin checkbox on add/edit. Pin state is persisted as explicit user-controlled provenance; unpin overrides the merged historical pin flag without erasing lineage. Pinned records remain retrieval candidates without lexical matches and sort ahead of unpinned candidates under the existing bounded selection policy. Store, manager, catalog, and orchestrator persistence contracts pass, and changed-module Pyright reports zero diagnostics. Qt MinGW Release and full CTest pass 126/126; the official mapped GUI flow completed 29 successful interactions and all 10 distinct inspected images. Passing manifest `artifacts/evidence/sprint1061-memory-pins-r2.json` has SHA-256 `6EE403F2DBA6F96345F668EA2C28A3AA349C76C8DF943FFE15536129205452DA`; build/test logs and screenshots remain workspace-only. Exact-main hosted Actions run `36797742968` passed all five jobs; main integration and feature-branch cleanup are complete.
 
 ## Sprint 1060 — explicit memory provenance (local gate passed)
 

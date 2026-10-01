@@ -1,5 +1,13 @@
 # CCad Agent production TODO
 
+### Sprint 1062 — Langfuse ingestion clock-resolution contract
+
+- [x] Reproduce the hosted Windows-only `langfuse_v4_local_ingestion` failure: short root span had equal start/end nanoseconds, then passed on the workflow's verbose rerun.
+- [x] Correct the test to accept valid zero-duration spans while still requiring a positive start timestamp and nondecreasing end timestamp.
+- [x] Run the local OTLP ingestion contract five consecutive times; all passed.
+- [x] Run official non-visual Qt/MinGW Release and full CTest: 128/128 pass. Manifest `artifacts/evidence/sprint1062-langfuse-clock-contract-r3.json`, SHA-256 `22D3D574356661DFD06D14A2009EA8DCEA4C2510BD84D20B83EDCD589641CF69`; build and test logs are workspace-only.
+- [ ] Commit/push, fast-forward main, and verify hosted CI on the exact main SHA.
+
 ### Sprint 1061 — memory pin/unpin lifecycle (merged; hosted CI green)
 
 - [x] Complete verified `main` integration for Sprints 1056–1060: direct fast-forward push at `e2035fddaf39c22ebb24202e2bde7fad59b09b8d`; hosted workflow run `36792365682` passed all five jobs on that exact SHA; only `main` remains as a local/remote branch. PR merge API was unavailable, so the authorized fast-forward push was used and verified.

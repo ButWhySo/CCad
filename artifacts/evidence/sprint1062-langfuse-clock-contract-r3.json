@@ -1,0 +1,49 @@
+{
+    "schema_version":  1,
+    "sprint_id":  "sprint1062-langfuse-clock-contract-r3",
+    "feature":  "Correct the Langfuse OTLP test for valid spans shorter than clock resolution",
+    "validation_mode":  "non_visual",
+    "interaction_plan":  null,
+    "target_sequence":  null,
+    "visual_validation":  "not_applicable_no_gui_behavior_changed",
+    "started_utc":  "2026-10-01T01:54:00.3629552Z",
+    "status":  "pass",
+    "steps":  [
+                  {
+                      "name":  "qt_mingw_preflight",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.86 log=artifacts/evidence/sprint1062-langfuse-clock-contract-r3/preflight.log",
+                      "finished_utc":  "2026-10-01T01:54:01.3096838Z"
+                  },
+                  {
+                      "name":  "release_build",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=0.63 log=artifacts/evidence/sprint1062-langfuse-clock-contract-r3/build.log",
+                      "finished_utc":  "2026-10-01T01:54:01.9508579Z"
+                  },
+                  {
+                      "name":  "full_ctest",
+                      "passed":  true,
+                      "detail":  "exit=0 duration_seconds=182.49 log=artifacts/evidence/sprint1062-langfuse-clock-contract-r3/ctest.log",
+                      "finished_utc":  "2026-10-01T01:57:04.4428979Z"
+                  }
+              ],
+    "artifacts":  [
+
+                  ],
+    "workspace_only_artifacts":  [
+                                     {
+                                         "path":  "artifacts/evidence/sprint1062-langfuse-clock-contract-r3/build.log",
+                                         "sha256":  "8C35B1682F73592D30612D7B0FABDB384FCFFF35CB5A076CB48B85B1368AA794"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1062-langfuse-clock-contract-r3/ctest.log",
+                                         "sha256":  "336CD5B17F7156AF8E39056AAEC3250635098163D4C0BDE551F41142298716B7"
+                                     },
+                                     {
+                                         "path":  "artifacts/evidence/sprint1062-langfuse-clock-contract-r3/preflight.log",
+                                         "sha256":  "ED8F46390BF48F5582EA94BABABBCFD1DA103D8B4F16F588A14CFBE85F00C0F9"
+                                     }
+                                 ],
+    "finished_utc":  "2026-10-01T01:57:04.5428971Z"
+}
