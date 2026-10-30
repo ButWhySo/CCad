@@ -1,0 +1,35 @@
+- [ ] NK-01 Replace `ccad_core` with a self-contained KiCad-derived implementation: copy and adapt needed KiCad code and its dependency/resource closure into CCad, build and ship it with CCad, and require no separate KiCad install at runtime. Keep useful CCad agent/product features on top of that implementation. [Decision and migration order](native-kicad-strategy.md)
+  - [ ] NK-01-CUT-A Pin a stable KiCad source revision; inventory per-file and third-party licenses; map the needed code, build, resource, and runtime dependency closure.
+  - [ ] NK-01-CUT-B Select coherent KiCad source modules, copy/adapt them into the CCad repository, map their full code/build/resource dependency closure, preserve license notices, and bundle the required dependencies/resources with CCad. Do not depend on an installed KiCad application, external KiCad process, or KiCad runtime.
+  - [ ] NK-01-CUT-C Make the copied/adapted KiCad code own CCad's project lifecycle, native IO, board/schematic state, libraries, canvas, and saved design.
+  - [ ] NK-01-CUT-D Add one CCad typed-action boundary that calls the adapted KiCad implementation, resolves native object IDs, validates requests, uses KiCad commit/undo behavior, and returns actual results or clear errors.
+  - [ ] NK-01-CUT-E Identify useful CCad-specific features, then port or adapt them into the self-contained CCad product. Route component/library operations, connectivity, rules, routing, zone fill, and manufacturing through bundled KiCad-derived code.
+  - [ ] NK-01-CUT-F Switch the supported workflow to the self-contained CCad build once real projects can open, edit, save, reopen, undo, and run bundled KiCad-derived checks without a separate KiCad install. Full bug-free parity is not required; reliable saves and clear refusal of unsupported operations are required.
+  - [ ] NK-01-CUT-G Drop the `ccad_core` target and remove its duplicate CAD model and related implementation files after useful CCad-specific features have moved to the KiCad-based product. Remove obsolete serializers, import/export approximations, CAD geometry/check services, canvas renderers, build targets, tests, and docs. Retain only useful CCad product features implemented on KiCad and their thin adapters.
+  - [ ] NK-01-CUT-H Update `AGENTS.md`, codebase map, build instructions, and dependent todos to make KiCad the CAD authority and prohibit a second editable design model.
+  - [ ] NK-01-CUT-I Record unsupported workflows as explicit product gaps; fix post-cut bugs in the KiCad-backed path rather than rebuilding the duplicate kernel.
+  - [ ] NK-01-S01 Inventory existing CCad features, project data, libraries, and agent metadata that need preservation.
+  - [ ] NK-01-S02 Pin the KiCad release and inspect its documented board, schematic, project, symbol, and footprint formats.
+  - [ ] NK-01-S03 Record stable-versus-development source provenance; as of 2026-10-30, use KiCad 10.0.7 as the stable baseline and treat KiCad 11 IPC features as future until release and runtime validation.
+  - [ ] NK-01-S04 Keep IPC/CLI as development research only; confirm the shipped CCad workflow has no dependency on a separate KiCad process or installation.
+  - [ ] NK-01-S05 Compare existing KiCad typed messages and handlers with CCad actions, including library IDs, symbol units, references, and version-specific support.
+  - [ ] NK-01-S06 Test omitted and explicit footprint layers against the pinned KiCad API; check documented defaults against actual behavior.
+  - [ ] NK-01-S07 Verify licensing, distribution, versioning, packaging, and rollback for the KiCad-based product.
+  - [ ] NK-01-S08 Prototype open, typed inspection, edit, preview, approval, save, reopen, undo, rules, and export against independent KiCad checks.
+    - [ ] NK-01-S08-S01 Use one pinned real `.kicad_pro`/`.kicad_pcb` fixture with a footprint, asymmetric pad geometry, connected track, and at least one unrelated field or object that the prototype does not edit.
+    - [ ] NK-01-S08-S02 Resolve the footprint by stable reference and library identity, then request one typed move by a stated distance and unit; do not identify it by screen coordinates.
+    - [ ] NK-01-S08-S03 Show a before/after preview naming the target and every changed field, then require approval before writing.
+    - [ ] NK-01-S08-S04 Save, close, and reopen the design in the pinned stable KiCad release; compare footprint origin, pad positions and rotations, pad/net identities, track connectivity, and the unrelated object or field.
+    - [ ] NK-01-S08-S05 Undo the accepted move, save and reopen again, and prove the original design state is restored; a failed or rejected move must leave the saved project unchanged.
+    - [ ] NK-01-S08-S06 Run KiCad's independent board checks before and after; report new, cleared, and unchanged findings separately.
+    - [ ] NK-01-S08-S07 Exercise the contract through the bundled KiCad-derived code; record build, packaging, licensing, and unsupported-operation evidence. A separate KiCad install may be used only as an independent development-time check, not as a shipped runtime dependency.
+    - [ ] NK-01-S08-S08 Pass only if unsupported data is preserved or the edit is refused clearly, no identity/connectivity/geometry changes occur outside the request, and results survive close/reopen and undo. Label this as a board-edit feasibility result, not proof of schematic, symbol-library, footprint-library, routing, or manufacturing completeness.
+  - [ ] NK-01-S09 Test unknown fields, identities, hierarchy, libraries, geometry, and newer-format compatibility without silent loss.
+    - [ ] NK-01-S09-S01 Keep `.kicad_sym` library import distinct from `.kicad_sch` project import; state which paths are supported. If native schematic projects are in scope, test multi-sheet load/edit/save/reopen with sheet hierarchy, symbol/pin/net identities, embedded symbols/resources, and unsupported-field preservation. See the vault's schematic boundary audit, which is not included in this repository.
+  - [ ] NK-01-S10 Document KiCad as the authoritative state and the typed bridge as the CCad operation boundary.
+  - [ ] NK-01-S11 Update `AGENTS.md`, codebase map, and dependent checklists to remove the conflicting CCad-kernel source-of-truth rule.
+  - [ ] NK-01-S12 Rework persistence, importer, component-generation, rendering, rules, and export tasks around KiCad-owned services and duplicate-code removal.
+- [ ] NK-02 Reconcile the F: audit continuation with the Obsidian vault. [Decision context](native-kicad-strategy.md)
+  - [ ] NK-02-S01 Inventory every F: audit file, its source revision, evidence type, and matching vault reports.
+  - [ ] NK-02-S02 Map each unique actionable finding into the relevant checklist without overwriting either source.
+  - [ ] NK-02-S03 Record conflicting, superseded, and unverified findings separately and preserve original evidence links.
